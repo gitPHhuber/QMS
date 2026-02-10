@@ -25,38 +25,6 @@ const {
 
 
 const {
-    Document,
-    DocumentVersion,
-    DocumentApproval,
-    DocumentDistribution,
-    setupDocumentAssociations,
-    DOCUMENT_TYPES,
-    DOCUMENT_STATUSES,
-    VERSION_STATUSES,
-    APPROVAL_ROLES,
-    APPROVAL_DECISIONS,
-} = require("./definitions/Document");
-
-
-const {
-    Nonconformity,
-    NcAttachment,
-    Capa,
-    CapaAction,
-    CapaVerification,
-    setupNcCapaAssociations,
-    NC_SOURCES,
-    NC_CLASSIFICATIONS,
-    NC_STATUSES,
-    NC_DISPOSITIONS,
-    CAPA_TYPES,
-    CAPA_STATUSES,
-    CAPA_PRIORITIES,
-    CAPA_ACTION_STATUSES,
-} = require("./definitions/NcCapa");
-
-
-const {
   DefectCategory,
   BoardDefect,
   RepairAction,
@@ -125,26 +93,6 @@ const {
     YADRO_LOG_STATUSES,
     SUBSTITUTE_STATUSES
 } = require("./definitions/YadroIntegration");
-
-// ═══ QMS P0: Document Management ═══
-
-// ═══ QMS P1: Risk Management (ISO 14971) ═══
-const { RiskRegister, RiskAssessment, RiskMitigation } = require("./definitions/Risk");
-
-// ═══ QMS P1: Supplier Management (§7.4) ═══
-const { Supplier, SupplierEvaluation, SupplierAudit } = require("./definitions/Supplier");
-
-// ═══ QMS P2: Internal Audits (§8.2.4) ═══
-const { AuditPlan, AuditSchedule, AuditFinding } = require("./definitions/InternalAudit");
-
-// ═══ QMS P2: Training & Competency (§6.2) ═══
-const { TrainingPlan, TrainingRecord, CompetencyMatrix } = require("./definitions/Training");
-
-// ═══ QMS P2: Equipment & Calibration (§7.6) ═══
-const { Equipment, CalibrationRecord } = require("./definitions/Equipment");
-
-// ═══ QMS P2: Management Review (§5.6) ═══
-const { ManagementReview, ReviewAction } = require("./definitions/ManagementReview");
 
 
 User.hasMany(Session);
@@ -335,25 +283,6 @@ Project.belongsTo(User, { foreignKey: "createdById", as: "author" });
 User.hasMany(Project, { foreignKey: "createdById", as: "projects" });
 
 
-
-// ═══ QMS Ассоциации ════════════════════════════════════════
-// Risk → User (владелец)
-User.hasMany(RiskRegister, { as: "ownedRisks", foreignKey: "ownerId" });
-RiskRegister.belongsTo(User, { as: "owner", foreignKey: "ownerId" });
-
-// Training → User
-User.hasMany(TrainingRecord, { as: "trainings", foreignKey: "userId" });
-TrainingRecord.belongsTo(User, { as: "trainee", foreignKey: "userId" });
-
-// Equipment → User
-User.hasMany(Equipment, { as: "responsibleEquipment", foreignKey: "responsibleId" });
-Equipment.belongsTo(User, { as: "responsible", foreignKey: "responsibleId" });
-
-// Document → User
-QMSDocument.belongsTo(User, { as: "author", foreignKey: "authorId" });
-QMSDocument.belongsTo(User, { as: "approver", foreignKey: "currentApproverId" });
-// ═══════════════════════════════════════════════════════════
-
 module.exports = {
 
     User, PC, Session, AuditLog, Role, Ability, RoleAbility,
@@ -442,13 +371,4 @@ module.exports = {
     ProductionOutput,
     OperationType,
     OUTPUT_STATUSES
-
-    // ═══ QMS модули ═══
-    QMSDocument, DocumentVersion, DocumentApproval,
-    RiskRegister, RiskAssessment, RiskMitigation,
-    Supplier, SupplierEvaluation, SupplierAudit,
-    AuditPlan, AuditSchedule, AuditFinding,
-    TrainingPlan, TrainingRecord, CompetencyMatrix,
-    Equipment, CalibrationRecord,
-    ManagementReview, ReviewAction,
 };

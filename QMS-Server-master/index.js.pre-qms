@@ -71,25 +71,6 @@ const initInitialData = async () => {
       { code: "beryll.view", description: "Просмотр серверов АПК Берилл" },
       { code: "beryll.work", description: "Взятие в работу и настройка серверов" },
       { code: "beryll.manage", description: "Управление модулем (Синхронизация DHCP)" },
-
-      // QMS: DMS
-      { code: "dms.view", description: "Просмотр реестра документов" },
-      { code: "dms.create", description: "Создание документов" },
-      { code: "dms.approve", description: "Согласование документов" },
-      { code: "dms.manage", description: "Введение в действие, рассылка" },
-      // QMS: Audit
-      { code: "qms.audit.view", description: "Расширенный аудит-лог" },
-      { code: "qms.audit.verify", description: "Верификация hash-chain" },
-      { code: "qms.audit.report", description: "Отчёты для инспекции" },
-      // QMS: NC
-      { code: "nc.view", description: "Просмотр несоответствий" },
-      { code: "nc.create", description: "Регистрация NC" },
-      { code: "nc.manage", description: "Управление NC" },
-      // QMS: CAPA
-      { code: "capa.view", description: "Просмотр CAPA" },
-      { code: "capa.create", description: "Создание CAPA" },
-      { code: "capa.manage", description: "Управление CAPA" },
-      { code: "capa.verify", description: "Проверка эффективности CAPA" },
     ];
 
 
@@ -174,14 +155,14 @@ const initInitialData = async () => {
 const start = async () => {
   try {
     await sequelize.authenticate();
-// AUTO-DISABLED: sequelize.sync disabled (use migrations)
+    await sequelize.sync({ alter: true });
 
 
     await initInitialData();
 
 
     console.log(">>> [Beryll] Инициализация шаблонов чек-листов...");
-    // await initChecklistTemplates()  // disabled;
+    await initChecklistTemplates();
     console.log(">>> [Beryll] Шаблоны чек-листов инициализированы");
 
     app.listen(PORT, () => console.log(`Server started on port ${PORT}`));

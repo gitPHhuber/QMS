@@ -181,7 +181,7 @@ const start = async () => {
 
 
     console.log(">>> [Beryll] Инициализация шаблонов чек-листов...");
-    // await initChecklistTemplates()  // disabled;
+    await initChecklistTemplates();
     console.log(">>> [Beryll] Шаблоны чек-листов инициализированы");
 
     app.listen(PORT, () => console.log(`Server started on port ${PORT}`));

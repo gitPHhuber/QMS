@@ -48,10 +48,6 @@ const productionOutputRouter = require("./productionOutputRouter");
 const documentRouter = require("./documentRouter");
 const ncCapaRouter = require("./ncCapaRouter");
 
-// ═══ QMS роутеры ═══
-const documentRouter = require("./documentRouter");
-const riskRouter = require("./riskRouter");
-
 
 router.use("/users", userRouter);
 router.use("/sessions", sessionRouter);
@@ -99,16 +95,5 @@ router.use("/production", productionOutputRouter);
 router.use("/documents", documentRouter);
 // QMS: Nonconformity + CAPA
 router.use("/nc", ncCapaRouter);
-
-
-// ═══ QMS эндпоинты ═══
-router.use("/documents", documentRouter);
-router.use("/risks", riskRouter);
-// TODO: подключить по мере создания контроллеров:
-// router.use("/suppliers", supplierRouter);
-// router.use("/internal-audits", internalAuditRouter);
-// router.use("/training", trainingRouter);
-// router.use("/equipment", equipmentRouter);
-// router.use("/management-review", managementReviewRouter);
 
 module.exports = router;
