@@ -1,9 +1,28 @@
 const { auth } = require('express-oauth2-jwt-bearer');
+const AUTH_MODE = process.env.AUTH_MODE || 'keycloak';
 
-const checkJwt = auth({
-  audience: 'account',
-  issuerBaseURL: 'http://keycloak.local/realms/MES-Realm',
-  tokenSigningAlg: 'RS256'
-});
+if (AUTH_MODE === 'dev-bypass') {
+  // Для локальной разработки без Keycloak
+  module.exports = (req, res, next) => {
+    req.auth = {
+      payload: {
+        sub: 'dev-user-001',
+        preferred_username: process.env.DEV_USER || 'developer',
+        given_name: 'Dev',
+        family_name: 'User',
+        realm_access: { roles: [process.env.DEV_ROLE || 'SUPER_ADMIN'] }
+      }
+    };
+    next();
+  };
+} else {
+  const KEYCLOAK_URL = process.env.KEYCLOAK_URL || 'http://localhost:8080';
+  const KEYCLOAK_REALM = process.env.KEYCLOAK_REALM || 'QMS-Realm';
 
-module.exports = checkJwt;
+  const checkJwt = auth({
+    audience: 'account',
+    issuerBaseURL: `${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}`,
+    tokenSigningAlg: 'RS256'
+  });
+  module.exports = checkJwt;
+}

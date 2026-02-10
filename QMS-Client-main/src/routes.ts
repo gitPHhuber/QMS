@@ -19,6 +19,12 @@ import TasksPage from "./pages/Tasks/TasksPage";
 
 import { AdminRightsPage } from "./pages/Admin/RBAC/AdminRightsPage";
 
+// QMS страницы
+import { QmsDashboardPage } from "./pages/QMS/QmsDashboardPage";
+import { DocumentsPage } from "./pages/Documents/DocumentsPage";
+import { NonconformityPage } from "./pages/Nonconformity/NonconformityPage";
+import { CapaPage } from "./pages/CAPA/CapaPage";
+
 import {
   ADMIN_PCs_ROUTE,
   ADMIN_ROUTE,
@@ -37,6 +43,10 @@ import {
   ADMIN_RBAC_ROUTE,
   LOGIN_ROUTE,
   REGISTRATION_ROUTE,
+  QMS_DASHBOARD_ROUTE,
+  DOCUMENTS_ROUTE,
+  NC_ROUTE,
+  CAPA_ROUTE,
 } from "./utils/consts";
 
 export const authRoutes = [
@@ -46,6 +56,10 @@ export const authRoutes = [
   { path: WAREHOUSE_ANALYTICS_ROUTE, Component: AnalyticsPage },
   { path: WAREHOUSE_INVENTORY_ROUTE, Component: InventoryPage },
   { path: TASKS_ROUTE, Component: TasksPage },
+  { path: QMS_DASHBOARD_ROUTE, Component: QmsDashboardPage },
+  { path: DOCUMENTS_ROUTE, Component: DocumentsPage },
+  { path: NC_ROUTE, Component: NonconformityPage },
+  { path: CAPA_ROUTE, Component: CapaPage },
 ];
 
 export const adminRoutes = [
