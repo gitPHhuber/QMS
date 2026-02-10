@@ -6,7 +6,6 @@ import {
 } from "lucide-react";
 
 import { fetchStructure } from "src/api/structureApi";
-import { fetchProductsReference, fetchComponentsRef } from "src/api/product_componentApi";
 import { fetchAlerts } from "src/api/warehouseApi";
 import { SectionModel } from "src/store/StructureStore";
 import { productModel } from "src/types/ProductModel";
@@ -36,8 +35,6 @@ export const WarehousePage: React.FC = () => {
 
   useEffect(() => {
     fetchStructure().then(setSections);
-    fetchProductsReference().then(res => setProductsList(Array.isArray(res) ? res : []));
-    fetchComponentsRef().then(res => setComponentsList(res.data || []));
 
     fetchAlerts().then(alerts => setAlertsCount(alerts.length)).catch(console.error);
   }, []);

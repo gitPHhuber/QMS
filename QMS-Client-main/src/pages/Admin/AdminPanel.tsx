@@ -5,41 +5,19 @@ import clsx from "clsx";
 
 import { Context } from "src/main";
 
-
 import {
   Shield,
   Users,
   Network,
   Package,
-  Box,
-  Layers,
-  Cpu,
-  Radio,
-  Activity,
-  Database,
   History,
   Plus,
   ArrowUpRight,
-  AlertTriangle,
   Settings,
 } from "lucide-react";
 
-
-import { createCategoryDefect } from "src/api/fcApi";
-import { createCategoryDefect24, createCategoryDefect915 } from "src/api/elrsApi";
-import { createCategoryDefectCoral_B } from "src/api/coralBApi";
-
-
-import { CreateDefect } from "./CreateModals/CreateDefect";
 import { CreatePC } from "./CreateModals/CreatePC";
-import { CreateFC } from "./CreateModals/CreateFC";
-import { CreateBoard } from "./CreateModals/CreateELRS";
-import { CreateProdStatus } from "./CreateModals/CreateProdStatus";
-import { CreateProduct } from "./CreateModals/CreateProduct";
-import { CreateProdComp } from "./CreateModals/CreateProdComponents";
-import { CreateCoralB } from "./CreateModals/CreateCoralB";
 import { Modal } from "src/components/Modal/Modal";
-
 
 import {
   ADMIN_RBAC_ROUTE,
@@ -47,31 +25,10 @@ import {
   STRUCTURE_ROUTE,
   AUDIT_LOG_ROUTE,
   ADMIN_WAREHOUSE_ROUTE,
-  ADMIN_PRODUCTS_ROUTE,
-  ADMIN_COMPONENTS_ROUTE,
-  FC_ROUTE,
-  ELRS_915_ROUTE,
-  ELRS_2_4_ROUTE,
-  CORAL_B_ROUTE,
-  ADMIN_DEFECTS_FC_CATEGORIES_ROUTE,
-
-  ADMIN_DEFECT_CATEGORIES_ROUTE,
 } from "src/utils/consts";
 
-
 import {
-  CREATE_BOARD_24,
-  CREATE_BOARD_915,
-  CREATE_BOARD_CORAL_B,
-  CREATE_BOARD_FC,
-  CREATE_COMPONENT,
   CREATE_COMPUTER,
-  CREATE_DEFECT_24,
-  CREATE_DEFECT_915,
-  CREATE_DEFECT_CORAL_B,
-  CREATE_DEFECT_FC,
-  CREATE_PRODUCT,
-  CREATE_PRODUCT_STATUSES,
 } from "src/utils/constsModalType";
 
 
@@ -107,15 +64,12 @@ const BentoItem: React.FC<BentoItemProps> = ({
         className
       )}
     >
-
       <div className="absolute -right-6 -top-6 w-24 h-24 bg-current opacity-5 rounded-full pointer-events-none group-hover:scale-150 transition-transform duration-500" />
 
       <div className="flex justify-between items-start z-10">
         <div className={clsx("p-3 rounded-2xl", iconColorClass)}>
           <Icon size={28} strokeWidth={1.5} />
         </div>
-
-
         <div className="p-2 rounded-full text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">
           <ArrowUpRight size={20} />
         </div>
@@ -129,7 +83,6 @@ const BentoItem: React.FC<BentoItemProps> = ({
           </p>
         )}
       </div>
-
 
       {onAdd && (
         <button
@@ -156,23 +109,6 @@ export const AdminPanel: React.FC = observer(() => {
   const openModal = (type: string) => setModalType(type);
   const closeModal = () => setModalType(null);
 
-
-  const createDefectFC = async (title: string, description: string) => {
-    await createCategoryDefect(title, description);
-  };
-
-  const createDefect915 = async (title: string, description: string) => {
-    await createCategoryDefect915(title, description);
-  };
-
-  const createDefect24 = async (title: string, description: string) => {
-    await createCategoryDefect24(title, description);
-  };
-
-  const createDefectCoralB = async (title: string, description: string) => {
-    await createCategoryDefectCoral_B(title, description);
-  };
-
   const canManageUsers =
     user.can("users.manage") || user.can("admin.users_manage");
 
@@ -183,13 +119,11 @@ export const AdminPanel: React.FC = observer(() => {
           Центр управления
         </h1>
         <p className="text-slate-500 mt-2 text-lg">
-          Администрирование производства, склада и доступа
+          Администрирование системы менеджмента качества
         </p>
       </div>
 
-
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 auto-rows-[180px]">
-
         {(canManageUsers || user.can("rbac.manage")) && (
           <div className="md:col-span-2 row-span-2 bg-slate-900 rounded-3xl p-8 text-white relative overflow-hidden group shadow-2xl">
             <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500 rounded-full blur-[100px] opacity-20 -mr-20 -mt-20 pointer-events-none" />
@@ -212,12 +146,10 @@ export const AdminPanel: React.FC = observer(() => {
               <div>
                 <h2 className="text-3xl font-bold mb-2">Безопасность</h2>
                 <p className="text-slate-400 mb-6 max-w-md">
-                  Управление ролевой моделью (RBAC), пользователями и рабочими
-                  станциями.
+                  Управление ролевой моделью (RBAC), пользователями и рабочими станциями.
                 </p>
 
                 <div className="flex gap-3 flex-wrap">
-
                   <button
                     onClick={() => navigate(ADMIN_RBAC_ROUTE)}
                     className="flex items-center gap-2 px-5 py-3 bg-indigo-600 hover:bg-indigo-500 rounded-xl font-bold transition shadow-lg shadow-indigo-900/50"
@@ -242,7 +174,6 @@ export const AdminPanel: React.FC = observer(() => {
           </div>
         )}
 
-
         {user.can("admin.structure_manage") && (
           <BentoItem
             title="Структура"
@@ -255,7 +186,6 @@ export const AdminPanel: React.FC = observer(() => {
           />
         )}
 
-
         {user.can("warehouse.manage") && (
           <BentoItem
             title="WMS Склад"
@@ -266,153 +196,10 @@ export const AdminPanel: React.FC = observer(() => {
             iconColorClass="bg-emerald-50 text-emerald-600"
           />
         )}
-
-
-        {user.can("recipe.manage") && (
-          <BentoItem
-            title="Продукция"
-            subtitle="Изделия и компоненты"
-            icon={Box}
-            link={ADMIN_PRODUCTS_ROUTE}
-            onAdd={() => openModal(CREATE_PRODUCT)}
-            colorClass="bg-white border-slate-200 hover:border-purple-400"
-            iconColorClass="bg-purple-50 text-purple-600"
-          />
-        )}
-
-
-        {user.can("recipe.manage") && (
-          <BentoItem
-            title="Комплектующие"
-            subtitle="Справочник деталей"
-            icon={Layers}
-            link={ADMIN_COMPONENTS_ROUTE}
-            onAdd={() => openModal(CREATE_COMPONENT)}
-          />
-        )}
-
-
-        {(user.can("devices.view") || user.can("firmware.flash")) && (
-          <>
-            <div className="md:col-span-4 mt-4 mb-2">
-              <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider ml-1">
-                Устройства и брак
-              </h3>
-            </div>
-
-            <BentoItem
-              title="Flight Controller"
-              subtitle="Справочник FC"
-              icon={Cpu}
-              link={FC_ROUTE}
-              onAdd={() => openModal(CREATE_BOARD_FC)}
-              iconColorClass="bg-orange-50 text-orange-600"
-            />
-
-            <BentoItem
-              title="ELRS 915"
-              subtitle="Приемники 915 MHz"
-              icon={Radio}
-              link={ELRS_915_ROUTE}
-              onAdd={() => openModal(CREATE_BOARD_915)}
-              iconColorClass="bg-sky-50 text-sky-600"
-            />
-
-            <BentoItem
-              title="ELRS 2.4"
-              subtitle="Приемники 2.4 GHz"
-              icon={Activity}
-              link={ELRS_2_4_ROUTE}
-              onAdd={() => openModal(CREATE_BOARD_24)}
-              iconColorClass="bg-blue-50 text-blue-600"
-            />
-
-            <BentoItem
-              title="Coral B"
-              subtitle="Платы видео"
-              icon={Database}
-              link={CORAL_B_ROUTE}
-              onAdd={() => openModal(CREATE_BOARD_CORAL_B)}
-              iconColorClass="bg-rose-50 text-rose-600"
-            />
-          </>
-        )}
-
-
-        {user.can("defect.manage") && (
-          <div className="md:col-span-4 grid grid-cols-1 md:grid-cols-4 gap-4 mt-2">
-            <div
-
-              onClick={() => navigate(ADMIN_DEFECTS_FC_CATEGORIES_ROUTE)}
-              className="flex items-center gap-3 p-4 rounded-2xl border border-dashed border-slate-300 hover:border-red-400 hover:bg-red-50 transition cursor-pointer text-slate-600 hover:text-red-700"
-            >
-              <AlertTriangle size={20} />
-              <span className="font-bold text-sm">Брак FC</span>
-            </div>
-
-
-            <div
-              onClick={() => navigate(ADMIN_DEFECT_CATEGORIES_ROUTE)}
-              className="flex items-center gap-3 p-4 rounded-2xl border border-dashed border-slate-300 hover:border-amber-400 hover:bg-amber-50 transition cursor-pointer text-slate-600 hover:text-amber-700"
-            >
-              <Settings size={20} />
-              <span className="font-bold text-sm">Категории дефектов</span>
-            </div>
-
-          </div>
-        )}
       </div>
-
-
-      <Modal isOpen={modalType === CREATE_DEFECT_FC} onClose={closeModal}>
-        <CreateDefect createDefect={createDefectFC} />
-      </Modal>
-
-      <Modal isOpen={modalType === CREATE_DEFECT_915} onClose={closeModal}>
-        <CreateDefect createDefect={createDefect915} />
-      </Modal>
-
-      <Modal isOpen={modalType === CREATE_DEFECT_24} onClose={closeModal}>
-        <CreateDefect createDefect={createDefect24} />
-      </Modal>
-
-      <Modal isOpen={modalType === CREATE_DEFECT_CORAL_B} onClose={closeModal}>
-        <CreateDefect createDefect={createDefectCoralB} />
-      </Modal>
-
-      <Modal isOpen={modalType === CREATE_BOARD_FC} onClose={closeModal}>
-        <CreateFC />
-      </Modal>
-
-      <Modal isOpen={modalType === CREATE_BOARD_915} onClose={closeModal}>
-        <CreateBoard BoardName="приемник915" />
-      </Modal>
-
-      <Modal isOpen={modalType === CREATE_BOARD_24} onClose={closeModal}>
-        <CreateBoard BoardName="приемник2.4" />
-      </Modal>
-
-      <Modal isOpen={modalType === CREATE_BOARD_CORAL_B} onClose={closeModal}>
-        <CreateCoralB />
-      </Modal>
 
       <Modal isOpen={modalType === CREATE_COMPUTER} onClose={closeModal}>
         <CreatePC />
-      </Modal>
-
-      <Modal
-        isOpen={modalType === CREATE_PRODUCT_STATUSES}
-        onClose={closeModal}
-      >
-        <CreateProdStatus />
-      </Modal>
-
-      <Modal isOpen={modalType === CREATE_PRODUCT} onClose={closeModal}>
-        <CreateProduct />
-      </Modal>
-
-      <Modal isOpen={modalType === CREATE_COMPONENT} onClose={closeModal}>
-        <CreateProdComp />
       </Modal>
     </div>
   );

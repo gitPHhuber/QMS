@@ -8,7 +8,7 @@ import {
   updateTask,
 } from "src/api/tasksApi";
 import { fetchProjects, ProjectModel } from "src/api/projectsApi";
-import { fetchUsers } from "src/api/fcApi";
+import { fetchUsers } from "src/api/userApi";
 import { fetchStructure } from "src/api/structureApi";
 import { userGetModel } from "src/types/UserModel";
 import { SectionModel } from "src/store/StructureStore";

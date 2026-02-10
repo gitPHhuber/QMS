@@ -1,28 +1,23 @@
-import { observer } from "mobx-react-lite";
-import { useContext, useEffect } from "react";
-import { fetchPC, fetchSession, fetchUsers } from "src/api/fcApi";
-import { Context } from "src/main";
+import { useEffect, useState } from "react";
+import { fetchPC, fetchSession, fetchUsers } from "src/api/userApi";
 import { OneUser } from "./OneUser";
 import { userGetModel } from "src/types/UserModel";
 import { SessionModelFull } from "src/types/SessionModel";
+import { pcModelFull } from "src/types/PCModel";
 
-export const Users: React.FC = observer(() => {
-  const context = useContext(Context);
-
-  if (!context) {
-    throw new Error("Context must be used within a Provider");
-  }
-
-  const { flightController } = context;
+export const Users: React.FC = () => {
+  const [users, setUsers] = useState<userGetModel[]>([]);
+  const [sessions, setSessions] = useState<SessionModelFull[]>([]);
+  const [pcs, setPcs] = useState<pcModelFull[]>([]);
 
   useEffect(() => {
-    fetchUsers().then((data) => flightController.setUsers(data));
-    fetchSession().then((data) => flightController.setSessions(data));
-    fetchPC().then((data) => flightController.setPCs(data));
+    fetchUsers().then((data) => setUsers(data));
+    fetchSession().then((data) => setSessions(data));
+    fetchPC().then((data) => setPcs(data));
   }, []);
 
   const getActiveSession = () => {
-    return flightController.sessions.filter(
+    return sessions.filter(
       (session: SessionModelFull) => session.online === true
     );
   };
@@ -43,14 +38,14 @@ export const Users: React.FC = observer(() => {
       (session) => session.userId === userId
     );
     console.log(currentSession? currentSession.PCId : '00000')
-    const currentPC = flightController.PCs.find(
+    const currentPC = pcs.find(
       (pc) => pc.id === currentSession?.PCId
     );
 
     return currentPC;
   };
 
-  let allUsers = flightController.users.map((user: userGetModel) => (
+  let allUsers = users.map((user: userGetModel) => (
     <OneUser
       key={user.id}
       login={user.login}
@@ -74,4 +69,4 @@ export const Users: React.FC = observer(() => {
       </div>
     </div>
   );
-});
+};

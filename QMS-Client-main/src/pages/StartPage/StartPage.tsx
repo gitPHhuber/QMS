@@ -4,27 +4,22 @@ import { observer } from "mobx-react-lite";
 import { useNavigate } from "react-router-dom";
 import clsx from "clsx";
 import {
-  Zap, Box, Activity, ArrowRight, Clock,
-  PlayCircle, Users, BookOpen, Settings,
-  Cpu, ClipboardList, BarChart3, Radio, Server,
+  Box, Activity, ArrowRight, Clock,
+  Users, Settings,
+  ClipboardList,
   Monitor, Laptop, RefreshCw, AlertTriangle, CheckCircle2, Circle
 } from "lucide-react";
 import {
-  BETAFLIGHT_ROUTE,
   WAREHOUSE_ROUTE,
-  KNOWLEDGE_BASE_ROUTE,
   TASKS_ROUTE,
-  RECIPE_EXECUTION_ROUTE,
   ADMIN_ROUTE,
-  RANKINGS_ROUTE
 } from "src/utils/consts";
-import { fetchPC, fetchSession, fetchUsers } from "src/api/fcApi";
+import { fetchPC, fetchSession, fetchUsers } from "src/api/userApi";
 
 
 const UPDATES = [
+    { ver: "3.00", date: "10.02", desc: "QMS-ядро: документы, риски, NC/CAPA." },
     { ver: "2.04", date: "21.01", desc: "Виджет онлайн пользователей." },
-    { ver: "2.03", date: "18.09", desc: "Добавлен PRO-режим прошивки FC." },
-    { ver: "2.02", date: "05.09", desc: "Новые фильтры в таблицах." },
 ];
 
 
@@ -44,7 +39,7 @@ const HeroCard = ({ title, sub, icon: Icon, to }: any) => {
                         <Icon size={32} className="text-white" />
                     </div>
                     <div className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-wider backdrop-blur-md">
-                        Основной процесс
+                        QMS
                     </div>
                 </div>
 
@@ -52,7 +47,7 @@ const HeroCard = ({ title, sub, icon: Icon, to }: any) => {
                     <h2 className="text-3xl font-black leading-tight tracking-tight md:text-4xl">{title}</h2>
                     <p className="mt-2 max-w-sm text-sm font-medium text-indigo-100 opacity-90">{sub}</p>
                     <div className="mt-6 flex items-center gap-2 font-bold text-white opacity-0 transition-all duration-300 group-hover:translate-x-2 group-hover:opacity-100">
-                        Перейти к работе <ArrowRight size={18} />
+                        Перейти <ArrowRight size={18} />
                     </div>
                 </div>
             </div>
@@ -98,17 +93,9 @@ const SystemWidget = () => (
              <div className="space-y-4">
                  <div className="flex items-center justify-between rounded-xl bg-slate-50 p-3">
                      <div className="flex items-center gap-3">
-                         <div className="rounded-lg bg-white p-1.5 shadow-sm"><Server size={14} className="text-slate-500"/></div>
                          <div className="text-xs font-bold text-slate-600">Core API</div>
                      </div>
                      <span className="text-[10px] font-bold text-emerald-600">ONLINE</span>
-                 </div>
-                 <div className="flex items-center justify-between rounded-xl bg-slate-50 p-3">
-                     <div className="flex items-center gap-3">
-                         <div className="rounded-lg bg-white p-1.5 shadow-sm"><Radio size={14} className="text-slate-500"/></div>
-                         <div className="text-xs font-bold text-slate-600">MQTT</div>
-                     </div>
-                     <span className="text-[10px] font-bold text-emerald-600">ACTIVE</span>
                  </div>
              </div>
         </div>
@@ -116,7 +103,7 @@ const SystemWidget = () => (
         <div className="flex-1 rounded-[2rem] border border-slate-100 bg-slate-900 p-6 text-slate-300 shadow-lg relative overflow-hidden group">
             <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none"></div>
             <h3 className="mb-4 flex items-center gap-2 text-sm font-bold text-white uppercase tracking-wider">
-                <Zap size={16} className="text-yellow-400 fill-yellow-400"/> Updates
+                Updates
             </h3>
             <div className="space-y-3">
                 {UPDATES.map((u, i) => (
@@ -141,9 +128,6 @@ interface OnlineUser {
 }
 
 const OnlineUsersWidget = () => {
-    const context = useContext(Context);
-    const { flightController: _flightController } = context || {};
-
     const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
     const [loading, setLoading] = useState(true);
     const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
@@ -193,9 +177,9 @@ const OnlineUsersWidget = () => {
 
     const getRoleLabel = (role: string) => {
         const roles: Record<string, string> = {
-            SUPER_ADMIN: "Админ", ADMIN: "Админ", PRODUCTION_CHIEF: "Нач. пр.",
-            WAREHOUSE_MASTER: "Склад", TECHNOLOGIST: "Техн.", ASSEMBLER: "Сборщик",
-            REPAIR: "Ремонт", OTK: "ОТК", USER: "User"
+            SUPER_ADMIN: "Админ", ADMIN: "Админ",
+            WAREHOUSE_MASTER: "Склад", QC_ENGINEER: "ОТК",
+            USER: "User"
         };
         return roles[role] || role;
     };
@@ -204,7 +188,6 @@ const OnlineUsersWidget = () => {
 
     return (
         <div className="col-span-1 md:col-span-2 row-span-2 rounded-[2rem] border border-slate-100 bg-white shadow-sm overflow-hidden flex flex-col">
-
             <div className="p-5 border-b border-slate-100 flex-shrink-0">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -245,7 +228,6 @@ const OnlineUsersWidget = () => {
                     </div>
                 </div>
             </div>
-
 
             <div className="flex-1 overflow-y-auto p-4">
                 {loading && onlineUsers.length === 0 ? (
@@ -296,7 +278,6 @@ const OnlineUsersWidget = () => {
                 )}
             </div>
 
-
             {onlineUsers.length > 0 && (
                 <div className="px-5 py-2.5 bg-slate-50 border-t border-slate-100 flex-shrink-0">
                     <div className="flex items-center justify-between text-xs">
@@ -341,7 +322,6 @@ export const StartPage: React.FC = observer(() => {
         <div className="min-h-screen bg-[#F6F8FA] p-6 lg:p-10 font-sans text-slate-800 pb-20">
             <div className="max-w-[1400px] mx-auto animate-fade-in-up">
 
-
                 <div className="mb-10 flex flex-col justify-between gap-4 md:flex-row md:items-end">
                     <div>
                         <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400">
@@ -352,7 +332,7 @@ export const StartPage: React.FC = observer(() => {
                             {greeting}, <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">{user.user?.name || "Коллега"}</span>.
                         </h1>
                         <p className="mt-2 text-lg font-medium text-slate-500">
-                            Добро пожаловать в единое рабочее пространство.
+                            Добро пожаловать в систему менеджмента качества.
                         </p>
                     </div>
 
@@ -369,36 +349,24 @@ export const StartPage: React.FC = observer(() => {
                     </div>
                 </div>
 
-
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4 auto-rows-auto">
 
-
                     <HeroCard
-                        title="Терминал Сборки"
-                        sub="Интерактивные инструкции и контроль этапов производства"
-                        icon={PlayCircle}
-                        to={RECIPE_EXECUTION_ROUTE}
+                        title="Задачи"
+                        sub="Управление рабочими задачами и проектами"
+                        icon={ClipboardList}
+                        to={TASKS_ROUTE}
                     />
 
-
-                    <InfoTile title="Задачи" sub="Мой план на смену" icon={ClipboardList} to={TASKS_ROUTE} colorClass="bg-blue-500" iconColor="text-blue-600" />
                     <InfoTile title="Склад" sub="Остатки и движение" icon={Box} to={WAREHOUSE_ROUTE} colorClass="bg-emerald-500" iconColor="text-emerald-600" />
-                    <InfoTile title="Прошивка FC" sub="Утилиты Betaflight" icon={Cpu} to={BETAFLIGHT_ROUTE} colorClass="bg-orange-500" iconColor="text-orange-600" />
-                    <InfoTile title="Аналитика" sub="Рейтинги и отчеты" icon={BarChart3} to={RANKINGS_ROUTE} colorClass="bg-purple-500" iconColor="text-purple-600" />
-
-
-                    <SystemWidget />
-
-
-                    <InfoTile title="База Знаний" sub="Регламенты и PDF" icon={BookOpen} to={KNOWLEDGE_BASE_ROUTE} colorClass="bg-sky-500" iconColor="text-sky-600" />
 
                     {isAdmin && (
                         <InfoTile title="Админка" sub="Настройки системы" icon={Settings} to={ADMIN_ROUTE} colorClass="bg-slate-800" iconColor="text-slate-700" />
                     )}
 
+                    <SystemWidget />
 
                     {isAdmin && <OnlineUsersWidget />}
-
                 </div>
             </div>
         </div>

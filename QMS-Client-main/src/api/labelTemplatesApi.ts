@@ -1,75 +1,58 @@
+import { $authHost } from "./index";
 
-export type LabelElementType = "TEXT" | "QR" | "LINE" | "RECTANGLE" | "COUNTER" | "IMAGE" | "ICON";
+export type LabelElementType = "TEXT" | "QR" | "RECTANGLE" | "LINE" | "IMAGE" | "COUNTER" | "ICON";
 
 export interface LabelElement {
-    id: string;
-    type: LabelElementType;
-
-
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-
-
-    fontSize?: number;
-    content: string;
-    dataSource: "STATIC" | "VARIABLE";
-    align?: "left" | "center" | "right";
-    isBold?: boolean;
-
-
-    strokeWidth?: number;
-    counterFormat?: string;
-    imageUrl?: string;
-    imageName?: string;
-    iconType?: string;
+  id: string;
+  type: LabelElementType;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  text?: string;
+  content?: string;
+  fontSize?: number;
+  isBold?: boolean;
+  align?: "left" | "center" | "right";
+  counterFormat?: string;
+  imageUrl?: string;
+  imageName?: string;
+  iconType?: string;
+  strokeWidth?: number;
 }
-
 
 export interface LabelTemplateModel {
-    id: number;
-    name: string;
-    width: number;
-    height: number;
-    layout: LabelElement[];
-    createdAt?: string;
+  id: number;
+  name: string;
+  type: string;
+  width: number;
+  height: number;
+  layout?: LabelElement[];
+  elements: LabelElement[];
+  createdAt: string;
+  updatedAt: string;
 }
 
-
-export const fetchLabelTemplates = async () => {
-
-
-    return new Promise<LabelTemplateModel[]>((resolve) => {
-        const stored = localStorage.getItem("db_label_templates_mock");
-        resolve(stored ? JSON.parse(stored) : []);
-    });
+export const fetchLabelTemplates = async (): Promise<LabelTemplateModel[]> => {
+  const { data } = await $authHost.get("api/warehouse/label-templates");
+  return data;
 };
 
-
-export const createLabelTemplate = async (name: string, width: number, height: number, layout: LabelElement[]) => {
-
-
-    const stored = JSON.parse(localStorage.getItem("db_label_templates_mock") || "[]");
-
-    const newTemplate: LabelTemplateModel = {
-        id: Date.now(),
-        name,
-        width,
-        height,
-        layout,
-        createdAt: new Date().toISOString()
-    };
-
-    localStorage.setItem("db_label_templates_mock", JSON.stringify([...stored, newTemplate]));
-    return newTemplate;
+export const createLabelTemplate = async (
+  name: string,
+  width: number,
+  height: number,
+  elements: LabelElement[]
+): Promise<LabelTemplateModel> => {
+  const { data } = await $authHost.post("api/warehouse/label-templates", {
+    name,
+    width,
+    height,
+    elements,
+  });
+  return data;
 };
 
-
-export const deleteLabelTemplate = async (id: number) => {
-
-
-    const stored = JSON.parse(localStorage.getItem("db_label_templates_mock") || "[]");
-    const filtered = stored.filter((t: LabelTemplateModel) => t.id !== id);
-    localStorage.setItem("db_label_templates_mock", JSON.stringify(filtered));
+export const deleteLabelTemplate = async (id: number): Promise<void> => {
+  await $authHost.delete(`api/warehouse/label-templates/${id}`);
 };

@@ -8,11 +8,6 @@ const router = require("./routes/index");
 const errorHandler = require("./middleware/ErrorHandlingMiddleware");
 const path = require("path");
 
-
-const beryllExtendedRouter = require("./routes/beryllExtendedRouter");
-
-const { initChecklistTemplates } = require("./controllers/beryll");
-
 const PORT = process.env.PORT || 5000;
 const app = express();
 
@@ -32,9 +27,6 @@ app.use(fileUpload({}));
 app.use("/api", router);
 
 
-app.use("/api/beryll", beryllExtendedRouter);
-
-
 app.use(errorHandler);
 
 const initInitialData = async () => {
@@ -51,26 +43,6 @@ const initInitialData = async () => {
       { code: "warehouse.view", description: "Просмотр остатков" },
       { code: "warehouse.manage", description: "Приемка, создание коробок, перемещение" },
       { code: "labels.print", description: "Печать этикеток" },
-
-
-      { code: "assembly.execute", description: "Работа в сборочном терминале" },
-      { code: "recipe.manage", description: "Создание и редактирование техкарт" },
-
-
-      { code: "firmware.flash", description: "Прошивка плат (FC, ELRS, Coral)" },
-      { code: "devices.view", description: "Просмотр списка устройств" },
-
-
-      { code: "defect.manage", description: "Управление справочниками брака" },
-      { code: "defect.report", description: "Фиксация брака" },
-
-
-      { code: "analytics.view", description: "Просмотр дашбордов и рейтингов" },
-
-
-      { code: "beryll.view", description: "Просмотр серверов АПК Берилл" },
-      { code: "beryll.work", description: "Взятие в работу и настройка серверов" },
-      { code: "beryll.manage", description: "Управление модулем (Синхронизация DHCP)" },
 
       // QMS: DMS
       { code: "dms.view", description: "Просмотр реестра документов" },
@@ -98,20 +70,16 @@ const initInitialData = async () => {
     }
 
 
-    const rolesData = {
-      SUPER_ADMIN: "Полный доступ (DevOps/Admin)",
-      PRODUCTION_CHIEF: "Нач. производства",
-      TECHNOLOGIST: "Технолог",
-      WAREHOUSE_MASTER: "Кладовщик",
-      ASSEMBLER: "Сборщик",
-      QC_ENGINEER: "Инженер ОТК",
-      FIRMWARE_OPERATOR: "Прошивальщик"
-    };
+    const rolesData = [
+      { code: "SUPER_ADMIN", name: "SUPER_ADMIN", description: "Полный доступ (DevOps/Admin)" },
+      { code: "QC_ENGINEER", name: "QC_ENGINEER", description: "Инженер ОТК" },
+      { code: "WAREHOUSE_MASTER", name: "WAREHOUSE_MASTER", description: "Кладовщик" },
+    ];
 
-    for (const [name, desc] of Object.entries(rolesData)) {
+    for (const roleData of rolesData) {
       await models.Role.findOrCreate({
-        where: { name },
-        defaults: { description: desc }
+        where: { code: roleData.code },
+        defaults: roleData,
       });
     }
 
@@ -136,33 +104,15 @@ const initInitialData = async () => {
 
     await assign("SUPER_ADMIN", '*');
 
-    await assign("PRODUCTION_CHIEF", [
-      "analytics.view", "users.manage", "defect.manage",
-      "warehouse.view", "devices.view", "recipe.manage",
-      "beryll.view"
-    ]);
-
-    await assign("TECHNOLOGIST", [
-      "recipe.manage", "firmware.flash", "devices.view",
-      "defect.manage",
-      "beryll.view", "beryll.work", "beryll.manage"
-    ]);
-
     await assign("WAREHOUSE_MASTER", [
       "warehouse.view", "warehouse.manage", "labels.print"
     ]);
 
-    await assign("ASSEMBLER", [
-      "assembly.execute"
-    ]);
-
     await assign("QC_ENGINEER", [
-      "defect.report", "devices.view", "warehouse.view"
-    ]);
-
-    await assign("FIRMWARE_OPERATOR", [
-      "firmware.flash", "devices.view",
-      "beryll.view", "beryll.work"
+      "warehouse.view",
+      "nc.view", "nc.create", "nc.manage",
+      "capa.view", "capa.create", "capa.manage", "capa.verify",
+      "qms.audit.view",
     ]);
 
     console.log(">>> [RBAC] Инициализация завершена успешно.");
@@ -178,11 +128,6 @@ const start = async () => {
 
 
     await initInitialData();
-
-
-    console.log(">>> [Beryll] Инициализация шаблонов чек-листов...");
-    // await initChecklistTemplates()  // disabled;
-    console.log(">>> [Beryll] Шаблоны чек-листов инициализированы");
 
     app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
   } catch (e) {

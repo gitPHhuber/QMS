@@ -6,7 +6,7 @@ import {
   fetchSession,
   fetchUsers,
   setSessionOnline,
-} from "src/api/fcApi";
+} from "src/api/userApi";
 import { pcModelFull } from "src/types/PCModel";
 import { SessionModelFull } from "src/types/SessionModel";
 import { useNavigate } from "react-router-dom";
@@ -20,7 +20,11 @@ export const SelectPC: React.FC = observer(() => {
   const [searchTerm, setSearchTerm] = useState("");
 
   if (!context) throw new Error("Context required");
-  const { flightController, user } = context;
+  const { user } = context;
+
+  const [pcs, setPcs] = useState<pcModelFull[]>([]);
+  const [sessions, setSessions] = useState<SessionModelFull[]>([]);
+  const [users, setUsers] = useState<userGetModel[]>([]);
 
   useEffect(() => {
 
@@ -29,17 +33,17 @@ export const SelectPC: React.FC = observer(() => {
     const loadData = async () => {
 
       try {
-        const [pcs, sessions] = await Promise.all([fetchPC(), fetchSession()]);
-        flightController.setPCs(pcs);
-        flightController.setSessions(sessions);
+        const [pcsData, sessionsData] = await Promise.all([fetchPC(), fetchSession()]);
+        setPcs(pcsData);
+        setSessions(sessionsData);
       } catch (error) {
         console.error("Ошибка при загрузке списка ПК:", error);
       }
 
 
       try {
-        const users = await fetchUsers();
-        flightController.setUsers(users);
+        const usersData = await fetchUsers();
+        setUsers(usersData);
       } catch (error) {
         console.warn("Не удалось загрузить список пользователей (возможно ограничены права):", error);
       }
@@ -50,13 +54,13 @@ export const SelectPC: React.FC = observer(() => {
 
 
   const getActiveSessionInfo = (pcId: number) => {
-    const session = flightController.sessions.find(
+    const session = sessions.find(
       (s: SessionModelFull) => s.online === true && s.PCId === pcId
     );
 
     if (!session) return null;
 
-    const sessionUser = flightController.users.find(
+    const sessionUser = users.find(
       (u: userGetModel) => u.id === session.userId
     );
 
@@ -86,7 +90,7 @@ export const SelectPC: React.FC = observer(() => {
 
 
   const groupedPCs = useMemo(() => {
-    const filtered = flightController.PCs.filter(pc =>
+    const filtered = pcs.filter(pc =>
         pc.pc_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         pc.ip.includes(searchTerm) ||
         pc.cabinet?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -101,7 +105,7 @@ export const SelectPC: React.FC = observer(() => {
     });
 
     return groups;
-  }, [flightController.PCs, searchTerm]);
+  }, [pcs, searchTerm]);
 
   return (
     <div className="min-h-screen bg-slate-50 relative overflow-hidden font-sans flex flex-col">
@@ -178,7 +182,7 @@ export const SelectPC: React.FC = observer(() => {
                     Компьютеры не найдены (или загружаются)
                 </div>
             ) : (
-                Object.entries(groupedPCs).map(([cabinet, pcs]) => (
+                Object.entries(groupedPCs).map(([cabinet, pcsGroup]) => (
                     <div key={cabinet} className="mb-8">
                         <div className="flex items-center gap-2 mb-4 px-2">
                             <MapPin className="text-indigo-500" size={18}/>
@@ -186,12 +190,12 @@ export const SelectPC: React.FC = observer(() => {
                                 {cabinet}
                             </h2>
                             <span className="text-xs font-medium bg-gray-100 text-gray-500 px-2 py-1 rounded-full">
-                                {pcs.length} шт.
+                                {pcsGroup.length} шт.
                             </span>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
-                            {pcs.map(pc => {
+                            {pcsGroup.map(pc => {
                                 const activeUser = getActiveSessionInfo(pc.id);
                                 const isOccupied = !!activeUser;
                                 const isMyPC = localStorage.getItem("pcID") === String(pc.id);

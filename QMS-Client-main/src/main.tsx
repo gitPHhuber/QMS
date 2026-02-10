@@ -5,32 +5,18 @@ import "./index.css";
 import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "react-oidc-context";
 import UserStore from "./store/UserStore.ts";
-import FlightControllerStore from "./store/FCStore.ts";
-import FirmwareFCStore from "./store/FirmwareFC.ts";
-import Firmware915Store from "./store/Firmware915.ts";
-import ELRSStore from "./store/ELRS_915_and_2_4_store.ts";
-import ProductStore from "./store/ProductStore.ts";
-import FirmwareCoralBStore from "./store/FirmwareCoralB.ts";
-import CoralBStore from "./store/Coral_B_store.ts";
 import StructureStore from "./store/StructureStore.ts";
 
 
 interface IContext {
   user: UserStore;
-  flightController: FlightControllerStore;
-  elrsStore: ELRSStore;
-  coralBStore: CoralBStore;
-  firmwareFC: FirmwareFCStore;
-  firmware915: Firmware915Store;
-  firmwareCoralB: FirmwareCoralBStore;
-  product_component: ProductStore;
   structureStore: StructureStore;
 }
 
 export const Context = React.createContext<IContext | null>(null);
 
 
-const REDIRECT_PATH_KEY = "mes_redirect_path";
+const REDIRECT_PATH_KEY = "qms_redirect_path";
 
 
 const saveCurrentPath = () => {
@@ -90,13 +76,6 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <Context.Provider
           value={{
             user: new UserStore(),
-            flightController: new FlightControllerStore(),
-            elrsStore: new ELRSStore(),
-            coralBStore: new CoralBStore(),
-            firmwareFC: new FirmwareFCStore(),
-            firmware915: new Firmware915Store(),
-            firmwareCoralB: new FirmwareCoralBStore(),
-            product_component: new ProductStore(),
             structureStore: new StructureStore(),
           }}
         >

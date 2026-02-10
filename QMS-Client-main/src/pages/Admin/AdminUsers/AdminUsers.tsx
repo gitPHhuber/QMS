@@ -1,25 +1,19 @@
-import { observer } from "mobx-react-lite";
-import { useContext, useEffect } from "react";
-import { fetchPC, fetchSession, fetchUsers } from "src/api/fcApi";
-import { Context } from "src/main";
+import { useEffect, useState } from "react";
+import { fetchPC, fetchSession, fetchUsers, deleteUser } from "src/api/userApi";
 import { AdminOneUser } from "./AdminOneUser";
 import { userGetModel } from "src/types/UserModel";
 import { SessionModelFull } from "src/types/SessionModel";
-import { deleteUser } from "src/api/userApi";
+import { pcModelFull } from "src/types/PCModel";
 
-export const AdminUsers: React.FC = observer(() => {
-  const context = useContext(Context);
-
-  if (!context) {
-    throw new Error("Context must be used within a Provider");
-  }
-
-  const { flightController } = context;
+export const AdminUsers: React.FC = () => {
+  const [users, setUsers] = useState<userGetModel[]>([]);
+  const [sessions, setSessions] = useState<SessionModelFull[]>([]);
+  const [pcs, setPcs] = useState<pcModelFull[]>([]);
 
   const updateUsersList = async () => {
-    fetchUsers().then((data) => flightController.setUsers(data));
-    fetchSession().then((data) => flightController.setSessions(data));
-    fetchPC().then((data) => flightController.setPCs(data));
+    fetchUsers().then((data) => setUsers(data));
+    fetchSession().then((data) => setSessions(data));
+    fetchPC().then((data) => setPcs(data));
   };
 
   useEffect(() => {
@@ -27,7 +21,7 @@ export const AdminUsers: React.FC = observer(() => {
   }, []);
 
   const getActiveSession = () => {
-    return flightController.sessions.filter(
+    return sessions.filter(
       (session: SessionModelFull) => session.online === true
     );
   };
@@ -47,7 +41,7 @@ export const AdminUsers: React.FC = observer(() => {
     const currentSession = getActiveSession().find(
       (session) => session.userId === userId
     );
-    const currentPC = flightController.PCs.find(
+    const currentPC = pcs.find(
       (pc) => pc.id === currentSession?.PCId
     );
 
@@ -63,7 +57,7 @@ export const AdminUsers: React.FC = observer(() => {
     }
   };
 
-  let allUsers = flightController.users.map((user: userGetModel) => (
+  let allUsers = users.map((user: userGetModel) => (
     <AdminOneUser
       key={user.id}
       ID={user.id}
@@ -90,4 +84,4 @@ export const AdminUsers: React.FC = observer(() => {
       </div>
     </div>
   );
-});
+};
