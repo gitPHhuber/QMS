@@ -18,6 +18,7 @@ import { InventoryPage } from "./pages/Warehouse/InventoryPage";
 import TasksPage from "./pages/Tasks/TasksPage";
 
 import { AdminRightsPage } from "./pages/Admin/RBAC/AdminRightsPage";
+import { ModulesPage } from "./pages/Admin/Modules/ModulesPage";
 
 // QMS страницы
 import { QmsDashboardPage } from "./pages/QMS/QmsDashboardPage";
@@ -41,6 +42,7 @@ import {
   WAREHOUSE_INVENTORY_ROUTE,
   TASKS_ROUTE,
   ADMIN_RBAC_ROUTE,
+  ADMIN_MODULES_ROUTE,
   LOGIN_ROUTE,
   REGISTRATION_ROUTE,
   QMS_DASHBOARD_ROUTE,
@@ -70,6 +72,7 @@ export const adminRoutes = [
   { path: ADMIN_USERS_ROUTE, Component: AdminUsers },
   { path: ADMIN_WAREHOUSE_ROUTE, Component: AdminWarehousePage },
   { path: ADMIN_RBAC_ROUTE, Component: AdminRightsPage },
+  { path: ADMIN_MODULES_ROUTE, Component: ModulesPage },
 ];
 
 export const publicRoutes = [
