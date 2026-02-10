@@ -12,9 +12,9 @@ import clsx from "clsx";
 
 
 import {
-  Shield, Archive,
+  Shield, ShieldCheck, Archive,
   ClipboardList, User, LogOut,
-  ChevronDown, FileText, AlertTriangle, CheckCircle2, LayoutDashboard,
+  ChevronDown, FileText, AlertTriangle, ClipboardCheck, BarChart3, LayoutDashboard,
 } from "lucide-react";
 
 
@@ -42,7 +42,7 @@ export const Header: React.FC = observer(() => {
   const _location = useLocation();
 
   if (!context) throw new Error("Context required");
-  const { user } = context;
+  const { user, modules } = context;
 
 
   const [isVisible, setIsVisible] = useState(true);
@@ -101,27 +101,30 @@ export const Header: React.FC = observer(() => {
       icon: ClipboardList,
       to: TASKS_ROUTE,
     },
-    {
-      label: "QMS",
-      icon: Shield,
+    // QMS — dropdown if any qms module is enabled
+    ...(modules.hasGroup('qms') ? [{
+      label: "Качество",
+      icon: ShieldCheck,
       children: [
-        { label: "Дашборд QMS", to: QMS_DASHBOARD_ROUTE, icon: LayoutDashboard },
-        { label: "Документы", to: DOCUMENTS_ROUTE, icon: FileText },
-        { label: "Несоответствия", to: NC_ROUTE, icon: AlertTriangle },
-        { label: "CAPA", to: CAPA_ROUTE, icon: CheckCircle2 },
-      ],
-    },
-    {
+        modules.isEnabled('qms.dashboard') ? { label: "Дашборд", to: QMS_DASHBOARD_ROUTE, icon: BarChart3 } : null,
+        modules.isEnabled('qms.dms')       ? { label: "Документы", to: DOCUMENTS_ROUTE, icon: FileText } : null,
+        modules.isEnabled('qms.nc')        ? { label: "Несоответствия", to: NC_ROUTE, icon: AlertTriangle } : null,
+        modules.isEnabled('qms.capa')      ? { label: "CAPA", to: CAPA_ROUTE, icon: ClipboardCheck } : null,
+      ].filter(Boolean) as { label: string; to: string; icon?: React.ElementType }[],
+    } as NavItem] : []),
+    // WMS
+    ...(modules.hasGroup('wms') ? [{
       label: "Склад",
       icon: Archive,
       to: WAREHOUSE_ROUTE,
-      permissions: ["warehouse.view"]
-    },
+      permissions: ["warehouse.view"],
+    }] : []),
+    // Admin
     {
       label: "Админ",
       icon: Shield,
       to: ADMIN_ROUTE,
-      permissions: ["admin.access"]
+      permissions: ["admin.access"],
     },
   ];
 
@@ -218,6 +221,11 @@ export const Header: React.FC = observer(() => {
         )}
 
         <div className="flex items-center gap-4 min-w-max">
+          {modules.config?.tier === 'dev-all' && (
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-yellow-900/30 border border-yellow-700/50 text-yellow-400">
+              DEV — все модули
+            </span>
+          )}
           <div className="hidden xl:block text-right">
              <DateTimeDisplay />
           </div>

@@ -14,6 +14,7 @@ import {
   Plus,
   ArrowUpRight,
   Settings,
+  Blocks,
 } from "lucide-react";
 
 import { CreatePC } from "./CreateModals/CreatePC";
@@ -25,6 +26,7 @@ import {
   STRUCTURE_ROUTE,
   AUDIT_LOG_ROUTE,
   ADMIN_WAREHOUSE_ROUTE,
+  ADMIN_MODULES_ROUTE,
 } from "src/utils/consts";
 
 import {
@@ -194,6 +196,17 @@ export const AdminPanel: React.FC = observer(() => {
             link={ADMIN_WAREHOUSE_ROUTE}
             colorClass="bg-white border-slate-200 hover:border-emerald-400"
             iconColorClass="bg-emerald-50 text-emerald-600"
+          />
+        )}
+
+        {(canManageUsers || user.can("rbac.manage")) && (
+          <BentoItem
+            title="Модули"
+            subtitle="Тариф и активные модули"
+            icon={Blocks}
+            link={ADMIN_MODULES_ROUTE}
+            colorClass="bg-gradient-to-br from-violet-50 to-purple-50 border border-purple-100 hover:shadow-lg"
+            iconColorClass="bg-purple-100 text-purple-600"
           />
         )}
       </div>

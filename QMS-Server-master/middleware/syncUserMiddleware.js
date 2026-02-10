@@ -1,5 +1,6 @@
 
 
+
 const { User, Role, Ability } = require('../models/index');
 
 module.exports = async function (req, res, next) {
@@ -46,6 +47,16 @@ module.exports = async function (req, res, next) {
             });
         }
 
+        // Находим Role entity для получения roleId
+        const roleEntity = await Role.findOne({
+            where: { name: mainRole },
+            include: [{
+                model: Ability,
+                as: "abilities",
+                through: { attributes: [] }
+            }]
+        });
+
         let user = await User.findOne({ where: { login } });
 
         if (!user) {
@@ -55,7 +66,7 @@ module.exports = async function (req, res, next) {
                     login,
                     name,
                     surname,
-                    role: mainRole,
+                    roleId: roleEntity ? roleEntity.id : null,
                     password: 'sso_managed_account',
                     img: null
                 });
@@ -66,29 +77,16 @@ module.exports = async function (req, res, next) {
             }
         } else {
 
-            if (user.role !== mainRole) {
-                console.log(`Обновление роли пользователя ${login}: ${user.role} -> ${mainRole}`);
-                user.role = mainRole;
+            if (user.roleId !== (roleEntity ? roleEntity.id : null)) {
+                console.log(`Обновление роли пользователя ${login}: roleId ${user.roleId} -> ${roleEntity ? roleEntity.id : null} (${mainRole})`);
+                user.roleId = roleEntity ? roleEntity.id : null;
                 await user.save();
             }
         }
 
         let abilities = [];
-        try {
-            const roleEntity = await Role.findOne({
-                where: { name: mainRole },
-                include: [{
-                    model: Ability,
-                    as: "abilities",
-                    through: { attributes: [] }
-                }]
-            });
-
-            if (roleEntity && roleEntity.abilities) {
-                abilities = roleEntity.abilities.map(ab => ab.code);
-            }
-        } catch (e) {
-            console.error("Ошибка при загрузке прав (abilities):", e.message);
+        if (roleEntity && roleEntity.abilities) {
+            abilities = roleEntity.abilities.map(ab => ab.code);
         }
 
         req.user = {
@@ -96,7 +94,7 @@ module.exports = async function (req, res, next) {
             login: user.login,
             name: user.name,
             surname: user.surname,
-            role: user.role,
+            role: mainRole,
             roles: kcRoles,
             abilities: abilities,
             keycloakId: keycloakUUID
