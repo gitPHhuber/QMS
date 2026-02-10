@@ -7,7 +7,7 @@ import {
     RoleModel,
     AbilityModel
 } from "src/api/rbacApi";
-import { fetchUsers } from "src/api/fcApi";
+import { fetchUsers } from "src/api/userApi";
 import { userGetModel } from "src/types/UserModel";
 import {
     Shield, Save, CheckSquare, Square,
@@ -28,20 +28,15 @@ interface AbilityGroup {
 
 const GROUP_LABELS: Record<string, string> = {
     warehouse: "Склад",
-    recipe: "Техкарты",
     rbac: "Права доступа",
-    roles: "Роли",
     users: "Пользователи",
-    assembly: "Сборка",
-    firmware: "Прошивка",
-    devices: "Устройства",
-    analytics: "Аналитика",
-    beryll: "АПК Берилл",
-    defect: "Дефекты/Брак",
     admin: "Администрирование",
-    production: "Производство",
     tasks: "Задачи",
-    mit: "Ручной ввод",
+    dms: "Документы",
+    nc: "Несоответствия",
+    capa: "CAPA",
+    qms: "Аудит QMS",
+    labels: "Этикетки",
 };
 
 

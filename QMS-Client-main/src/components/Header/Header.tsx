@@ -6,37 +6,22 @@ import { observer } from "mobx-react-lite";
 import { Context } from "src/main";
 import { useAuth } from "react-oidc-context";
 import { Menu, Transition } from "@headlessui/react";
-import { setSessionOnline } from "src/api/fcApi";
+import { setSessionOnline } from "src/api/userApi";
 import { DateTimeDisplay } from "./DateTimeDisplay";
 import clsx from "clsx";
 
 
 import {
-  Shield, KeySquare, Database, BookText, Archive,
-  ClipboardList, Package, Wrench, User, LogOut,
-  ChevronDown, PackageCheck, Cpu, Radio, Activity,
-  BarChart3, Trophy, PieChart, MonitorPlay, FileText,
-  CircuitBoard, LineChart,
-  Server,
-  AlertTriangle,
-  Factory
+  Shield, Archive,
+  ClipboardList, User, LogOut,
+  ChevronDown,
 } from "lucide-react";
 
 
 import {
-  ADMIN_ROUTE, INPUT_DEFECT_ROUTE, ASSEMBLED_PRODUCTS_ROUTE,
-  FC_ROUTE,
-  KNOWLEDGE_BASE_ROUTE, ANALYTICS_DASHBOARD_ROUTE, RANKINGS_ROUTE,
-  WAREHOUSE_ROUTE, TASKS_ROUTE, RECIPE_EXECUTION_ROUTE,
-  RECIPE_CONSTRUCTOR_ROUTE, ASSEMBLY_ROUTE, ADMIN_ASSEMBLY_ROUTES_ROUTE,
-  FIRMWARE_FC_ROUTE,
-  FIRMWARE_915_019_ROUTE, FIRMWARE_Coral_B_ROUTE,
-  MQTT_CHECK_FC_ROUTE, MQTT_CHECK_ESC_ROUTE, PROFILE_ROUTE, RANKINGS_CHARTS_ROUTE,
-  BERYLL_ROUTE,
-  BERYLL_MONITORING_ROUTE,
-  BERYLL_REVISIONS_ROUTE,
-  DEFECTS_ROUTE,
-  PRODUCTION_ROUTE
+  ADMIN_ROUTE,
+  WAREHOUSE_ROUTE, TASKS_ROUTE,
+  PROFILE_ROUTE,
 } from "src/utils/consts";
 
 type NavItem = {
@@ -110,7 +95,6 @@ export const Header: React.FC = observer(() => {
 
 
   const navigation: NavItem[] = [
-
     {
       label: "Задачи",
       icon: ClipboardList,
@@ -122,79 +106,6 @@ export const Header: React.FC = observer(() => {
       to: WAREHOUSE_ROUTE,
       permissions: ["warehouse.view"]
     },
-    {
-      label: "Сборка",
-      icon: Package,
-      permissions: ["assembly.execute", "recipe.manage"],
-      children: [
-        { label: "Терминал Сборки", to: RECIPE_EXECUTION_ROUTE, icon: MonitorPlay },
-        { label: "Конструктор ТК", to: RECIPE_CONSTRUCTOR_ROUTE, icon: FileText },
-        { label: "Рабочее место (Legacy)", to: ASSEMBLY_ROUTE, icon: Wrench },
-        { label: "Маршруты (Legacy)", to: ADMIN_ASSEMBLY_ROUTES_ROUTE, icon: Wrench },
-      ]
-    },
-
-
-    {
-      label: "Производство",
-      icon: Factory,
-      to: PRODUCTION_ROUTE,
-    },
-
-
-    {
-      label: "АПК Берилл",
-      icon: Server,
-      permissions: ["beryll.view"],
-      children: [
-        { label: "Серверы", to: BERYLL_ROUTE, icon: Server },
-        { label: "Мониторинг", to: BERYLL_MONITORING_ROUTE, icon: Activity },
-        { label: "Ревизии комплектующих", to: BERYLL_REVISIONS_ROUTE, icon: CircuitBoard },
-      ]
-    },
-
-
-    {
-      label: "Учёт брака",
-      icon: AlertTriangle,
-      to: DEFECTS_ROUTE,
-      permissions: ["defect.manage", "defect.view"]
-    },
-
-
-    {
-      label: "Инженерия",
-      icon: CircuitBoard,
-      permissions: ["firmware.flash", "devices.view", "defect.manage"],
-      children: [
-
-        { label: "Прошивка FC", to: FIRMWARE_FC_ROUTE, icon: Cpu },
-        { label: "Прошивка ELRS", to: FIRMWARE_915_019_ROUTE, icon: Radio },
-        { label: "Прошивка Coral", to: FIRMWARE_Coral_B_ROUTE, icon: Activity },
-
-        { label: "Тест FC (Стенд)", to: MQTT_CHECK_FC_ROUTE, icon: Activity },
-        { label: "Тест ESC (Стенд)", to: MQTT_CHECK_ESC_ROUTE, icon: Activity },
-
-        { label: "БД: Изделия", to: ASSEMBLED_PRODUCTS_ROUTE, icon: PackageCheck },
-        { label: "БД: Компоненты", to: FC_ROUTE, icon: Database },
-
-        { label: "Ввод брака", to: INPUT_DEFECT_ROUTE, icon: KeySquare },
-      ]
-    },
-
-
-    {
-      label: "Аналитика",
-      icon: PieChart,
-      permissions: ["analytics.view"],
-      children: [
-        { label: "Дашборды", to: ANALYTICS_DASHBOARD_ROUTE, icon: BarChart3 },
-        { label: "Графики динамики", to: RANKINGS_CHARTS_ROUTE, icon: LineChart },
-        { label: "Рейтинг (KPI)", to: RANKINGS_ROUTE, icon: Trophy },
-      ]
-    },
-
-
     {
       label: "Админ",
       icon: Shield,
@@ -215,26 +126,21 @@ export const Header: React.FC = observer(() => {
         "fixed top-0 left-0 right-0 z-50 h-14",
         "bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm",
         "transition-transform duration-300 ease-in-out",
-
         !isVisible && "-translate-y-full",
-
         isAtTop && "shadow-none"
       )}
     >
       <div className="max-w-[1920px] mx-auto px-4 h-full flex justify-between items-center">
 
-
         <div className="flex items-center gap-6 min-w-max">
           <NavLink to="/" className="flex items-center gap-2 group">
             <img src={Logo} alt="Logo" className="h-7 w-auto group-hover:opacity-80 transition-opacity" />
             <span className="text-lg font-bold text-slate-800 tracking-tight leading-none">
-              MES <span className="text-emerald-600">Kryptonit</span>
+              QMS
             </span>
           </NavLink>
-
           <div className="h-6 w-px bg-gray-200 hidden lg:block"></div>
         </div>
-
 
         {auth.isAuthenticated && (
           <nav className="hidden lg:flex items-center gap-1">
@@ -300,13 +206,7 @@ export const Header: React.FC = observer(() => {
           </nav>
         )}
 
-
         <div className="flex items-center gap-4 min-w-max">
-
-          <NavLink to={KNOWLEDGE_BASE_ROUTE} title="База знаний" className="p-2 text-slate-400 hover:text-indigo-600 transition">
-             <BookText size={20}/>
-          </NavLink>
-
           <div className="hidden xl:block text-right">
              <DateTimeDisplay />
           </div>

@@ -42,22 +42,6 @@ export const AppRouter: React.FC = observer(() => {
 
               if (path.includes('/warehouse') && !user.can('warehouse.view')) return null;
 
-
-              if (path.includes('/firmware') && !user.can('firmware.flash')) return null;
-
-
-              if (path.includes('/assembly') && !user.can('assembly.execute')) return null;
-
-
-              if (path.includes('/beryll') && !user.can('beryll.view')) return null;
-
-
-              if ((path.includes('/flight-controller') || path.includes('/elrs') || path.includes('/coral'))
-                  && !user.can('devices.view')) return null;
-
-
-              if (path.includes('/rankings') && !user.can('analytics.view')) return null;
-
               return <Route key={path} path={path} element={<Component />} />;
           })
         }

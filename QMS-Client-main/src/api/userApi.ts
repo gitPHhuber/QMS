@@ -45,3 +45,38 @@ export const getUsers = async () => {
     const { data } = await $authHost.get("api/users")
     return data
 }
+
+export const fetchUsers = async () => {
+    const { data } = await $authHost.get("api/users")
+    return data
+}
+
+export const fetchSession = async () => {
+    const { data } = await $authHost.get("api/sessions")
+    return data
+}
+
+export const fetchPC = async () => {
+    const { data } = await $authHost.get("api/pcs")
+    return data
+}
+
+export const setSessionOnline = async (online: boolean, userId: number, pcId: number | null) => {
+    const { data } = await $authHost.post("api/sessions", { online, userId, pcId })
+    return data
+}
+
+export const createPC = async (ip: string, pc_name: string, cabinet: string) => {
+    const { data } = await $authHost.post("api/pcs", { ip, pc_name, cabinet })
+    return data
+}
+
+export const updatePC = async (id: number, ip: string, pc_name: string, cabinet: string) => {
+    const { data } = await $authHost.put(`api/pcs/${id}`, { ip, pc_name, cabinet })
+    return data
+}
+
+export const deletePC = async (id: number) => {
+    const { data } = await $authHost.delete(`api/pcs/${id}`)
+    return data
+}

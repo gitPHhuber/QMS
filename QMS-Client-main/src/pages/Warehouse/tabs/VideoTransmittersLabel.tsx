@@ -333,7 +333,7 @@ export const VideoTransmittersLabel: React.FC = () => {
         setIsConstructorMode(false);
         setTemplateType("CUSTOM");
         setLabelSize({ width: t.width, height: t.height });
-        setCustomLayout(t.layout);
+        setCustomLayout(t.layout || []);
         setCustomTemplateName(t.name);
         toast.success(`Загружен макет: ${t.name}`);
     };

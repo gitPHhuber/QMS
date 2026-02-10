@@ -2,12 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { fetchAuditLogs } from "api/auditApi";
 import { Preloader } from "src/components/common/Preloader";
 import {
-  History, Search, LogIn, Building2, Shield, Server,
-  AlertTriangle, Warehouse, Cpu, Factory, MoreHorizontal,
+  History, Search, LogIn, Building2, Shield,
+  Warehouse, MoreHorizontal,
   Download, RefreshCw
 } from "lucide-react";
 import { AuditLogModel } from "types/AuditLogModel";
-import { fetchUsers } from "src/api/fcApi";
+import { fetchUsers } from "src/api/userApi";
 import { userGetModel } from "src/types/UserModel";
 
 
@@ -16,22 +16,14 @@ type AuditTab =
   | "SESSIONS"
   | "STRUCTURE"
   | "ACCESS"
-  | "SERVERS"
-  | "DEFECTS"
   | "WAREHOUSE"
-  | "COMPONENTS"
-  | "PRODUCTION"
   | "OTHER";
 
 
 const TABS: { id: AuditTab; label: string; icon: React.ElementType; description: string }[] = [
   { id: "ALL", label: "Все события", icon: History, description: "Все записи журнала" },
   { id: "SESSIONS", label: "Сессии", icon: LogIn, description: "Вход и выход пользователей" },
-  { id: "SERVERS", label: "Серверы", icon: Server, description: "Beryll: серверы, партии, стойки, кластеры" },
-  { id: "DEFECTS", label: "Брак", icon: AlertTriangle, description: "Дефекты серверов и плат" },
   { id: "WAREHOUSE", label: "Склад", icon: Warehouse, description: "Складские операции" },
-  { id: "COMPONENTS", label: "Компоненты", icon: Cpu, description: "Компоненты серверов" },
-  { id: "PRODUCTION", label: "Производство", icon: Factory, description: "Производственные операции" },
   { id: "STRUCTURE", label: "Структура", icon: Building2, description: "Участки и бригады" },
   { id: "ACCESS", label: "Права", icon: Shield, description: "Роли и разрешения" },
   { id: "OTHER", label: "Прочее", icon: MoreHorizontal, description: "Остальные события" },
@@ -39,39 +31,14 @@ const TABS: { id: AuditTab; label: string; icon: React.ElementType; description:
 
 
 const ENTITY_TAB_MAP: Record<string, AuditTab> = {
-
   SESSION: "SESSIONS",
-
 
   Section: "STRUCTURE",
   Team: "STRUCTURE",
 
-
   Role: "ACCESS",
   Ability: "ACCESS",
   RoleAbility: "ACCESS",
-
-
-  BeryllServer: "SERVERS",
-  BeryllBatch: "SERVERS",
-  BeryllRack: "SERVERS",
-  BeryllCluster: "SERVERS",
-  BeryllShipment: "SERVERS",
-  Server: "SERVERS",
-  Batch: "SERVERS",
-  Rack: "SERVERS",
-  Cluster: "SERVERS",
-
-
-  BeryllDefectRecord: "DEFECTS",
-  DefectRecord: "DEFECTS",
-  BoardDefect: "DEFECTS",
-  RepairAction: "DEFECTS",
-  RepairHistory: "DEFECTS",
-  DefectCategory: "DEFECTS",
-  YadroTicketLog: "DEFECTS",
-  Defect: "DEFECTS",
-
 
   WarehouseMovement: "WAREHOUSE",
   InventoryBox: "WAREHOUSE",
@@ -79,21 +46,6 @@ const ENTITY_TAB_MAP: Record<string, AuditTab> = {
   WarehouseDocument: "WAREHOUSE",
   Warehouse: "WAREHOUSE",
   Box: "WAREHOUSE",
-
-
-  ComponentInventory: "COMPONENTS",
-  ComponentHistory: "COMPONENTS",
-  ComponentCatalog: "COMPONENTS",
-  ServerComponent: "COMPONENTS",
-  Component: "COMPONENTS",
-
-
-  ProductionEntry: "PRODUCTION",
-  ProductionOutput: "PRODUCTION",
-  AssembledProduct: "PRODUCTION",
-  Recipe: "PRODUCTION",
-  RecipeStep: "PRODUCTION",
-  Production: "PRODUCTION",
 };
 
 
@@ -217,10 +169,6 @@ export const AuditLogPage: React.FC = () => {
 
     if (log.action?.startsWith("SESSION_")) return "SESSIONS";
     if (log.action?.startsWith("WAREHOUSE_")) return "WAREHOUSE";
-    if (log.action?.startsWith("DEFECT_")) return "DEFECTS";
-    if (log.action?.startsWith("COMPONENT_")) return "COMPONENTS";
-    if (log.action?.startsWith("SERVER_") || log.action?.startsWith("BERYLL_")) return "SERVERS";
-    if (log.action?.startsWith("PRODUCTION_")) return "PRODUCTION";
     return "OTHER";
   };
 
@@ -263,11 +211,7 @@ export const AuditLogPage: React.FC = () => {
       SESSIONS: 0,
       STRUCTURE: 0,
       ACCESS: 0,
-      SERVERS: 0,
-      DEFECTS: 0,
       WAREHOUSE: 0,
-      COMPONENTS: 0,
-      PRODUCTION: 0,
       OTHER: 0,
     };
 
@@ -322,7 +266,7 @@ export const AuditLogPage: React.FC = () => {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-gray-800">Журнал действий</h1>
-            <p className="text-sm text-gray-500">Аудит изменений в системе MES Kryptonit</p>
+            <p className="text-sm text-gray-500">Аудит изменений в системе QMS</p>
           </div>
         </div>
         <div className="flex items-center gap-2">

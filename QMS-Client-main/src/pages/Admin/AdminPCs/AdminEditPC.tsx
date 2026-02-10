@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { updatePC } from "src/api/fcApi";
+import { updatePC } from "src/api/userApi";
 
 interface AdminEditPCProps {
   updatePCList: () => void;
