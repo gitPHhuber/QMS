@@ -2,99 +2,177 @@
 
 /**
  * Миграция: добавление hash-chain полей в таблицу audit_logs
- * 
- * ISO 13485 §4.2.5 требует защиту записей от несанкционированного изменения.
- * Hash-chain гарантирует: если кто-то изменит/удалит запись в середине цепочки,
- * верификация покажет разрыв.
- * 
- * Схема: каждая запись содержит:
- *   - chainIndex: порядковый номер в цепочке (глобальный автоинкремент)
- *   - prevHash:   SHA-256 хеш предыдущей записи
- *   - currentHash: SHA-256 хеш текущей записи (включая prevHash)
- *   - dataHash:   SHA-256 только данных записи (без chain-полей)
- * 
- * Начальная запись (genesis): prevHash = "0".repeat(64)
+ *
+ * Фикс: migration-safe для пустой БД
+ * - если таблицы audit_logs нет (после db:drop/db:create) → миграция НЕ падает, а пропускается
+ * - down тоже безопасный
  */
 
 module.exports = {
   async up(queryInterface, Sequelize) {
+    // ✅ GUARD: таблица должна существовать (иначе после db:create база пустая)
+    const reg = await queryInterface.sequelize.query(
+      `SELECT to_regclass('public.audit_logs') AS t`,
+      { type: Sequelize.QueryTypes.SELECT }
+    );
+
+    if (!reg?.[0]?.t) {
+      console.log("⚠️ [audit-hashchain] Таблица public.audit_logs не найдена — пропускаем миграцию");
+      return;
+    }
+
     const transaction = await queryInterface.sequelize.transaction();
 
     try {
-      // 1. Добавляем chain-поля
-      await queryInterface.addColumn("audit_logs", "chainIndex", {
-        type: Sequelize.BIGINT,
-        allowNull: true, // nullable для старых записей
-        unique: true,
-      }, { transaction });
+      // Можно дополнительно защититься от частично применённых изменений
+      const table = await queryInterface.describeTable("audit_logs");
 
-      await queryInterface.addColumn("audit_logs", "prevHash", {
-        type: Sequelize.STRING(64),
-        allowNull: true,
-      }, { transaction });
+      // 1) chain-поля
+      if (!table.chainIndex) {
+        await queryInterface.addColumn(
+          "audit_logs",
+          "chainIndex",
+          {
+            type: Sequelize.BIGINT,
+            allowNull: true, // nullable для старых записей
+            unique: true,
+          },
+          { transaction }
+        );
+      }
 
-      await queryInterface.addColumn("audit_logs", "currentHash", {
-        type: Sequelize.STRING(64),
-        allowNull: true,
-      }, { transaction });
+      if (!table.prevHash) {
+        await queryInterface.addColumn(
+          "audit_logs",
+          "prevHash",
+          {
+            type: Sequelize.STRING(64),
+            allowNull: true,
+          },
+          { transaction }
+        );
+      }
 
-      await queryInterface.addColumn("audit_logs", "dataHash", {
-        type: Sequelize.STRING(64),
-        allowNull: true,
-      }, { transaction });
+      if (!table.currentHash) {
+        await queryInterface.addColumn(
+          "audit_logs",
+          "currentHash",
+          {
+            type: Sequelize.STRING(64),
+            allowNull: true,
+          },
+          { transaction }
+        );
+      }
 
-      // 2. Добавляем поле signature для электронной подписи (будущее)
-      await queryInterface.addColumn("audit_logs", "signedBy", {
-        type: Sequelize.INTEGER,
-        allowNull: true,
-        comment: "userId кто подтвердил запись (электронная подпись)",
-      }, { transaction });
+      if (!table.dataHash) {
+        await queryInterface.addColumn(
+          "audit_logs",
+          "dataHash",
+          {
+            type: Sequelize.STRING(64),
+            allowNull: true,
+          },
+          { transaction }
+        );
+      }
 
-      await queryInterface.addColumn("audit_logs", "signedAt", {
-        type: Sequelize.DATE,
-        allowNull: true,
-      }, { transaction });
+      // 2) подпись (будущее)
+      if (!table.signedBy) {
+        await queryInterface.addColumn(
+          "audit_logs",
+          "signedBy",
+          {
+            type: Sequelize.INTEGER,
+            allowNull: true,
+            comment: "userId кто подтвердил запись (электронная подпись)",
+          },
+          { transaction }
+        );
+      }
 
-      // 3. Добавляем поле severity для QMS-классификации
-      await queryInterface.addColumn("audit_logs", "severity", {
-        type: Sequelize.ENUM("INFO", "WARNING", "CRITICAL", "SECURITY"),
-        allowNull: false,
-        defaultValue: "INFO",
-      }, { transaction });
+      if (!table.signedAt) {
+        await queryInterface.addColumn(
+          "audit_logs",
+          "signedAt",
+          {
+            type: Sequelize.DATE,
+            allowNull: true,
+          },
+          { transaction }
+        );
+      }
 
-      // 4. Индексы для производительности
-      await queryInterface.addIndex("audit_logs", ["chainIndex"], {
-        name: "idx_audit_chain_index",
-        unique: true,
-        where: { chainIndex: { [Sequelize.Op.ne]: null } },
-        transaction,
-      });
+      // 3) severity (ENUM)
+      if (!table.severity) {
+        await queryInterface.addColumn(
+          "audit_logs",
+          "severity",
+          {
+            type: Sequelize.ENUM("INFO", "WARNING", "CRITICAL", "SECURITY"),
+            allowNull: false,
+            defaultValue: "INFO",
+          },
+          { transaction }
+        );
+      }
 
-      await queryInterface.addIndex("audit_logs", ["currentHash"], {
-        name: "idx_audit_current_hash",
-        transaction,
-      });
+      // 4) Индексы (создаём только если их нет)
+      // PostgreSQL: безопасно проверяем через pg_indexes
+      const indexes = await queryInterface.sequelize.query(
+        `SELECT indexname FROM pg_indexes WHERE schemaname = 'public' AND tablename = 'audit_logs'`,
+        { type: Sequelize.QueryTypes.SELECT, transaction }
+      );
+      const idx = new Set((indexes || []).map((r) => r.indexname));
 
-      await queryInterface.addIndex("audit_logs", ["severity"], {
-        name: "idx_audit_severity",
-        transaction,
-      });
+      if (!idx.has("idx_audit_chain_index")) {
+        await queryInterface.addIndex(
+          "audit_logs",
+          ["chainIndex"],
+          {
+            name: "idx_audit_chain_index",
+            unique: true,
+            // частичный индекс: только где chainIndex не null
+            where: { chainIndex: { [Sequelize.Op.ne]: null } },
+            transaction,
+          }
+        );
+      }
 
-      await queryInterface.addIndex("audit_logs", ["entity", "entityId"], {
-        name: "idx_audit_entity_lookup",
-        transaction,
-      });
+      if (!idx.has("idx_audit_current_hash")) {
+        await queryInterface.addIndex(
+          "audit_logs",
+          ["currentHash"],
+          { name: "idx_audit_current_hash", transaction }
+        );
+      }
 
-      await queryInterface.addIndex("audit_logs", ["createdAt"], {
-        name: "idx_audit_created_at",
-        transaction,
-      });
+      if (!idx.has("idx_audit_severity")) {
+        await queryInterface.addIndex(
+          "audit_logs",
+          ["severity"],
+          { name: "idx_audit_severity", transaction }
+        );
+      }
 
-      // 5. Бэкфилл: пересчитываем хеши для существующих записей
-      // Это делается отдельным скриптом после миграции: scripts/backfill-audit-hashes.js
+      if (!idx.has("idx_audit_entity_lookup")) {
+        await queryInterface.addIndex(
+          "audit_logs",
+          ["entity", "entityId"],
+          { name: "idx_audit_entity_lookup", transaction }
+        );
+      }
+
+      if (!idx.has("idx_audit_created_at")) {
+        await queryInterface.addIndex(
+          "audit_logs",
+          ["createdAt"],
+          { name: "idx_audit_created_at", transaction }
+        );
+      }
 
       await transaction.commit();
-      console.log("✅ Миграция audit-hashchain выполнена успешно");
+      console.log("✅ [audit-hashchain] Миграция выполнена успешно");
     } catch (error) {
       await transaction.rollback();
       throw error;
@@ -102,30 +180,76 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
+    // ✅ GUARD: если таблицы нет — просто выходим
+    const reg = await queryInterface.sequelize.query(
+      `SELECT to_regclass('public.audit_logs') AS t`,
+      { type: Sequelize.QueryTypes.SELECT }
+    );
+    if (!reg?.[0]?.t) {
+      console.log("⚠️ [audit-hashchain] Таблица public.audit_logs не найдена — down пропускаем");
+      return;
+    }
+
     const transaction = await queryInterface.sequelize.transaction();
 
     try {
-      await queryInterface.removeIndex("audit_logs", "idx_audit_created_at", { transaction });
-      await queryInterface.removeIndex("audit_logs", "idx_audit_entity_lookup", { transaction });
-      await queryInterface.removeIndex("audit_logs", "idx_audit_severity", { transaction });
-      await queryInterface.removeIndex("audit_logs", "idx_audit_current_hash", { transaction });
-      await queryInterface.removeIndex("audit_logs", "idx_audit_chain_index", { transaction });
+      // removeIndex не любит, когда индекса нет → проверим
+      const indexes = await queryInterface.sequelize.query(
+        `SELECT indexname FROM pg_indexes WHERE schemaname = 'public' AND tablename = 'audit_logs'`,
+        { type: Sequelize.QueryTypes.SELECT, transaction }
+      );
+      const idx = new Set((indexes || []).map((r) => r.indexname));
 
-      await queryInterface.removeColumn("audit_logs", "severity", { transaction });
-      await queryInterface.removeColumn("audit_logs", "signedAt", { transaction });
-      await queryInterface.removeColumn("audit_logs", "signedBy", { transaction });
-      await queryInterface.removeColumn("audit_logs", "dataHash", { transaction });
-      await queryInterface.removeColumn("audit_logs", "currentHash", { transaction });
-      await queryInterface.removeColumn("audit_logs", "prevHash", { transaction });
-      await queryInterface.removeColumn("audit_logs", "chainIndex", { transaction });
+      if (idx.has("idx_audit_created_at")) {
+        await queryInterface.removeIndex("audit_logs", "idx_audit_created_at", { transaction });
+      }
+      if (idx.has("idx_audit_entity_lookup")) {
+        await queryInterface.removeIndex("audit_logs", "idx_audit_entity_lookup", { transaction });
+      }
+      if (idx.has("idx_audit_severity")) {
+        await queryInterface.removeIndex("audit_logs", "idx_audit_severity", { transaction });
+      }
+      if (idx.has("idx_audit_current_hash")) {
+        await queryInterface.removeIndex("audit_logs", "idx_audit_current_hash", { transaction });
+      }
+      if (idx.has("idx_audit_chain_index")) {
+        await queryInterface.removeIndex("audit_logs", "idx_audit_chain_index", { transaction });
+      }
 
-      // Удаляем ENUM тип
+      // Колонки удаляем только если они есть
+      const table = await queryInterface.describeTable("audit_logs");
+
+      if (table.severity) {
+        await queryInterface.removeColumn("audit_logs", "severity", { transaction });
+      }
+      if (table.signedAt) {
+        await queryInterface.removeColumn("audit_logs", "signedAt", { transaction });
+      }
+      if (table.signedBy) {
+        await queryInterface.removeColumn("audit_logs", "signedBy", { transaction });
+      }
+      if (table.dataHash) {
+        await queryInterface.removeColumn("audit_logs", "dataHash", { transaction });
+      }
+      if (table.currentHash) {
+        await queryInterface.removeColumn("audit_logs", "currentHash", { transaction });
+      }
+      if (table.prevHash) {
+        await queryInterface.removeColumn("audit_logs", "prevHash", { transaction });
+      }
+      if (table.chainIndex) {
+        await queryInterface.removeColumn("audit_logs", "chainIndex", { transaction });
+      }
+
+      // ENUM type может остаться — удаляем аккуратно
+      // В Postgres имя enum-типа для столбца severity обычно: enum_audit_logs_severity
       await queryInterface.sequelize.query(
         'DROP TYPE IF EXISTS "enum_audit_logs_severity";',
         { transaction }
       );
 
       await transaction.commit();
+      console.log("✅ [audit-hashchain] Down выполнен успешно");
     } catch (error) {
       await transaction.rollback();
       throw error;
