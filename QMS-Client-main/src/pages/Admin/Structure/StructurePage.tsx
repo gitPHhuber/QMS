@@ -25,7 +25,7 @@ import {
   removeUserFromTeam,
   fetchUnassignedUsers,
 } from "src/api/structureApi";
-import { fetchUsers } from "src/api/fcApi";
+import { fetchUsers } from "src/api/userApi";
 import { Modal } from "src/components/Modal/Modal";
 import { userGetModel } from "src/types/UserModel";
 import toast from "react-hot-toast";

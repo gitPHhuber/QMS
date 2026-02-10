@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { createPC } from "src/api/fcApi";
+import { createPC } from "src/api/userApi";
 
 export const CreatePC = () => {
   const [ip, SetIp] = useState("");

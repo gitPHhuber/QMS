@@ -1,21 +1,13 @@
-import { useContext, useEffect } from "react";
-import { deletePC, fetchPC } from "src/api/fcApi";
-import { Context } from "src/main";
+import { useEffect, useState } from "react";
+import { deletePC, fetchPC } from "src/api/userApi";
 import { AdminOnePC } from "./AdminOnePC";
 import { pcModelFull } from "src/types/PCModel";
-import { observer } from "mobx-react-lite";
 
-export const AdminPCs: React.FC = observer(() => {
-  const context = useContext(Context);
-
-  if (!context) {
-    throw new Error("Context must be used within a Provider");
-  }
-
-  const { flightController } = context;
+export const AdminPCs: React.FC = () => {
+  const [pcs, setPcs] = useState<pcModelFull[]>([]);
 
   const updatePCList = async () => {
-    fetchPC().then((data) => flightController.setPCs(data));
+    fetchPC().then((data) => setPcs(data));
   };
 
   useEffect(() => {
@@ -31,7 +23,7 @@ export const AdminPCs: React.FC = observer(() => {
     }
   };
 
-  let PCs = flightController.PCs.map((el: pcModelFull) => (
+  let PCs = pcs.map((el: pcModelFull) => (
     <AdminOnePC
       deleteComputer={() => deleteComputer(el.id)}
       updatePCList = {()=> updatePCList()}
@@ -53,4 +45,4 @@ export const AdminPCs: React.FC = observer(() => {
       </div>
     </div>
   );
-});
+};
