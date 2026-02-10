@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: asvo-qms-db
+    environment:
+      POSTGRES_DB: asvo_qms
+      POSTGRES_USER: qms
+      POSTGRES_PASSWORD: qms_dev_2026
+    command: ["postgres","-c","listen_addresses=0.0.0.0"]
+    ports:
+      - "127.0.0.1:5434:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+volumes:
+  pgdata:
