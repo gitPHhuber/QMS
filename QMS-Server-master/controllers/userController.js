@@ -1,5 +1,5 @@
 const ApiError = require("../error/ApiError");
-const { User, Session } = require("../models/index");
+const { User, Session, Role } = require("../models/index");
 const jwt = require("jsonwebtoken");
 const uuid = require("uuid");
 const path = require("path");
@@ -124,11 +124,18 @@ class UserController {
         );
       }
 
-      const user = await User.create({ login, password, role, name, surname });
+      let roleId = null;
+      const roleName = role || 'USER';
+      if (roleName) {
+        const roleEntity = await Role.findOne({ where: { name: roleName } });
+        if (roleEntity) roleId = roleEntity.id;
+      }
+
+      const user = await User.create({ login, password, roleId, name, surname });
       const token = generateJWT(
         user.id,
         user.login,
-        user.role,
+        roleName,
         user.name,
         user.surname,
         null
@@ -146,7 +153,10 @@ class UserController {
       if (!login || !password) {
         return next(ApiError.badRequest("нет логина или пароля в запросе"));
       }
-      const currentUser = await User.findOne({ where: { login } });
+      const currentUser = await User.findOne({
+        where: { login },
+        include: [{ model: Role, as: "userRole", attributes: ["name"] }]
+      });
       if (!currentUser) {
         return next(ApiError.internal("Такого пользователя нет"));
       }
@@ -166,10 +176,11 @@ class UserController {
         );
       }
 
+      const roleName = currentUser.userRole ? currentUser.userRole.name : 'USER';
       const token = generateJWT(
         currentUser.id,
         currentUser.login,
-        currentUser.role,
+        roleName,
         currentUser.name,
         currentUser.surname,
         currentUser.img

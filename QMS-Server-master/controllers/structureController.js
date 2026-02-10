@@ -1,4 +1,4 @@
-const { Section, Team, User } = require("../models/index");
+const { Section, Team, User, Role } = require("../models/index");
 const ApiError = require("../error/ApiError");
 const { logAudit } = require("../utils/auditLogger");
 const { Op } = require("sequelize");
@@ -47,12 +47,15 @@ class StructureController {
 
   async getUnassignedUsers(req, res, next) {
     try {
+      const superAdminRole = await Role.findOne({ where: { name: "SUPER_ADMIN" } });
+      const whereClause = { teamId: { [Op.is]: null } };
+      if (superAdminRole) {
+        whereClause.roleId = { [Op.ne]: superAdminRole.id };
+      }
       const users = await User.findAll({
-        where: {
-          teamId: { [Op.is]: null },
-          role: { [Op.notIn]: ["SUPER_ADMIN"] }
-        },
-        attributes: ["id", "name", "surname", "login", "role", "img"],
+        where: whereClause,
+        attributes: ["id", "name", "surname", "login", "img"],
+        include: [{ model: Role, as: "userRole", attributes: ["name"] }],
         order: [["surname", "ASC"]]
       });
       return res.json(users);
