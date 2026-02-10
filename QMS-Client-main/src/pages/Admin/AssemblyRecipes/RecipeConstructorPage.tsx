@@ -3,7 +3,7 @@ import { fetchProjects, ProjectModel } from "src/api/projectsApi";
 import { createOrUpdateRecipe, fetchRecipeByProject, RecipeStep } from "src/api/assemblyRecipesApi";
 import {
     Save, Plus, Trash2, Layers, ArrowDown,
-    FileText, CheckSquare, Settings, AlertCircle
+    Settings
 } from "lucide-react";
 import toast from "react-hot-toast";
 

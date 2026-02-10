@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useContext } from "react";
 import {
     Plus, Edit2, Trash2, Save, X, Settings2,
-    CheckCircle2, XCircle, GripVertical, Clock,
+    CheckCircle2, XCircle, Clock,
     AlertTriangle, Building2
 } from "lucide-react";
 import toast from "react-hot-toast";

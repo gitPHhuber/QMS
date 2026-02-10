@@ -5,9 +5,7 @@ import {
   fetchTasks,
   fetchTaskById,
   createTask,
-  updateTaskStatus,
   updateTask,
-  deleteTask,
 } from "src/api/tasksApi";
 import { fetchProjects, ProjectModel } from "src/api/projectsApi";
 import { fetchUsers } from "src/api/fcApi";
@@ -15,8 +13,7 @@ import { fetchStructure } from "src/api/structureApi";
 import { userGetModel } from "src/types/UserModel";
 import { SectionModel } from "src/store/StructureStore";
 import {
-  Plus, Calendar, Target, Loader2, MapPin, Box,
-  CheckCircle2, AlertCircle, Clock, Flag, User, Trash2, Building2,
+  Plus, Loader2, MapPin,
   Edit3, Save, X, Briefcase
 } from "lucide-react";
 import { Modal } from "src/components/Modal/Modal";
@@ -33,7 +30,7 @@ const TasksList: React.FC = () => {
   const [editForm, setEditForm] = useState<any>({});
 
   const [users, setUsers] = useState<userGetModel[]>([]);
-  const [sections, setSections] = useState<SectionModel[]>([]);
+  const [_sections, setSections] = useState<SectionModel[]>([]);
   const [projects, setProjects] = useState<ProjectModel[]>([]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);

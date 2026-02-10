@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import {
-  Plus, Trash2, Edit, CheckCircle, Paperclip, Download, RefreshCw, Filter, X, ChevronDown, ChevronUp
+  Plus, Trash2, Edit, CheckCircle, Paperclip, RefreshCw, Filter, ChevronDown, ChevronUp
 } from 'lucide-react';
 import clsx from 'clsx';
 import toast from 'react-hot-toast';

@@ -195,7 +195,7 @@ export const AuditLogPage: React.FC = () => {
   }, [logs]);
 
 
-  const entities = useMemo(() => {
+  const _entities = useMemo(() => {
     const set = new Set<string>();
     logs.forEach((log) => {
       if (log.entity) set.add(log.entity);

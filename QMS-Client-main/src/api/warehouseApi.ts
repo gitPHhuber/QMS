@@ -7,6 +7,9 @@ import {
   StockBalanceItem
 } from "src/types/WarehouseModels";
 
+export type { WarehouseMovement };
+export type WarehouseBox = InventoryBoxModel;
+
 export interface SupplyCreateDto {
   supplier?: string;
   docNumber?: string;

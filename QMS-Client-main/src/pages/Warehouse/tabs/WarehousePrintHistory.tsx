@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { fetchPrintHistory } from "src/api/warehouseApi";
 import {
-    Search, Calendar, Printer, User, History,
+    Search, Printer, User, History,
     ArrowRight, Tv, Tag, Info, FileText
 } from "lucide-react";
 import { formatDateTime } from "../utils";

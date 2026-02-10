@@ -3,8 +3,8 @@
 import React, { useState, useEffect, useMemo } from "react";
 import {
     Calendar, ChevronLeft, ChevronRight, Download,
-    Users, FolderKanban, Settings2, TrendingUp, Award,
-    RefreshCw, User, Filter, X
+    TrendingUp, Award,
+    RefreshCw, X, Users
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -12,9 +12,7 @@ import {
     fetchMatrix,
     fetchOperationTypes,
     MatrixResponse,
-    MatrixUser,
     OperationType,
-    formatShortDate,
     getDayOfWeek
 } from "src/api/productionApi";
 

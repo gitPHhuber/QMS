@@ -15,8 +15,6 @@ import {
   Network,
   AlertCircle,
   ChevronRight,
-  Download,
-  Upload,
   Clock
 } from "lucide-react";
 import toast from "react-hot-toast";

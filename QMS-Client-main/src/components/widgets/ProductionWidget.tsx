@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
 import {
-  Factory, TrendingUp, Package, Wrench, Calendar,
+  Factory, TrendingUp, Package, Wrench,
   ChevronRight, Loader2, Award
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { fetchUserSummary, fetchOutputs, ProductionOutput } from "src/api/productionApi";
+import { fetchOutputs, ProductionOutput } from "src/api/productionApi";
 import { PRODUCTION_ROUTE } from "src/utils/consts";
 
 interface Props {
@@ -56,10 +56,10 @@ export const ProductionWidget: React.FC<Props> = ({ userId }) => {
         const opsMap = new Map<string, number>();
 
         entries.forEach(e => {
-          const qty = e.status === "APPROVED" ? (e.approvedQty || 0) : e.quantity;
+          const qty = e.status === "APPROVED" ? (e.approvedQty || 0) : (e.quantity ?? 0);
           total += qty;
 
-          if (e.status === "PENDING") pending += e.quantity;
+          if (e.status === "PENDING") pending += (e.quantity ?? 0);
           if (e.status === "APPROVED") approved += (e.approvedQty || 0);
 
           const opName = e.operationType?.name || "Другое";
@@ -163,7 +163,7 @@ export const ProductionWidget: React.FC<Props> = ({ userId }) => {
               >
                 <div>
                   <span className="font-medium text-gray-800">
-                    {entry.productType?.name}
+                    {entry.productType}
                   </span>
                   <span className="text-gray-400 mx-1">•</span>
                   <span className="text-gray-500">{entry.operationType?.name}</span>

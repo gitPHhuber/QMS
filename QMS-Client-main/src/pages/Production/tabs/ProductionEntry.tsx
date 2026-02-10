@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useContext, useMemo } from "react";
 import {
     Calendar, User, Hash, MessageSquare, Save,
-    Plus, RotateCcw, CheckCircle2, Clock, FolderKanban,
+    Plus, CheckCircle2, Clock, FolderKanban,
     ClipboardList, Settings2, Users
 } from "lucide-react";
 import toast from "react-hot-toast";
@@ -20,7 +20,6 @@ import {
     ProductionOutput,
     OUTPUT_STATUS_LABELS,
     OUTPUT_STATUS_COLORS,
-    formatUserName,
     formatDate
 } from "src/api/productionApi";
 

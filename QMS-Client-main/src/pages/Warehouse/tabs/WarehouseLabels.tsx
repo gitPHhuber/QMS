@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
 import {
     fetchBoxes, updateBoxesBatch, createBoxesBatch,
-    printBoxesPdf, downloadBoxesExcel
+    printBoxesPdf
 } from "src/api/warehouseApi";
 import { InventoryBoxModel } from "src/types/WarehouseModels";
 import {
-    Search, Filter, Printer, Edit, Trash2,
-    Plus, CheckSquare, Square, Save, X, Tag, Copy
+    Search, Filter, Printer, Edit,
+    Plus, CheckSquare, Square, Tag
 } from "lucide-react";
 import { Modal } from "src/components/Modal/Modal";
 import toast from "react-hot-toast";

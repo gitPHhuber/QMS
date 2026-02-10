@@ -50,6 +50,8 @@ export interface ServerComponent {
 
   capacity?: number;
   speed?: string;
+  capacityFormatted?: string;
+  speedFormatted?: string;
   firmwareVersion?: string;
 
 

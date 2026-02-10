@@ -8,11 +8,7 @@ import {
   Filter,
   RefreshCw,
   Clock,
-  CheckCircle,
-  XCircle,
-  Truck,
   Wrench,
-  Eye,
   ChevronRight,
   AlertCircle
 } from "lucide-react";
@@ -466,13 +462,15 @@ const DefectRecordsPage: React.FC = () => {
 
       {showCreateModal && (
         <DefectRecordModal
+          isOpen={showCreateModal}
           onClose={() => setShowCreateModal(false)}
           onSuccess={() => {
             setShowCreateModal(false);
             loadRecords();
             loadStats();
           }}
-          partTypes={partTypes}
+          servers={[]}
+          users={[]}
         />
       )}
 

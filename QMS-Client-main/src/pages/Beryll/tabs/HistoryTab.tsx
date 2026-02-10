@@ -2,9 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   History,
-  Search,
   Filter,
-  Calendar,
   User,
   Server,
   RefreshCw,
@@ -15,7 +13,6 @@ import {
   Play,
   Square,
   CheckCircle2,
-  XCircle,
   MessageSquare,
   Package,
   Trash2,

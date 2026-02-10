@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
-  FileText, Calendar, Search, Plus, Filter,
-  ArrowDownToLine, Printer, User, MoreHorizontal
+  FileText, Calendar, Search, Plus,
+  ArrowDownToLine, Printer, User
 } from "lucide-react";
 import { createDocument, fetchDocuments } from "src/api/warehouseApi";
 import { WarehouseDocument } from "src/types/WarehouseModels";

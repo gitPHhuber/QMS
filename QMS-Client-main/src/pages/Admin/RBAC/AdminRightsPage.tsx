@@ -12,8 +12,8 @@ import { userGetModel } from "src/types/UserModel";
 import {
     Shield, Save, CheckSquare, Square,
     Loader2, Users, Key, Search, User,
-    ChevronDown, ChevronRight, Filter, X,
-    CheckCircle2, AlertCircle
+    ChevronDown, ChevronRight, X,
+    AlertCircle
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -141,7 +141,7 @@ export const AdminRightsPage: React.FC = observer(() => {
     }, [abilities, abilitySearch, expandedGroups]);
 
 
-    const visibleAbilities = useMemo(() => {
+    const _visibleAbilities = useMemo(() => {
         const result: { ability: AbilityModel; groupPrefix: string; isFirstInGroup: boolean; groupLabel: string; groupSize: number }[] = [];
 
         groupedAbilities.forEach(group => {
@@ -234,7 +234,7 @@ export const AdminRightsPage: React.FC = observer(() => {
 
             setOriginalMatrix(prev => ({
                 ...prev,
-                [roleId]: abilityIds
+                [roleId]: new Set(abilityIds)
             }));
 
 
@@ -268,7 +268,7 @@ export const AdminRightsPage: React.FC = observer(() => {
 
                 setOriginalMatrix(prev => ({
                     ...prev,
-                    [role.id]: abilityIds
+                    [role.id]: new Set(abilityIds)
                 }));
                 successCount++;
             } catch (e) {

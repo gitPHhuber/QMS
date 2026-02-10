@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import {
-  AlertTriangle, Plus, Search, Filter, FileText, Download,
+  AlertTriangle, Plus, Search, Filter, Download,
   Clock, CheckCircle, XCircle, Send, RotateCcw, Repeat,
-  ChevronDown, Trash2, Edit, Paperclip, Eye, Calendar,
+  ChevronDown, Trash2, Edit, Paperclip, Eye,
   Truck, Package, ChevronLeft, ChevronRight, RefreshCw,
   FileSpreadsheet, BarChart3, Loader2, X
 } from "lucide-react";
@@ -12,7 +12,7 @@ import {
   getDefectRecords, getDefectRecordById, createDefectRecord, updateDefectRecord, deleteDefectRecord,
   changeDefectRecordStatus, sendDefectToYadro, returnDefectFromYadro, resolveDefectRecord,
   markDefectAsRepeated, getDefectRecordStats, uploadDefectRecordFile, downloadDefectRecordFile,
-  deleteDefectRecordFile, getRepairPartTypes, getDefectStatuses,
+  deleteDefectRecordFile,
   BeryllDefectRecord, DefectRecordStatus, RepairPartType, DefectRecordStats
 } from "../../../api/beryll/beryllExtendedApi";
 import { getServers } from "../../../api/beryllApi";
@@ -370,7 +370,7 @@ const DefectRecordsTab: React.FC = () => {
     });
   };
 
-  const formatDateTime = (dateStr: string | null) => {
+  const _formatDateTime = (dateStr: string | null) => {
     if (!dateStr) return "—";
     return new Date(dateStr).toLocaleDateString("ru-RU", {
       day: "2-digit",
@@ -837,7 +837,7 @@ const RecordDetails: React.FC<{
   onDelete: () => void;
   onStatusChange: () => void;
   onClose: () => void;
-}> = ({ record, users, onUpdate, onEdit, onDelete, onStatusChange, onClose }) => {
+}> = ({ record, users: _users, onUpdate, onEdit, onDelete, onStatusChange, onClose }) => {
   const statusConfig = STATUS_CONFIG[record.status];
   const [uploading, setUploading] = useState(false);
   const [fileToDelete, setFileToDelete] = useState<{id: number; name: string} | null>(null);
@@ -1221,8 +1221,7 @@ const CreateRecordModal: React.FC<{
       setSaving(true);
       await createDefectRecord({
         ...form,
-        serverId: form.serverId || undefined,
-        serverSerial: form.serverSerial || undefined,
+        serverId: form.serverId || 0,
         repairPartType: form.repairPartType || undefined,
         diagnosticianId: form.diagnosticianId || undefined,
         sentToYadroAt: form.sentToYadroAt ? new Date(form.sentToYadroAt).toISOString() : undefined,
@@ -1230,7 +1229,7 @@ const CreateRecordModal: React.FC<{
         returnedFromYadroAt: form.returnedFromYadroAt ? new Date(form.returnedFromYadroAt).toISOString() : undefined,
         returnedFromYadro: !!form.returnedFromYadroAt,
         repeatedDefectDate: form.repeatedDefectDate ? new Date(form.repeatedDefectDate).toISOString() : undefined
-      });
+      } as any);
       toast.success("Запись создана");
       onSuccess();
     } catch (error: any) {
@@ -1562,7 +1561,7 @@ const EditRecordModal: React.FC<{
   users: any[];
   onClose: () => void;
   onSuccess: () => void;
-}> = ({ isOpen, record, servers, users, onClose, onSuccess }) => {
+}> = ({ isOpen, record, servers: _servers, users, onClose, onSuccess }) => {
   const [form, setForm] = useState<any>({});
   const [saving, setSaving] = useState(false);
 

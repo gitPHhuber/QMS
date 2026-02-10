@@ -3,8 +3,8 @@
 import React, { useState, useEffect, useContext, useMemo } from "react";
 import {
     CheckCircle2, XCircle, Clock, ChevronDown, ChevronRight,
-    User, Calendar, Hash, Edit3, AlertTriangle, Filter,
-    FolderKanban, Settings2, Users
+    User, Calendar, Edit3, AlertTriangle, Filter,
+    FolderKanban, Settings2
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { Context } from "src/main";
@@ -16,8 +16,7 @@ import {
     rejectOutputs,
     ProductionOutput,
     formatUserName,
-    formatDate,
-    formatShortDate
+    formatDate
 } from "src/api/productionApi";
 
 import { fetchStructure } from "src/api/structureApi";
@@ -30,7 +29,7 @@ interface GroupedOutputs {
 
 export const ProductionApproval: React.FC = observer(() => {
     const context = useContext(Context);
-    const currentUser = context?.user?.user;
+    const _currentUser = context?.user?.user;
 
 
     const [outputs, setOutputs] = useState<ProductionOutput[]>([]);
@@ -123,7 +122,7 @@ export const ProductionApproval: React.FC = observer(() => {
         setSelectedIds(newSet);
     };
 
-    const toggleSelectAll = (date: string, outputsForDate: ProductionOutput[]) => {
+    const toggleSelectAll = (_date: string, outputsForDate: ProductionOutput[]) => {
         const ids = outputsForDate.map(o => o.id);
         const allSelected = ids.every(id => selectedIds.has(id));
 

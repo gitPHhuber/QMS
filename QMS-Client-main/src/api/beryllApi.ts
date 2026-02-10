@@ -58,6 +58,10 @@ export interface BeryllBatch {
   createdById: number | null;
   createdBy?: BeryllServerUser | null;
   createdAt: string;
+  stats?: { total: number; done: number; inProgress: number; tested: number; failed: number } & Record<string, number>;
+  servers?: any[];
+  totalCount?: number;
+  completedAt?: string;
 }
 
 export interface BeryllServerChecklist {

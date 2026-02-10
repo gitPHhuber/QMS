@@ -7,10 +7,8 @@ import {
   RefreshCw,
   Calendar,
   Building2,
-  Server,
   CheckCircle2,
   Clock,
-  MoreVertical,
   Edit,
   Trash2,
   ExternalLink,
@@ -23,6 +21,7 @@ import {
   deleteBatch,
   BeryllBatch,
   BatchStatus,
+  ServerStatus,
   BATCH_STATUS_LABELS,
   BATCH_STATUS_COLORS,
   getStatusProgress,
@@ -205,7 +204,7 @@ export const BatchesTab: React.FC = () => {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {batches.map((batch) => {
-            const progress = getStatusProgress(batch.stats);
+            const progress = getStatusProgress(batch.stats as unknown as Record<ServerStatus, number>);
             const totalServers = batch.totalCount || 0;
             const doneServers = batch.stats?.DONE || 0;
 

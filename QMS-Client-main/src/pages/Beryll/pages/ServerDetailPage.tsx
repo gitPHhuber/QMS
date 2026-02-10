@@ -28,14 +28,12 @@ import {
   Archive,
   FileSpreadsheet,
   Upload,
-  Download,
   Tag,
   Camera,
   Image,
   Trash2,
   Eye,
   X,
-  AlertCircle,
   File as FileIcon,
   Loader2,
   RotateCcw,
@@ -58,7 +56,6 @@ import {
   downloadFile,
   BeryllServer,
   BeryllServerChecklist,
-  BeryllChecklistFile,
   ServerStatus,
   ChecklistGroup,
   STATUS_LABELS,
@@ -98,7 +95,7 @@ export const ServerDetailPage: React.FC = observer(() => {
 
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploadingChecklistId, setUploadingChecklistId] = useState<number | null>(null);
+  const [_uploadingChecklistId, setUploadingChecklistId] = useState<number | null>(null);
 
 
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -367,26 +364,6 @@ export const ServerDetailPage: React.FC = observer(() => {
 
   const handleSelectFile = () => {
     fileInputRef.current?.click();
-  };
-
-
-  const openUploadModal = (checklistId: number, checklistTitle: string, file: File) => {
-    const preview = file.type.startsWith("image/")
-      ? URL.createObjectURL(file)
-      : null;
-
-
-    const now = new Date();
-    const defaultName = `${checklistTitle.replace(/[^a-zа-яё0-9]/gi, "_")}_${now.toLocaleDateString("ru-RU").replace(/\./g, "-")}`;
-
-    setUploadModal({
-      open: true,
-      checklistId,
-      checklistTitle,
-      file,
-      preview,
-      fileName: defaultName
-    });
   };
 
 
@@ -1378,8 +1355,8 @@ export const ServerDetailPage: React.FC = observer(() => {
           <div className="bg-white rounded-xl border border-gray-200 p-6">
             <ServerComponentsManager
               serverId={server.id}
-              serverIp={server.ipAddress}
-              apkSerialNumber={server.apkSerialNumber}
+              serverIp={server.ipAddress ?? undefined}
+              apkSerialNumber={server.apkSerialNumber ?? undefined}
               readOnly={server.status === "ARCHIVED"}
             />
           </div>

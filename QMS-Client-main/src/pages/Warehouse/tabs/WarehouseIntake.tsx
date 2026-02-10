@@ -163,7 +163,7 @@ export const WarehouseIntake: React.FC<Props> = ({ sections, productsList, compo
                         <label className="block text-sm font-semibold text-gray-700 mb-1">Выберите из справочника</label>
                         <select
                             className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-emerald-500"
-                            value={selectedSkuId} onChange={e => setSelectedSkuId(e.target.value)}
+                            value={selectedSkuId} onChange={e => setSelectedSkuId(e.target.value ? Number(e.target.value) : "")}
                         >
                             <option value="">-- Не выбрано --</option>
                             {intakeMode === 'PRODUCT'

@@ -142,7 +142,7 @@ interface OnlineUser {
 
 const OnlineUsersWidget = () => {
     const context = useContext(Context);
-    const { flightController } = context || {};
+    const { flightController: _flightController } = context || {};
 
     const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
     const [loading, setLoading] = useState(true);
