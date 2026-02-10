@@ -3,11 +3,11 @@
 # ASVO-QMS: Удаление специфики дронов/Beryll из кодовой базы
 # ═══════════════════════════════════════════════════════════════
 #
-# ВНИМАНИЕ: Перед запуском сделай коммит или создай ветку archive/kryptonit-mes!
+# ВНИМАНИЕ: Перед запуском сделай коммит или создай ветку archive/asvo-qms-legacy!
 #
 # Использование:
 #   chmod +x scripts/cleanup-mes-legacy.sh
-#   git checkout -b archive/kryptonit-mes   # сохраняем оригинал
+#   git checkout -b archive/asvo-qms-legacy   # сохраняем оригинал
 #   git checkout -b feature/qms-cleanup     # рабочая ветка
 #   bash scripts/cleanup-mes-legacy.sh
 #

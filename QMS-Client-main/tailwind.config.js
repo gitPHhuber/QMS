@@ -6,12 +6,21 @@ export default {
   ],
   theme: {
     extend: {
+      colors: {
+        asvo: {
+          dark: '#0f172a',
+          'dark-2': '#1e293b',
+          'dark-3': '#334155',
+          accent: '#2dd4bf',
+          'accent-hover': '#14b8a6',
+          'accent-muted': '#2dd4bf33',
+          light: '#e2e8f0',
+          muted: '#94a3b8',
+        },
+      },
       animation: {
-
         'fade-in': 'fadeIn 0.4s ease-out forwards',
-
         'slide-in-up': 'slideInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-
         'scale-in': 'scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards',
       },
       keyframes: {

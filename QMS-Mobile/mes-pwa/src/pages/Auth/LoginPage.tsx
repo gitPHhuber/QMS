@@ -30,7 +30,7 @@ export const LoginPage = () => {
             <Cpu size={40} className="text-white" />
           </div>
           <h1 className="text-3xl font-bold">
-            MES <span className="text-primary">Kryptonit</span>
+            ASVO-<span className="text-primary">QMS</span>
           </h1>
           <p className="text-slate-400 mt-2">Система управления производством</p>
         </div>
@@ -60,7 +60,7 @@ export const LoginPage = () => {
 
         <div className="mt-6 text-center">
           <p className="text-slate-600 text-sm">
-            MES Kryptonit PWA v2.0
+            ASVO-QMS PWA v2.0
           </p>
           <p className="text-slate-700 text-xs mt-1">
             Для работы требуется подключение к корпоративной сети

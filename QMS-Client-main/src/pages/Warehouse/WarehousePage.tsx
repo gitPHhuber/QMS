@@ -53,7 +53,7 @@ export const WarehousePage: React.FC = () => {
                </div>
                <div>
                   <h1 className="text-3xl font-bold text-gray-800">Складская система</h1>
-                  <p className="text-indigo-600/80 font-medium">WMS Kryptonit v2.4</p>
+                  <p className="text-indigo-600/80 font-medium">WMS ASVO-QMS v2.4</p>
                </div>
             </div>
 

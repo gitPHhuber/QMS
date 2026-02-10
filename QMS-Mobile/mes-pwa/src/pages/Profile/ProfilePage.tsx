@@ -259,7 +259,7 @@ export const ProfilePage = () => {
 
       <Card className="p-4">
         <div className="text-center text-sm text-slate-500">
-          <p>MES Kryptonit PWA v2.0.0</p>
+          <p>ASVO-QMS PWA v2.0.0</p>
           <p className="mt-1">© 2024 Все права защищены</p>
         </div>
       </Card>
