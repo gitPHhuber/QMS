@@ -16,7 +16,7 @@ export default defineConfig({
         'apple-touch-icon.png'
       ],
       manifest: {
-        name: 'MES Kryptonit',
+        name: 'ASVO-QMS',
         short_name: 'MES',
         description: 'Система управления производством серверов',
         theme_color: '#0f172a',

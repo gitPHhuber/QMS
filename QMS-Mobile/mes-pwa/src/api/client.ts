@@ -41,7 +41,7 @@ const detectNetwork = (): NetworkConfig => {
     }
   }
 
-  if (hostname === 'mes.local' || hostname === 'mes-kryptonit.local') {
+  if (hostname === 'mes.local' || hostname === 'asvo-qms.local') {
     return {
       apiBaseUrl: `${protocol}//${hostname}:3000/api`,
       keycloakAuthority: `${protocol}//${hostname}:8080/realms/MES-Realm`,

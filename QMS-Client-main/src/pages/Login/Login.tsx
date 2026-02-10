@@ -50,31 +50,31 @@ export const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-yellow-200 to-green-300">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-        <h2 className="text-2xl font-bold mb-4">
+    <div className="min-h-screen flex items-center justify-center bg-asvo-dark">
+      <div className="bg-asvo-dark-2 p-6 rounded-xl shadow-2xl border border-asvo-dark-3/50 w-full max-w-md">
+        <h2 className="text-2xl font-bold mb-4 text-asvo-light">
           Войти в существующий аккаунт
         </h2>
         <form>
           <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2">
+            <label className="block text-asvo-muted text-sm font-bold mb-2">
               Логин
             </label>
             <input
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline"
+              className="bg-asvo-dark border border-asvo-dark-3 rounded-lg w-full py-2 px-3 text-asvo-light mb-3 leading-tight focus:outline-none focus:border-asvo-accent focus:ring-1 focus:ring-asvo-accent"
               value={loginName}
               onChange={(e) => setLoginName(e.target.value)}
             />
           </div>
           <div className="mb-6">
             <label
-              className="block text-gray-700 text-sm font-bold mb-2"
+              className="block text-asvo-muted text-sm font-bold mb-2"
               htmlFor="password"
             >
               Пароль
             </label>
             <input
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline"
+              className="bg-asvo-dark border border-asvo-dark-3 rounded-lg w-full py-2 px-3 text-asvo-light mb-3 leading-tight focus:outline-none focus:border-asvo-accent focus:ring-1 focus:ring-asvo-accent"
               value={password}
               type="password"
               onChange={(e) => setPassword(e.target.value)}
@@ -84,26 +84,26 @@ export const Login: React.FC = () => {
             <button
               onClick={signIN}
               type="submit"
-              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+              className="bg-asvo-accent hover:bg-asvo-accent-hover text-asvo-dark font-bold py-2 px-6 rounded-lg focus:outline-none transition-colors"
             >
               Войти
             </button>
 
             <NavLink
               to={REGISTRATION_ROUTE}
-              className="inline-block align-baseline font-bold text-sm text-blue-500 hover:text-blue-800"
+              className="inline-block align-baseline font-bold text-sm text-asvo-accent hover:text-asvo-accent-hover"
             >
               Нет аккаунта?
             </NavLink>
           </div>
         </form>
         {successMessage && (
-          <div className="mt-4 text-green-500 font-medium">
+          <div className="mt-4 text-asvo-accent font-medium">
             {successMessage}
           </div>
         )}
         {errorMessage && (
-          <div className="mt-4 text-red-500 font-medium">{errorMessage}</div>
+          <div className="mt-4 text-red-400 font-medium">{errorMessage}</div>
         )}
       </div>
     </div>

@@ -131,7 +131,7 @@ export const WarehousePage: React.FC = () => {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `kryptonit_labels_supply_${selectedSupplyId}.csv`;
+    a.download = `asvo_qms_labels_supply_${selectedSupplyId}.csv`;
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -147,7 +147,7 @@ export const WarehousePage: React.FC = () => {
       </h1>
       <p className="text-gray-600 mb-6">
         Здесь принимаем изделия и комплектующие, раскладываем по коробкам и
-        генерируем этикетки с префиксом «Криптонит».
+        генерируем этикетки с префиксом «ASVO-QMS».
       </p>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
@@ -259,7 +259,7 @@ export const WarehousePage: React.FC = () => {
                 </select>
 
                 <label className="text-sm text-gray-700">
-                  Наименование (без «Криптонит»)
+                  Наименование (без «ASVO-QMS»)
                 </label>
                 <input
                   className="w-full border rounded px-2 py-1 text-sm"
@@ -318,7 +318,7 @@ export const WarehousePage: React.FC = () => {
                   <div className="text-xs text-gray-500">Имя:</div>
                   <div className="font-medium">
                     {sectionId && itemName
-                      ? `Криптонит ${itemName.trim()}${
+                      ? `ASVO-QMS ${itemName.trim()}${
                           sections.find((s) => s.id === sectionId)
                             ? ` / ${
                                 sections.find((s) => s.id === sectionId)?.title
