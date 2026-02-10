@@ -60,19 +60,28 @@ const oidcConfig = {
 };
 
 
+const AUTH_MODE = import.meta.env.VITE_AUTH_MODE || 'keycloak';
+
+const AuthWrapper = ({ children }: { children: React.ReactNode }) => {
+  if (AUTH_MODE === 'dev-bypass') {
+    return <>{children}</>;
+  }
+  return <AuthProvider {...oidcConfig}>{children}</AuthProvider>;
+};
+
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <AuthProvider {...oidcConfig}>
+    <Context.Provider
+      value={{
+        user: new UserStore(),
+        structureStore: new StructureStore(),
+      }}
+    >
       <BrowserRouter>
-        <Context.Provider
-          value={{
-            user: new UserStore(),
-            structureStore: new StructureStore(),
-          }}
-        >
+        <AuthWrapper>
           <App />
-        </Context.Provider>
+        </AuthWrapper>
       </BrowserRouter>
-    </AuthProvider>
+    </Context.Provider>
   </React.StrictMode>
 );

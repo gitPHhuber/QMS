@@ -5,7 +5,7 @@ import { observer } from "mobx-react-lite";
 import { useContext, useEffect, useState, useRef } from "react";
 import { Context, getSavedPath, clearSavedPath } from "./main";
 import { Preloader } from "./components/common/Preloader";
-import { useAuth } from "react-oidc-context";
+import { useAppAuth as useAuth } from "./hooks/useAppAuth";
 import { useNavigate, useLocation } from "react-router-dom";
 import { SELECT_PC_ROUTE } from "./utils/consts";
 import { check } from "./api/userApi";

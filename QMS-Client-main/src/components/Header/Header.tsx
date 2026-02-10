@@ -4,7 +4,7 @@ import Logo from "assets/images/logo.svg";
 import { NavLink, useLocation } from "react-router-dom";
 import { observer } from "mobx-react-lite";
 import { Context } from "src/main";
-import { useAuth } from "react-oidc-context";
+import { useAppAuth as useAuth } from "src/hooks/useAppAuth";
 import { Menu, Transition } from "@headlessui/react";
 import { setSessionOnline } from "src/api/userApi";
 import { DateTimeDisplay } from "./DateTimeDisplay";
