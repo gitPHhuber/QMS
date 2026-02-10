@@ -132,10 +132,10 @@ EXCLUDED_EXT = {
 
 # Конкретные мусорные файлы по относительному пути от PROJECT_DIR
 UNWANTED_RELATIVE_PATHS = {
-    "MES-Kryptonit-Client-main/package-lock.json",
-    "MES-Kryptonit-Server-master/package-lock.json",
-    "MES-Kryptonit-Client-main/README.md",
-    "MES-Kryptonit-Client-main/src/components/Test/Test.tsx",
+    "QMS-Client-main/package-lock.json",
+    "QMS-Server-master/package-lock.json",
+    "QMS-Client-main/README.md",
+    "QMS-Client-main/src/components/Test/Test.tsx",
 }
 
 # Лимиты: обрезать очень большие исходники

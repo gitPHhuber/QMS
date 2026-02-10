@@ -1,88 +1,11 @@
 import axios, { AxiosError, InternalAxiosRequestConfig, AxiosResponse } from 'axios'
 import { User } from 'oidc-client-ts'
 
-export type NetworkEnvironment = 'production' | 'wifi' | 'development'
-
-interface NetworkConfig {
-  apiBaseUrl: string
-  keycloakAuthority: string
-  keycloakClientId: string
-  network: NetworkEnvironment
-}
-
-const detectNetwork = (): NetworkConfig => {
-  const hostname = window.location.hostname
-  const protocol = window.location.protocol
-
-  if (hostname.startsWith('192.168.27.')) {
-    return {
-      apiBaseUrl: `${protocol}//${hostname}:3000/api`,
-      keycloakAuthority: `${protocol}//${hostname}:8080/realms/MES-Realm`,
-      keycloakClientId: 'mes-pwa-client',
-      network: 'wifi'
-    }
-  }
-
-  if (hostname === 'mes-wifi.local' || hostname === 'mes-mobile.local') {
-    return {
-      apiBaseUrl: `${protocol}//${hostname}:3000/api`,
-      keycloakAuthority: `${protocol}//${hostname}:8080/realms/MES-Realm`,
-      keycloakClientId: 'mes-pwa-client',
-      network: 'wifi'
-    }
-  }
-
-  if (hostname.startsWith('10.11.0.')) {
-    return {
-      apiBaseUrl: `${protocol}//${hostname}:3000/api`,
-      keycloakAuthority: `${protocol}//10.11.0.16:8080/realms/MES-Realm`,
-      keycloakClientId: 'mes-pwa-client',
-      network: 'production'
-    }
-  }
-
-  if (hostname === 'mes.local' || hostname === 'mes-kryptonit.local') {
-    return {
-      apiBaseUrl: `${protocol}//${hostname}:3000/api`,
-      keycloakAuthority: `${protocol}//${hostname}:8080/realms/MES-Realm`,
-      keycloakClientId: 'mes-pwa-client',
-      network: 'production'
-    }
-  }
-
-  if (hostname === '10.11.0.16') {
-    return {
-      apiBaseUrl: `${protocol}//10.11.0.16:5001/api`,
-      keycloakAuthority: `${protocol}//10.11.0.16:8080/realms/MES-Realm`,
-      keycloakClientId: 'mes-pwa-client',
-      network: 'production'
-    }
-  }
-
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return {
-      apiBaseUrl: '/api',
-      keycloakAuthority: 'http://keycloak.local/realms/MES-Realm',
-      keycloakClientId: 'mes-client',
-      network: 'development'
-    }
-  }
-
-  return {
-    apiBaseUrl: `${protocol}//${hostname}/api`,
-    keycloakAuthority: `${protocol}//${hostname}:8080/realms/MES-Realm`,
-    keycloakClientId: 'mes-pwa-client',
-    network: 'production'
-  }
-}
-
-const networkConfig = detectNetwork()
-
-export const API_BASE_URL = networkConfig.apiBaseUrl
+export const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
 
 export const KEYCLOAK_CONFIG = {
-  authority: networkConfig.keycloakAuthority,
-  clientId: networkConfig.keycloakClientId,
+  authority: `${import.meta.env.VITE_KEYCLOAK_URL || 'http://localhost:8080'}/realms/${import.meta.env.VITE_KEYCLOAK_REALM || 'QMS-Realm'}`,
+  clientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'qms-mobile-client',
 }
 
 const DEBUG_HTTP = import.meta.env.DEV
@@ -300,12 +223,8 @@ export const apiUpload = async <T>(url: string, formData: FormData): Promise<T> 
 export const getNetworkInfo = () => ({
   apiUrl: API_BASE_URL,
   keycloakAuthority: KEYCLOAK_CONFIG.authority,
-  network: networkConfig.network,
-  isWifi: networkConfig.network === 'wifi',
-  isProduction: networkConfig.network === 'production',
-  isDevelopment: networkConfig.network === 'development',
 })
 
-console.log(`[API] Network: ${networkConfig.network}, URL: ${API_BASE_URL}`)
+console.log(`[API] URL: ${API_BASE_URL}`)
 
 export default api

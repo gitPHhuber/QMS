@@ -4,7 +4,7 @@ import Logo from "assets/images/logo.svg";
 import { NavLink, useLocation } from "react-router-dom";
 import { observer } from "mobx-react-lite";
 import { Context } from "src/main";
-import { useAuth } from "react-oidc-context";
+import { useAppAuth as useAuth } from "src/hooks/useAppAuth";
 import { Menu, Transition } from "@headlessui/react";
 import { setSessionOnline } from "src/api/userApi";
 import { DateTimeDisplay } from "./DateTimeDisplay";
@@ -14,7 +14,7 @@ import clsx from "clsx";
 import {
   Shield, Archive,
   ClipboardList, User, LogOut,
-  ChevronDown,
+  ChevronDown, FileText, AlertTriangle, CheckCircle2, LayoutDashboard,
 } from "lucide-react";
 
 
@@ -22,6 +22,7 @@ import {
   ADMIN_ROUTE,
   WAREHOUSE_ROUTE, TASKS_ROUTE,
   PROFILE_ROUTE,
+  QMS_DASHBOARD_ROUTE, DOCUMENTS_ROUTE, NC_ROUTE, CAPA_ROUTE,
 } from "src/utils/consts";
 
 type NavItem = {
@@ -101,6 +102,16 @@ export const Header: React.FC = observer(() => {
       to: TASKS_ROUTE,
     },
     {
+      label: "QMS",
+      icon: Shield,
+      children: [
+        { label: "Дашборд QMS", to: QMS_DASHBOARD_ROUTE, icon: LayoutDashboard },
+        { label: "Документы", to: DOCUMENTS_ROUTE, icon: FileText },
+        { label: "Несоответствия", to: NC_ROUTE, icon: AlertTriangle },
+        { label: "CAPA", to: CAPA_ROUTE, icon: CheckCircle2 },
+      ],
+    },
+    {
       label: "Склад",
       icon: Archive,
       to: WAREHOUSE_ROUTE,
@@ -124,7 +135,7 @@ export const Header: React.FC = observer(() => {
     <div
       className={clsx(
         "fixed top-0 left-0 right-0 z-50 h-14",
-        "bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm",
+        "bg-asvo-dark/95 backdrop-blur-sm border-b border-asvo-dark-3/50 shadow-sm",
         "transition-transform duration-300 ease-in-out",
         !isVisible && "-translate-y-full",
         isAtTop && "shadow-none"
@@ -135,11 +146,11 @@ export const Header: React.FC = observer(() => {
         <div className="flex items-center gap-6 min-w-max">
           <NavLink to="/" className="flex items-center gap-2 group">
             <img src={Logo} alt="Logo" className="h-7 w-auto group-hover:opacity-80 transition-opacity" />
-            <span className="text-lg font-bold text-slate-800 tracking-tight leading-none">
-              QMS
+            <span className="text-lg font-bold text-asvo-accent tracking-tight leading-none">
+              ASVO-QMS
             </span>
           </NavLink>
-          <div className="h-6 w-px bg-gray-200 hidden lg:block"></div>
+          <div className="h-6 w-px bg-asvo-dark-3 hidden lg:block"></div>
         </div>
 
         {auth.isAuthenticated && (
@@ -150,7 +161,7 @@ export const Header: React.FC = observer(() => {
                   <Menu as="div" className="relative">
                     <Menu.Button className={({ open }) => clsx(
                         "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all outline-none",
-                        open ? "bg-slate-100 text-slate-900" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                        open ? "bg-asvo-dark-2 text-asvo-accent" : "text-asvo-muted hover:bg-asvo-dark-2 hover:text-asvo-light"
                     )}>
                       <item.icon size={16} />
                       <span>{item.label}</span>
@@ -165,7 +176,7 @@ export const Header: React.FC = observer(() => {
                       leaveFrom="transform opacity-100 scale-100 translate-y-0"
                       leaveTo="transform opacity-0 scale-95 -translate-y-2"
                     >
-                      <Menu.Items className="absolute left-0 mt-2 w-56 origin-top-left divide-y divide-gray-100 rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
+                      <Menu.Items className="absolute left-0 mt-2 w-56 origin-top-left divide-y divide-asvo-dark-3/30 rounded-lg bg-asvo-dark-2 shadow-lg ring-1 ring-asvo-dark-3/50 focus:outline-none z-50">
                         <div className="p-1">
                           {item.children.map((sub, sIdx) => (
                             <Menu.Item key={sIdx}>
@@ -174,10 +185,10 @@ export const Header: React.FC = observer(() => {
                                   to={sub.to}
                                   className={clsx(
                                     "flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm",
-                                    active ? "bg-slate-100 text-indigo-700 font-medium" : "text-slate-700 hover:bg-slate-50"
+                                    active ? "bg-asvo-dark-3/50 text-asvo-accent font-medium" : "text-asvo-muted hover:bg-asvo-dark-3/30"
                                   )}
                                 >
-                                  {sub.icon && <sub.icon size={14} className={active ? "text-indigo-600" : "text-slate-400"} />}
+                                  {sub.icon && <sub.icon size={14} className={active ? "text-asvo-accent" : "text-asvo-muted"} />}
                                   {sub.label}
                                 </NavLink>
                               )}
@@ -193,8 +204,8 @@ export const Header: React.FC = observer(() => {
                     className={({ isActive }) => clsx(
                         "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all",
                         isActive
-                          ? "bg-slate-100 text-indigo-700 font-bold"
-                          : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                          ? "bg-asvo-dark-2 text-asvo-accent font-bold"
+                          : "text-asvo-muted hover:bg-asvo-dark-2 hover:text-asvo-light"
                     )}
                   >
                     <item.icon size={16} />
@@ -213,15 +224,15 @@ export const Header: React.FC = observer(() => {
 
           {auth.isAuthenticated ? (
             <Menu as="div" className="relative ml-2">
-                <Menu.Button className="flex items-center gap-2 pl-2 pr-1 py-1 rounded-full hover:bg-slate-100 transition border border-transparent hover:border-slate-200 group outline-none">
+                <Menu.Button className="flex items-center gap-2 pl-2 pr-1 py-1 rounded-full hover:bg-asvo-dark-2 transition border border-transparent hover:border-asvo-dark-3 group outline-none">
                     <div className="flex flex-col items-end leading-none mr-1">
-                        <span className="text-xs font-bold text-slate-700">{user.user?.surname} {user.user?.name?.[0]}.</span>
-                        <span className="text-[10px] text-slate-400">{user.user?.role}</span>
+                        <span className="text-xs font-bold text-asvo-light">{user.user?.surname} {user.user?.name?.[0]}.</span>
+                        <span className="text-[10px] text-asvo-muted">{user.user?.role}</span>
                     </div>
-                    <div className="h-8 w-8 rounded-full bg-slate-200 overflow-hidden ring-2 ring-white shadow-sm">
+                    <div className="h-8 w-8 rounded-full bg-asvo-dark-3 overflow-hidden ring-2 ring-asvo-dark-2 shadow-sm">
                          {user.user?.img
                             ? <img src={`${import.meta.env.VITE_API_URL}/${user.user.img}`} alt="" className="h-full w-full object-cover"/>
-                            : <div className="h-full w-full flex items-center justify-center text-slate-500 font-bold text-xs">{user.user?.name?.[0]}</div>
+                            : <div className="h-full w-full flex items-center justify-center text-asvo-accent font-bold text-xs">{user.user?.name?.[0]}</div>
                          }
                     </div>
                 </Menu.Button>
@@ -235,7 +246,7 @@ export const Header: React.FC = observer(() => {
                   leaveFrom="transform opacity-100 scale-100"
                   leaveTo="transform opacity-0 scale-95"
                 >
-                  <Menu.Items className="absolute right-0 mt-2 w-48 origin-top-right divide-y divide-gray-100 rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
+                  <Menu.Items className="absolute right-0 mt-2 w-48 origin-top-right divide-y divide-asvo-dark-3/30 rounded-lg bg-asvo-dark-2 shadow-lg ring-1 ring-asvo-dark-3/50 focus:outline-none z-50">
                     <div className="p-1">
                       <Menu.Item>
                         {({ active }) => (
@@ -243,7 +254,7 @@ export const Header: React.FC = observer(() => {
                             to={PROFILE_ROUTE}
                             className={clsx(
                               "flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm",
-                              active ? "bg-slate-100 text-indigo-700" : "text-slate-700"
+                              active ? "bg-asvo-dark-3/50 text-asvo-accent" : "text-asvo-muted"
                             )}
                           >
                             <User size={14} />
@@ -259,7 +270,7 @@ export const Header: React.FC = observer(() => {
                             onClick={logOut}
                             className={clsx(
                               "flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm",
-                              active ? "bg-red-50 text-red-700" : "text-slate-700"
+                              active ? "bg-red-900/30 text-red-400" : "text-asvo-muted"
                             )}
                           >
                             <LogOut size={14} />

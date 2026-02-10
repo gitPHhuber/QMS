@@ -48,40 +48,40 @@ saveCurrentPath();
 
 
 const oidcConfig = {
-  authority: "http://keycloak.local/realms/MES-Realm",
-  client_id: "mes-client",
+  authority: `${import.meta.env.VITE_KEYCLOAK_URL || 'http://localhost:8080'}/realms/${import.meta.env.VITE_KEYCLOAK_REALM || 'QMS-Realm'}`,
+  client_id: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'qms-web-client',
   redirect_uri: window.location.origin + "/",
   post_logout_redirect_uri: window.location.origin + "/",
   response_type: "code",
-
-
   onSigninCallback: () => {
-
     const savedPath = getSavedPath();
-
-
-    const cleanUrl = savedPath || "/";
-
-    window.history.replaceState({}, document.title, cleanUrl);
-
-
+    window.history.replaceState({}, document.title, savedPath || "/");
   }
 };
 
 
+const AUTH_MODE = import.meta.env.VITE_AUTH_MODE || 'keycloak';
+
+const AuthWrapper = ({ children }: { children: React.ReactNode }) => {
+  if (AUTH_MODE === 'dev-bypass') {
+    return <>{children}</>;
+  }
+  return <AuthProvider {...oidcConfig}>{children}</AuthProvider>;
+};
+
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <AuthProvider {...oidcConfig}>
+    <Context.Provider
+      value={{
+        user: new UserStore(),
+        structureStore: new StructureStore(),
+      }}
+    >
       <BrowserRouter>
-        <Context.Provider
-          value={{
-            user: new UserStore(),
-            structureStore: new StructureStore(),
-          }}
-        >
+        <AuthWrapper>
           <App />
-        </Context.Provider>
+        </AuthWrapper>
       </BrowserRouter>
-    </AuthProvider>
+    </Context.Provider>
   </React.StrictMode>
 );

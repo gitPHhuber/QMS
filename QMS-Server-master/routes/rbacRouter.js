@@ -15,5 +15,6 @@ const protect = [
 router.get("/roles", ...protect, rbacController.getRoles);
 router.get("/abilities", ...protect, rbacController.getAbilities);
 router.post("/role/:roleId", ...protect, rbacController.updateRoleAbilities);
+router.get("/keycloak/status", authMiddleware, syncUserMiddleware, rbacController.getKeycloakStatus);
 
 module.exports = router;

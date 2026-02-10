@@ -11,7 +11,6 @@ const MovementController = require("../controllers/warehouse/MovementController"
 const DocumentController = require("../controllers/warehouse/DocumentController");
 const AnalyticsController = require("../controllers/warehouse/AnalyticsController");
 const AlertsController = require("../controllers/warehouse/AlertsController");
-const RankingsController = require("../controllers/RankingsController");
 const HistoryController = require("../controllers/warehouse/HistoryController");
 
 const protect = [authMiddleware, syncUserMiddleware];
@@ -58,14 +57,9 @@ router.get("/documents", ...protect, checkAbility("warehouse.view"), DocumentCon
 
 router.get("/analytics/dashboard", ...protect, checkAbility("analytics.view"), AnalyticsController.getDashboardStats);
 
-router.get("/rankings", ...protect, checkAbility("analytics.view"), RankingsController.getStats);
-
-
 router.get("/alerts", ...protect, checkAbility("warehouse.view"), AlertsController.getAlerts);
 router.get("/limits", ...protect, checkAbility("warehouse.view"), AlertsController.getAllLimits);
 router.post("/limits", ...protect, checkAbility("warehouse.manage"), AlertsController.setLimit);
-
-router.get("/rankings/user/:userId", ...protect, RankingsController.getUserDetails);
 
 
 module.exports = router;

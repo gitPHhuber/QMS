@@ -31,10 +31,10 @@ export const DateTimeDisplay = () => {
 
   return (
     <div className="flex flex-col items-end justify-center">
-      <div className="text-xl font-semibold text-emerald-700 tracking-wide">
+      <div className="text-xl font-semibold text-asvo-accent tracking-wide">
         {formatDate(currentTime)}
       </div>
-      <div className="text-sm text-gray-600 font-medium bg-emerald-50 px-2 py-1 rounded-md">
+      <div className="text-sm text-asvo-muted font-medium bg-asvo-dark-2 px-2 py-1 rounded-md">
         {formatTime(currentTime)}
       </div>
     </div>

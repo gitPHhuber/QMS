@@ -13,7 +13,7 @@ import {
     Shield, Save, CheckSquare, Square,
     Loader2, Users, Key, Search, User,
     ChevronDown, ChevronRight, X,
-    AlertCircle
+    AlertCircle, AlertTriangle
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -27,23 +27,38 @@ interface AbilityGroup {
 
 
 const GROUP_LABELS: Record<string, string> = {
-    warehouse: "Склад",
-    rbac: "Права доступа",
-    users: "Пользователи",
-    admin: "Администрирование",
-    tasks: "Задачи",
-    dms: "Документы",
+    dms: "Документы СМК",
     nc: "Несоответствия",
     capa: "CAPA",
+    risk: "Управление рисками",
+    supplier: "Поставщики",
+    training: "Обучение",
+    equipment: "Оборудование",
+    review: "Анализ руководства",
     qms: "Аудит QMS",
+    rbac: "Права доступа",
+    users: "Пользователи",
+    warehouse: "Склад",
     labels: "Этикетки",
+    analytics: "Аналитика",
+    audit: "Журнал аудита",
 };
 
+
+interface KeycloakStatus {
+    connected: boolean;
+    mode: string;
+    message?: string;
+    realm?: string;
+    url?: string;
+    error?: string;
+}
 
 export const AdminRightsPage: React.FC = observer(() => {
 
     const [viewMode, setViewMode] = useState<"USERS" | "MATRIX">("USERS");
     const [loading, setLoading] = useState(false);
+    const [kcStatus, setKcStatus] = useState<KeycloakStatus | null>(null);
 
 
     const [roles, setRoles] = useState<RoleModel[]>([]);
@@ -67,7 +82,18 @@ export const AdminRightsPage: React.FC = observer(() => {
 
     useEffect(() => {
         loadData();
+        loadKeycloakStatus();
     }, []);
+
+    const loadKeycloakStatus = async () => {
+        try {
+            const { $authHost } = await import("src/api/index");
+            const { data } = await $authHost.get("api/rbac/keycloak/status");
+            setKcStatus(data);
+        } catch {
+            // silently ignore — endpoint might not exist yet
+        }
+    };
 
     const loadData = async () => {
         setLoading(true);
@@ -332,6 +358,12 @@ export const AdminRightsPage: React.FC = observer(() => {
         <div className="p-6 bg-gray-50 min-h-screen">
             <div className="max-w-full mx-auto">
 
+                {kcStatus && kcStatus.mode === 'dev-bypass' && (
+                    <div className="mb-4 flex items-center gap-3 px-4 py-3 bg-amber-50 border border-amber-300 rounded-xl text-amber-800 text-sm font-medium">
+                        <AlertTriangle size={18} className="text-amber-600 flex-shrink-0" />
+                        <span>Режим разработки — Keycloak отключён (AUTH_MODE=dev-bypass)</span>
+                    </div>
+                )}
 
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                     <div className="flex items-center gap-4">

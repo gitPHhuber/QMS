@@ -87,8 +87,8 @@ export const Layout = () => {
               <Cpu size={20} className="text-white" />
             </div>
             <div>
-              <span className="font-bold text-lg">MES</span>
-              <span className="text-primary ml-1 font-light">Kryptonit</span>
+              <span className="font-bold text-lg">ASVO-</span>
+              <span className="text-primary font-light">QMS</span>
             </div>
           </div>
           <button

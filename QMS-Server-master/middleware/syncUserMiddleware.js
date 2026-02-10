@@ -4,54 +4,52 @@ const { User, Role, Ability } = require('../models/index');
 
 module.exports = async function (req, res, next) {
 
-
     if (req.method === "OPTIONS") return next();
 
     try {
 
         if (!req.auth || !req.auth.payload) {
-            console.error("❌ ОШИБКА: authMiddleware не передал payload. Токен невалиден или не проверен.");
+            console.error("ОШИБКА: authMiddleware не передал payload. Токен невалиден или не проверен.");
             return res.status(401).json({ message: "Invalid token payload" });
         }
 
         const payload = req.auth.payload;
 
-
         const keycloakUUID = payload.sub;
-
 
         const login = payload.preferred_username || payload.nickname || payload.email;
 
         if (!login) {
-            console.error("❌ ОШИБКА: В токене нет поля login (preferred_username/nickname/email).");
+            console.error("ОШИБКА: В токене нет поля login (preferred_username/nickname/email).");
             return res.status(500).json({ message: "Token structure error: missing username" });
         }
 
         const name = payload.given_name || login;
         const surname = payload.family_name || '';
 
-
         const kcRoles = payload.realm_access?.roles || [];
 
+        // Загружаем роли из БД динамически
+        const allDbRoles = await Role.findAll({ attributes: ['name'], order: [['id', 'ASC']] });
+        const dbRoleNames = allDbRoles.map(r => r.name);
 
-        const priorityRoles = [
-            "SUPER_ADMIN",
-            "PRODUCTION_CHIEF",
-            "TECHNOLOGIST",
-            "WAREHOUSE_MASTER",
-            "QC_ENGINEER",
-            "FIRMWARE_OPERATOR",
-            "ASSEMBLER"
-        ];
+        // Ищем первую KC-роль, которая есть в нашей БД
+        const matchedRole = kcRoles.find(r => dbRoleNames.includes(r));
+        const DEFAULT_ROLE = process.env.DEFAULT_ROLE || 'VIEWER';
+        const mainRole = matchedRole || DEFAULT_ROLE;
 
-
-        const mainRole = priorityRoles.find(r => kcRoles.includes(r)) || "ASSEMBLER";
-
+        // Если роли нет в БД — создаём автоматически (только для KC ролей, не системных)
+        if (!dbRoleNames.includes(mainRole) && mainRole !== DEFAULT_ROLE) {
+            await Role.findOrCreate({
+                where: { name: mainRole },
+                defaults: { code: mainRole, description: 'Автоимпорт из Keycloak' }
+            });
+        }
 
         let user = await User.findOne({ where: { login } });
 
         if (!user) {
-            console.log(`ℹ️ Пользователь ${login} не найден. Создаем с ролью ${mainRole}...`);
+            console.log(`Пользователь ${login} не найден. Создаем с ролью ${mainRole}...`);
             try {
                 user = await User.create({
                     login,
@@ -61,20 +59,19 @@ module.exports = async function (req, res, next) {
                     password: 'sso_managed_account',
                     img: null
                 });
-                console.log(`✅ Пользователь создан. ID: ${user.id}`);
+                console.log(`Пользователь создан. ID: ${user.id}`);
             } catch (dbError) {
-                console.error("❌ ОШИБКА БАЗЫ ДАННЫХ при создании:", dbError);
+                console.error("ОШИБКА БАЗЫ ДАННЫХ при создании:", dbError);
                 return res.status(500).json({ message: "DB Error during user creation" });
             }
         } else {
 
             if (user.role !== mainRole) {
-                console.log(`🔄 Обновление роли пользователя ${login}: ${user.role} -> ${mainRole}`);
+                console.log(`Обновление роли пользователя ${login}: ${user.role} -> ${mainRole}`);
                 user.role = mainRole;
                 await user.save();
             }
         }
-
 
         let abilities = [];
         try {
@@ -91,9 +88,8 @@ module.exports = async function (req, res, next) {
                 abilities = roleEntity.abilities.map(ab => ab.code);
             }
         } catch (e) {
-            console.error("⚠️ Ошибка при загрузке прав (abilities):", e.message);
+            console.error("Ошибка при загрузке прав (abilities):", e.message);
         }
-
 
         req.user = {
             id: user.id,
@@ -109,7 +105,7 @@ module.exports = async function (req, res, next) {
         next();
 
     } catch (e) {
-        console.error("🔥 КРИТИЧЕСКАЯ ОШИБКА в syncUserMiddleware:", e);
+        console.error("КРИТИЧЕСКАЯ ОШИБКА в syncUserMiddleware:", e);
         return res.status(500).json({ message: "Sync Middleware Crash", error: e.message });
     }
 };
