@@ -40,13 +40,18 @@ const App = observer(() => {
   }, []);
 
   if (!context) throw new Error("Context required");
-  const { user } = context;
+  const { user, modules } = context;
 
 
   useEffect(() => {
     if (auth.isAuthenticated && auth.user) {
       localStorage.setItem('token', auth.user.access_token);
       setIsUserLoading(true);
+
+      // Load modules config
+      if (!modules.config) {
+        modules.fetchModules();
+      }
 
       check()
         .then((userData) => {

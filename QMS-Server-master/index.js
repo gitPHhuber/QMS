@@ -1,6 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const sequelize = require("./db");
+const { moduleManager } = require('./config/modules');
 const models = require("./models/index");
 const cors = require("cors");
 const fileUpload = require("express-fileupload");
@@ -215,6 +216,7 @@ const initInitialData = async () => {
 
 const start = async () => {
   try {
+    moduleManager.printStatus();
     await sequelize.authenticate();
 // AUTO-DISABLED: sequelize.sync disabled (use migrations)
 
