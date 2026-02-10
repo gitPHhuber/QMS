@@ -139,6 +139,10 @@ class ModuleManager {
     }
 
     this._resolveDependencies();
+
+    // DB-backed feature flags (loaded async via loadFlags())
+    this._flags = new Map();   // code -> { enabled, scope, metadata }
+    this._flagsLoaded = false;
   }
 
   _resolveDependencies() {
@@ -158,6 +162,37 @@ class ModuleManager {
     }
   }
 
+  /**
+   * Load feature flags from DB. Call once after sequelize.sync().
+   * Flags with scope="module" override the env-based module set.
+   */
+  async loadFlags() {
+    try {
+      const { FeatureFlag } = require('../models/index');
+      const rows = await FeatureFlag.findAll({ raw: true });
+      this._flags.clear();
+      for (const f of rows) {
+        this._flags.set(f.code, {
+          enabled: f.enabled,
+          scope: f.scope,
+          metadata: f.metadata,
+        });
+        // Module-scoped flags override env config
+        if (f.scope === 'module') {
+          if (f.enabled) {
+            this.enabled.add(f.code);
+          } else {
+            this.enabled.delete(f.code);
+          }
+        }
+      }
+      this._flagsLoaded = true;
+      console.log(`>>> [FeatureFlags] Loaded ${rows.length} flag(s) from DB`);
+    } catch (e) {
+      console.error('>>> [FeatureFlags] Could not load flags:', e.message);
+    }
+  }
+
   /** Check module or group: isEnabled('qms.dms') or isEnabled('qms') */
   isEnabled(moduleCode) {
     if (this.enabled.has(moduleCode)) return true;
@@ -166,6 +201,27 @@ class ModuleManager {
       if (code.startsWith(moduleCode + '.')) return true;
     }
     return false;
+  }
+
+  /** Check a feature flag by code (any scope) */
+  flagEnabled(code) {
+    const f = this._flags.get(code);
+    if (!f) return false;
+    return f.enabled;
+  }
+
+  /** Get a single flag's full data */
+  getFlag(code) {
+    return this._flags.get(code) || null;
+  }
+
+  /** All flags as array (for API) */
+  getAllFlags() {
+    const out = [];
+    for (const [code, data] of this._flags) {
+      out.push({ code, ...data });
+    }
+    return out;
   }
 
   getEnabledGroups() {
@@ -193,6 +249,7 @@ class ModuleManager {
       enabled: [...this.enabled],
       groups: this.getEnabledGroups(),
       maxUsers: this._getMaxUsers(),
+      flags: this.getAllFlags(),
       modules,
     };
   }
@@ -206,12 +263,14 @@ class ModuleManager {
   printStatus() {
     const enabledCount = [...this.enabled].length;
     const groups = this.getEnabledGroups();
+    const flagCount = this._flags.size;
     console.log('╔══════════════════════════════════════╗');
     console.log('║       ASVO-QMS Module System         ║');
     console.log('╠══════════════════════════════════════╣');
     console.log(`║  Тариф:   ${this.tier.padEnd(26)}║`);
     console.log(`║  Модулей: ${String(enabledCount).padEnd(26)}║`);
     console.log(`║  Группы:  ${groups.join(', ').padEnd(26)}║`);
+    console.log(`║  Флаги:   ${String(flagCount).padEnd(26)}║`);
     console.log(`║  Юзеров:  до ${String(this._getMaxUsers()).padEnd(23)}║`);
     console.log('╚══════════════════════════════════════╝');
   }

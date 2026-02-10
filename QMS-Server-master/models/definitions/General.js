@@ -115,6 +115,36 @@ const RoleAbility = sequelize.define("role_ability", {
   id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
 });
 
+// ─── Feature Flags (runtime-toggleable) ──────────────────────────
+
+const FeatureFlag = sequelize.define("feature_flag", {
+  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  code: {
+    type: DataTypes.STRING(128),
+    unique: true,
+    allowNull: false,
+    comment: "Unique flag key, e.g. 'qms.dms' or 'beta.new-editor'",
+  },
+  name: { type: DataTypes.STRING(255), allowNull: false },
+  description: { type: DataTypes.TEXT, allowNull: true },
+  enabled: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+  },
+  scope: {
+    type: DataTypes.ENUM("global", "module", "experiment"),
+    allowNull: false,
+    defaultValue: "module",
+    comment: "global = system-wide, module = matches MODULE_CATALOG, experiment = A/B",
+  },
+  metadata: {
+    type: DataTypes.JSON,
+    allowNull: true,
+    comment: "Extra config: rollout %, allowed roles, etc.",
+  },
+});
+
 module.exports = {
   User,
   PC,
@@ -123,4 +153,5 @@ module.exports = {
   Role,
   Ability,
   RoleAbility,
+  FeatureFlag,
 };

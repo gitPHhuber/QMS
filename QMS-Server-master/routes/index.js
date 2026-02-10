@@ -72,6 +72,10 @@ if (moduleManager.isEnabled('wms')) {
 //   router.use("/production", checkModule('mes.routes'), require("./productionRouter"));
 // }
 
+// ─── Feature Flags (admin) ───
+const featureFlagRouter = require("./featureFlagRouter");
+router.use("/feature-flags", featureFlagRouter);
+
 // ─── System API (always) ───
 router.get("/system/modules", (req, res) => {
   res.json(moduleManager.toClientConfig());

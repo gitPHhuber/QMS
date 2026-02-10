@@ -1,5 +1,5 @@
 
-const { User, PC, Session, AuditLog, Role, Ability, RoleAbility } = require("./definitions/General");
+const { User, PC, Session, AuditLog, Role, Ability, RoleAbility, FeatureFlag } = require("./definitions/General");
 const { Section, Team } = require("./definitions/Structure");
 
 const {
@@ -156,7 +156,7 @@ if (typeof setupNcCapaAssociations === "function") {
 // ─────────────────────────────────────────────────────────────
 
 module.exports = {
-  User, PC, Session, AuditLog, Role, Ability, RoleAbility,
+  User, PC, Session, AuditLog, Role, Ability, RoleAbility, FeatureFlag,
 
   Section, Team,
 

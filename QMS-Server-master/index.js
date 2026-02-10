@@ -218,9 +218,9 @@ const start = async () => {
   try {
     moduleManager.printStatus();
     await sequelize.authenticate();
-// AUTO-DISABLED: sequelize.sync disabled (use migrations)
+    await sequelize.sync({ alter: true });
 
-
+    await moduleManager.loadFlags();
     await initInitialData();
 
     app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
