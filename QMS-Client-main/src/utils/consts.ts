@@ -21,3 +21,10 @@ export const WAREHOUSE_ANALYTICS_ROUTE = '/warehouse/analytics';
 export const WAREHOUSE_INVENTORY_ROUTE = '/warehouse/inventory';
 
 export const TASKS_ROUTE = '/tasks';
+
+// QMS модули
+export const QMS_DASHBOARD_ROUTE = '/qms';
+export const DOCUMENTS_ROUTE = '/qms/documents';
+export const NC_ROUTE = '/qms/nonconformity';
+export const CAPA_ROUTE = '/qms/capa';
+export const RISKS_ROUTE = '/qms/risks';

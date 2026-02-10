@@ -48,23 +48,14 @@ saveCurrentPath();
 
 
 const oidcConfig = {
-  authority: "http://keycloak.local/realms/MES-Realm",
-  client_id: "mes-client",
+  authority: `${import.meta.env.VITE_KEYCLOAK_URL || 'http://localhost:8080'}/realms/${import.meta.env.VITE_KEYCLOAK_REALM || 'QMS-Realm'}`,
+  client_id: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'qms-web-client',
   redirect_uri: window.location.origin + "/",
   post_logout_redirect_uri: window.location.origin + "/",
   response_type: "code",
-
-
   onSigninCallback: () => {
-
     const savedPath = getSavedPath();
-
-
-    const cleanUrl = savedPath || "/";
-
-    window.history.replaceState({}, document.title, cleanUrl);
-
-
+    window.history.replaceState({}, document.title, savedPath || "/");
   }
 };
 

@@ -14,7 +14,7 @@ import clsx from "clsx";
 import {
   Shield, Archive,
   ClipboardList, User, LogOut,
-  ChevronDown,
+  ChevronDown, FileText, AlertTriangle, CheckCircle2, LayoutDashboard,
 } from "lucide-react";
 
 
@@ -22,6 +22,7 @@ import {
   ADMIN_ROUTE,
   WAREHOUSE_ROUTE, TASKS_ROUTE,
   PROFILE_ROUTE,
+  QMS_DASHBOARD_ROUTE, DOCUMENTS_ROUTE, NC_ROUTE, CAPA_ROUTE,
 } from "src/utils/consts";
 
 type NavItem = {
@@ -99,6 +100,16 @@ export const Header: React.FC = observer(() => {
       label: "Задачи",
       icon: ClipboardList,
       to: TASKS_ROUTE,
+    },
+    {
+      label: "QMS",
+      icon: Shield,
+      children: [
+        { label: "Дашборд QMS", to: QMS_DASHBOARD_ROUTE, icon: LayoutDashboard },
+        { label: "Документы", to: DOCUMENTS_ROUTE, icon: FileText },
+        { label: "Несоответствия", to: NC_ROUTE, icon: AlertTriangle },
+        { label: "CAPA", to: CAPA_ROUTE, icon: CheckCircle2 },
+      ],
     },
     {
       label: "Склад",

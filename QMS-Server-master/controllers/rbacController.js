@@ -42,12 +42,29 @@ class RbacController {
                 return next(ApiError.badRequest("Роль не найдена"));
             }
 
-
             await role.setAbilities(abilityIds);
 
             return res.json({ message: "Права роли обновлены" });
         } catch (e) {
             next(ApiError.internal(e.message));
+        }
+    }
+
+    async getKeycloakStatus(req, res, next) {
+        try {
+            const authMode = process.env.AUTH_MODE || 'keycloak';
+            if (authMode !== 'keycloak') {
+                return res.json({ connected: false, mode: authMode, message: 'Dev-bypass режим' });
+            }
+            const url = `${process.env.KEYCLOAK_URL}/realms/${process.env.KEYCLOAK_REALM}/.well-known/openid-configuration`;
+            const response = await fetch(url, { signal: AbortSignal.timeout(3000) });
+            return res.json({
+                connected: response.ok, mode: authMode,
+                realm: process.env.KEYCLOAK_REALM,
+                url: process.env.KEYCLOAK_URL
+            });
+        } catch (e) {
+            return res.json({ connected: false, mode: 'keycloak', error: e.message });
         }
     }
 }
