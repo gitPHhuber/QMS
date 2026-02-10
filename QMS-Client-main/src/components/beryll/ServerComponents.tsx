@@ -18,7 +18,7 @@ import type {
 } from '../../types/beryll/components';
 
 import {
-  COMPONENT_TYPE_LABELS, COMPONENT_STATUS_LABELS, COMPONENT_STATUS_COLORS
+  COMPONENT_TYPE_LABELS, COMPONENT_STATUS_LABELS
 } from '../../types/beryll/components';
 
 interface Props {
@@ -39,6 +39,8 @@ const TypeIcon: Record<ComponentType, React.FC<{ className?: string }>> = {
   GPU: CircuitBoard,
   RAID: HardDrive,
   BMC: Server,
+  FAN: RefreshCw,
+  CHASSIS: Server,
   OTHER: Settings
 };
 
@@ -52,7 +54,7 @@ const StatusIcon: React.FC<{ status: ComponentStatus; className?: string }> = ({
   }
 };
 
-export const ServerComponents: React.FC<Props> = ({ serverId, serverIp }) => {
+export const ServerComponents: React.FC<Props> = ({ serverId }) => {
   const [data, setData] = useState<ComponentsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [fetching, setFetching] = useState(false);
@@ -463,7 +465,7 @@ const ComponentSection: React.FC<SectionProps> = ({
                   <Detail label="P/N" value={c.partNumber} />
                   {renderDetails(c)}
                   <Detail label="Статус" value={COMPONENT_STATUS_LABELS[c.status]} />
-                  <Detail label="Health" value={c.metadata?.health} />
+                  <Detail label="Health" value={c.metadata?.health?.toString()} />
                 </div>
               </div>
             )}

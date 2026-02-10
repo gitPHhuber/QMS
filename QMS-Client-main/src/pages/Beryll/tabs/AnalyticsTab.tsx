@@ -6,10 +6,8 @@ import {
   Clock,
   Server,
   CheckCircle2,
-  XCircle,
   RefreshCw,
   Calendar,
-  Award,
   Package
 } from "lucide-react";
 import {

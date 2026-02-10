@@ -14,11 +14,6 @@ import { $authHost } from '../../api/index';
 
 const BASE_URL = "/api/beryll";
 
-async function checkBMC(serverId: number) {
-  const { data } = await $authHost.get(`${BASE_URL}/servers/${serverId}/bmc/check`);
-  return data;
-}
-
 
 async function fetchComponentsFromBMC(
   serverId: number,
@@ -176,7 +171,7 @@ const COMPONENT_STATUS_COLORS: Record<ComponentStatus, string> = {
 };
 
 
-const TypeIcon: Record<ComponentType, React.FC<{ className?: string; size?: number }>> = {
+const TypeIcon: Record<ComponentType, React.FC<{ className?: string; size?: string | number }>> = {
   CPU: Cpu,
   RAM: MemoryStick,
   SSD: HardDrive,
@@ -1271,7 +1266,7 @@ const ComponentCard: React.FC<ComponentCardProps> = ({
 
 
 const ServerComponentsManager: React.FC<Props> = ({
-  serverId, serverIp, apkSerialNumber, readOnly = false
+  serverId, readOnly = false
 }) => {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<ComponentsResponse | null>(null);
@@ -1339,7 +1334,7 @@ const ServerComponentsManager: React.FC<Props> = ({
         await loadComponents();
       } else {
 
-        toast.info('BMC не вернул данных о комплектующих');
+        toast('BMC не вернул данных о комплектующих');
       }
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Ошибка выгрузки с BMC');
@@ -1360,7 +1355,7 @@ const ServerComponentsManager: React.FC<Props> = ({
           `Слияние завершено: обновлено ${actions?.updated?.length || 0}, добавлено ${actions?.added?.length || 0}`
         );
         if (actions?.flaggedForReview?.length > 0) {
-          toast.warning(`${actions.flaggedForReview.length} компонент(ов) требуют проверки`);
+          toast(`${actions.flaggedForReview.length} компонент(ов) требуют проверки`, { icon: '⚠️' });
         }
       } else {
         toast.success(result.message || `Синхронизировано ${result.components?.length || 0} комплектующих`);

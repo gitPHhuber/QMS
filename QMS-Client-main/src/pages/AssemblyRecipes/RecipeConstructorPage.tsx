@@ -4,7 +4,7 @@ import { createOrUpdateRecipe, fetchRecipeByProject, RecipeStep } from "src/api/
 import {
     Save, Plus, Trash2, Layers,
     ArrowUp, ArrowDown, CopyPlus,
-    Settings, FileText
+    Settings
 } from "lucide-react";
 import toast from "react-hot-toast";
 

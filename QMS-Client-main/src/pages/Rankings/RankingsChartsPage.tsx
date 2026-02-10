@@ -643,7 +643,7 @@ export const RankingsChartsPage: React.FC = () => {
                       }}
                       itemStyle={{ color: chartColor, fontWeight: 'bold' }}
                       cursor={{ stroke: '#fff', strokeWidth: 1, strokeDasharray: '4 4' }}
-                      formatter={(value: number) => [value.toLocaleString(), 'Выработка']}
+                      formatter={((value: number) => [value.toLocaleString(), 'Выработка']) as any}
                     />
                     <ReferenceLine y={selectedAsset.current} stroke="rgba(255,255,255,0.1)" strokeDasharray="3 3" />
                     <Area

@@ -90,7 +90,7 @@ export const AdminDefectCategoriesPage: React.FC = () => {
     setFormTitle(category.title);
     setFormDescription(category.description || "");
     setFormSeverity(category.severity);
-    setFormTypes(category.applicableTypes || []);
+    setFormTypes((category.applicableTypes || []) as BoardType[]);
     setFormActive(category.isActive);
     setError("");
     setShowModal(true);

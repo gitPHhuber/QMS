@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { fetchStockBalance } from "src/api/warehouseApi";
 import { StockBalanceItem } from "src/types/WarehouseModels";
-import { PieChart, Package, RefreshCw, PackageX } from "lucide-react";
+import { PieChart, RefreshCw, PackageX } from "lucide-react";
 
 export const WarehouseBalance: React.FC = () => {
     const [balance, setBalance] = useState<StockBalanceItem[]>([]);

@@ -3,16 +3,16 @@
 import React, { useState, useEffect } from "react";
 import {
   Boxes, Plus, Search, Truck, Package, Server,
-  ChevronDown, ChevronRight, Trash2, Edit, Users,
-  MapPin, Calendar, CheckCircle, Clock, Send
+  Trash2, Edit,
+  MapPin, CheckCircle, Send
 } from "lucide-react";
 import toast from "react-hot-toast";
 import {
   getShipments, getShipmentById, createShipment, updateShipment, deleteShipment,
   getClusters, getClusterById, createCluster, updateCluster, deleteCluster,
-  addServerToCluster, addServersToCluster, removeServerFromCluster, updateClusterServer,
+  addServersToCluster, removeServerFromCluster,
   getUnassignedServers,
-  BeryllShipment, BeryllCluster, BeryllClusterServer,
+  BeryllShipment, BeryllCluster,
   ShipmentStatus, ClusterStatus, ServerRole
 } from "../../../api/beryll/beryllExtendedApi";
 import { Modal } from "../../../components/Modal/Modal";
@@ -925,7 +925,7 @@ const CreateClusterModal: React.FC<{
   const [form, setForm] = useState({
     name: "",
     description: "",
-    shipmentId: shipmentId || null as number | null,
+    shipmentId: shipmentId ?? undefined as number | undefined,
     expectedCount: 10,
     configVersion: "",
     notes: ""
@@ -975,7 +975,7 @@ const CreateClusterModal: React.FC<{
           <label className="block text-sm font-medium mb-1">Комплект</label>
           <select
             value={form.shipmentId || ""}
-            onChange={(e) => setForm({ ...form, shipmentId: e.target.value ? parseInt(e.target.value) : null })}
+            onChange={(e) => setForm({ ...form, shipmentId: e.target.value ? parseInt(e.target.value) : (undefined as any) })}
             className="w-full px-3 py-2 border rounded-lg"
           >
             <option value="">— Без комплекта —</option>
@@ -1093,7 +1093,7 @@ const EditClusterModal: React.FC<{
           <label className="block text-sm font-medium mb-1">Комплект</label>
           <select
             value={form.shipmentId || ""}
-            onChange={(e) => setForm({ ...form, shipmentId: e.target.value ? parseInt(e.target.value) : null })}
+            onChange={(e) => setForm({ ...form, shipmentId: e.target.value ? parseInt(e.target.value) : (undefined as any) })}
             className="w-full px-3 py-2 border rounded-lg"
           >
             <option value="">— Без комплекта —</option>

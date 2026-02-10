@@ -16,7 +16,7 @@ import {
   ClipboardList, Package, Wrench, User, LogOut,
   ChevronDown, PackageCheck, Cpu, Radio, Activity,
   BarChart3, Trophy, PieChart, MonitorPlay, FileText,
-  Menu as MenuIcon, CircuitBoard, LineChart,
+  CircuitBoard, LineChart,
   Server,
   AlertTriangle,
   Factory
@@ -25,12 +25,12 @@ import {
 
 import {
   ADMIN_ROUTE, INPUT_DEFECT_ROUTE, ASSEMBLED_PRODUCTS_ROUTE,
-  FC_ROUTE, ELRS_915_ROUTE, ELRS_2_4_ROUTE, CORAL_B_ROUTE,
+  FC_ROUTE,
   KNOWLEDGE_BASE_ROUTE, ANALYTICS_DASHBOARD_ROUTE, RANKINGS_ROUTE,
   WAREHOUSE_ROUTE, TASKS_ROUTE, RECIPE_EXECUTION_ROUTE,
   RECIPE_CONSTRUCTOR_ROUTE, ASSEMBLY_ROUTE, ADMIN_ASSEMBLY_ROUTES_ROUTE,
-  FIRMWARE_OLD_ROUTE, FIRMWARE_FC_ROUTE, FIRMWARE_915_002_ROUTE,
-  FIRMWARE_915_019_ROUTE, FIRMWARE_2_4_ROUTE, FIRMWARE_Coral_B_ROUTE,
+  FIRMWARE_FC_ROUTE,
+  FIRMWARE_915_019_ROUTE, FIRMWARE_Coral_B_ROUTE,
   MQTT_CHECK_FC_ROUTE, MQTT_CHECK_ESC_ROUTE, PROFILE_ROUTE, RANKINGS_CHARTS_ROUTE,
   BERYLL_ROUTE,
   BERYLL_MONITORING_ROUTE,
@@ -53,7 +53,7 @@ export const HEADER_HEIGHT = 56;
 export const Header: React.FC = observer(() => {
   const auth = useAuth();
   const context = useContext(Context);
-  const location = useLocation();
+  const _location = useLocation();
 
   if (!context) throw new Error("Context required");
   const { user } = context;

@@ -22,18 +22,14 @@ import {
   Eye,
   BarChart3,
   CheckCircle,
-  XCircle,
   Package,
   RefreshCw
 } from "lucide-react";
 import clsx from "clsx";
 import { toast } from "react-hot-toast";
 import passportsExportApi, {
-  ExportOptions,
   ExportStats,
-  ServerPreview,
-  PreviewResponse,
-  StatsResponse
+  ServerPreview
 } from "../../api/passportsExportApi";
 
 
@@ -65,7 +61,7 @@ const SERVER_STATUSES = [
   { value: "RETURNED", label: "Возврат" }
 ];
 
-const COMPONENT_ICONS: Record<string, React.FC<{ className?: string; size?: number }>> = {
+const COMPONENT_ICONS: Record<string, React.FC<{ className?: string; size?: string | number }>> = {
   HDD: HardDrive,
   SSD: HardDrive,
   NVME: HardDrive,
@@ -655,7 +651,7 @@ const PreviewTab: React.FC<{
 
 
 const ComponentBadge: React.FC<{
-  icon: React.FC<{ className?: string; size?: number }>;
+  icon: React.FC<{ className?: string; size?: string | number }>;
   label: string;
   count: number;
   expected: number;
@@ -800,7 +796,7 @@ const StatsTab: React.FC<{
 const StatCard: React.FC<{
   label: string;
   value: number;
-  icon: React.FC<{ className?: string; size?: number }>;
+  icon: React.FC<{ className?: string; size?: string | number }>;
   color: "emerald" | "blue" | "amber" | "green";
 }> = ({ label, value, icon: Icon, color }) => {
   const colorClasses = {

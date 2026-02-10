@@ -1,6 +1,8 @@
 
 
-import { apiClient } from "../apiClient";
+import { apiClient } from "./apiClient";
+
+export type TicketPriority = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
 
 
 export interface ComponentCatalog {
@@ -127,6 +129,7 @@ export interface SubstituteServer {
   serverId: number;
   status: SubstituteStatus;
   currentDefectId: number | null;
+  currentDefect?: any;
   issuedAt: string | null;
   issuedToUserId: number | null;
   returnedAt: string | null;

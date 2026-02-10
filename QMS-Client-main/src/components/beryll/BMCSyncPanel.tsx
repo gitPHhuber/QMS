@@ -14,8 +14,8 @@ import {
   ChevronDown,
   ChevronUp
 } from 'lucide-react';
-import { toast } from 'react-toastify';
-import { $authHost } from '../../http';
+import toast from 'react-hot-toast';
+import { $authHost } from '../../api/index';
 
 interface ComponentDifference {
   field: string;
@@ -120,7 +120,7 @@ export const BMCSyncPanel: React.FC<BMCSyncPanelProps> = ({ serverId, onSyncComp
       setComparison(data);
 
       if (data.hasDiscrepancies) {
-        toast.warning(`Обнаружены расхождения с BMC`);
+        toast(`Обнаружены расхождения с BMC`, { icon: '⚠️' });
       } else {
         toast.success('Расхождений не обнаружено');
       }
@@ -169,7 +169,7 @@ export const BMCSyncPanel: React.FC<BMCSyncPanelProps> = ({ serverId, onSyncComp
       );
 
       if (actions.flaggedForReview.length > 0) {
-        toast.warning(`${actions.flaggedForReview.length} компонент(ов) требуют проверки`);
+        toast(`${actions.flaggedForReview.length} компонент(ов) требуют проверки`, { icon: '⚠️' });
       }
 
       setComparison(null);

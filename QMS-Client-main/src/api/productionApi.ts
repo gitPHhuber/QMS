@@ -28,7 +28,9 @@ export interface ProductionOutput {
     claimedQty: number;
     approvedQty: number;
     rejectedQty: number;
-    status: 'pending' | 'approved' | 'rejected' | 'adjusted';
+    quantity?: number;
+    productType?: string;
+    status: 'pending' | 'approved' | 'rejected' | 'adjusted' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'ADJUSTED';
     approvedById: number | null;
     approvedAt: string | null;
     createdById: number | null;

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import {
   Server, Plus, Search, MapPin, Wifi,
-  Trash2, Edit, Move, CheckCircle, XCircle, PlusCircle
+  Trash2, Edit, CheckCircle, XCircle, PlusCircle
 } from "lucide-react";
 import toast from "react-hot-toast";
 import {
@@ -804,7 +804,7 @@ const InstallServerModal: React.FC<InstallServerModalProps> = ({
           hostname: result.hostname || prev.hostname
         }));
       } else {
-        toast.info("Не найден в DHCP");
+        toast("Не найден в DHCP");
       }
     } catch (error: any) {
       toast.error("Ошибка поиска в DHCP");
@@ -927,7 +927,7 @@ const InstallServerModal: React.FC<InstallServerModalProps> = ({
   }, [searchQuery]);
 
 
-  const isTakeToWorkMode = unit.serverId && !unit.installedAt;
+  const isTakeToWorkMode = !!unit.serverId && !unit.installedAt;
 
   return (
     <Modal

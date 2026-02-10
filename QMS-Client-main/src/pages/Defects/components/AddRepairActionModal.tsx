@@ -6,8 +6,7 @@ import {
   ActionResult,
   BoardType,
   ACTION_TYPE_LABELS,
-  ACTION_TYPE_ICONS,
-  ACTION_RESULT_LABELS
+  ACTION_TYPE_ICONS
 } from "src/types/DefectTypes";
 
 interface Props {

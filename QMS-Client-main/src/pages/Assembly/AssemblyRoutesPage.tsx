@@ -17,7 +17,8 @@ import {
   Plus,
   Trash2,
   Save,
-  RefreshCw,
+
+
   Settings2,
   Cpu,
   Hammer,
@@ -56,7 +57,7 @@ export const AssemblyRoutesPage: React.FC = observer(() => {
   const [showHelp, setShowHelp] = useState(false);
 
   const [sections, setSections] = useState<SectionModel[]>([]);
-  const [structureLoading, setStructureLoading] = useState(false);
+  const [_structureLoading, setStructureLoading] = useState(false);
 
 
   const [title, setTitle] = useState("");

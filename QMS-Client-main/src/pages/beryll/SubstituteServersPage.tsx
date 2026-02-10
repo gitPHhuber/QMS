@@ -31,7 +31,7 @@ const SubstituteServersPage: React.FC = () => {
 
 
   const [showAddModal, setShowAddModal] = useState(false);
-  const [selectedSubstitute, setSelectedSubstitute] = useState<SubstituteServer | null>(null);
+  const [_selectedSubstitute, _setSelectedSubstitute] = useState<SubstituteServer | null>(null);
 
   const loadSubstitutes = useCallback(async () => {
     setLoading(true);
@@ -356,7 +356,7 @@ const AddSubstituteModal: React.FC<AddSubstituteModalProps> = ({ onClose, onSucc
   const [loading, setLoading] = useState(false);
   const [serverSearch, setServerSearch] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [searching, setSearching] = useState(false);
+  const [_searching, setSearching] = useState(false);
   const [selectedServer, setSelectedServer] = useState<any>(null);
   const [notes, setNotes] = useState("");
 

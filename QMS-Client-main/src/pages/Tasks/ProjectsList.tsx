@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Plus, Trash2, FolderOpen, Box } from "lucide-react";
+import { Plus, Trash2, FolderOpen } from "lucide-react";
 import { fetchProjects, createProject, deleteProject, ProjectModel } from "src/api/projectsApi";
 import { Modal } from "src/components/Modal/Modal";
 

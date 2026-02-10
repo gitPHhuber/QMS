@@ -7,7 +7,7 @@ import {
     downloadDefectsExcel,
     downloadDefectStatsExcel,
     DefectExportParams
-} from "../../../api/beryll/defectExportApi";
+} from "../api/beryll/defectExportApi";
 
 interface Props {
 

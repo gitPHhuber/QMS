@@ -6,9 +6,21 @@ interface ModalProps {
   onClose: () => void;
   children: React.ReactNode;
   title?: string;
+  size?: string;
 }
 
-export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children, title }) => {
+const SIZE_CLASSES: Record<string, string> = {
+  sm: "max-w-sm",
+  md: "max-w-md",
+  lg: "max-w-lg",
+  xl: "max-w-xl",
+  "2xl": "max-w-2xl",
+  "3xl": "max-w-3xl",
+  "4xl": "max-w-4xl",
+  "5xl": "max-w-5xl",
+};
+
+export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children, title, size }) => {
 
   useEffect(() => {
     if (!isOpen) return;
@@ -38,7 +50,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children, title }
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-lg p-6 w-full max-w-lg relative max-h-[90vh] overflow-y-auto"
+        className={`bg-white rounded-lg p-6 w-full ${size ? SIZE_CLASSES[size] || "max-w-lg" : "max-w-lg"} relative max-h-[90vh] overflow-y-auto`}
         onClick={(e) => e.stopPropagation()}
       >
         <button

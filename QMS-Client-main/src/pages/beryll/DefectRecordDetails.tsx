@@ -8,10 +8,8 @@ import {
   Clock,
   User,
   Wrench,
-  Truck,
   CheckCircle,
-  Package,
-  RotateCcw,
+
   AlertCircle,
   ChevronRight,
   FileText,
@@ -72,7 +70,7 @@ const DefectRecordDetails: React.FC<Props> = ({ record: initialRecord, partTypes
     repairDetails: ""
   });
 
-  const [yadroData, setYadroData] = useState({
+  const [yadroData, _setYadroData] = useState({
     ticketNumber: "",
     subject: "",
     description: record.problemDescription || "",

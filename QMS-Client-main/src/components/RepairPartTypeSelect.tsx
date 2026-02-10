@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { ChevronDown, Plus, X, Check, Loader2, Search } from "lucide-react";
 import toast from "react-hot-toast";
-import { getPartTypes, quickAddPartType, RepairPartType } from "../../api/repairPartTypeApi";
+import { getPartTypes, quickAddPartType, RepairPartType } from "../api/repairPartTypeApi";
 
 interface Props {
   value: string;

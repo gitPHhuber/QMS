@@ -5,11 +5,11 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import {
-  FileText, Plus, Search, Filter, ChevronRight, Clock,
-  CheckCircle2, AlertTriangle, Loader2, X
+  FileText, Plus, Search, ChevronRight,
+  AlertTriangle, Loader2, X
 } from "lucide-react";
 import { documentsApi } from "src/api/qmsApi";
-import type { DocumentShort, DocType, DocStatus } from "src/api/qmsApi";
+import type { DocumentShort, DocType } from "src/api/qmsApi";
 
 const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
   DRAFT: { label: "Черновик", cls: "bg-gray-100 text-gray-700" },

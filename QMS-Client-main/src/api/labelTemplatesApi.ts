@@ -1,7 +1,5 @@
-import { $authHost } from "./index";
 
-
-export type LabelElementType = "TEXT" | "QR" | "LINE" | "RECTANGLE";
+export type LabelElementType = "TEXT" | "QR" | "LINE" | "RECTANGLE" | "COUNTER" | "IMAGE" | "ICON";
 
 export interface LabelElement {
     id: string;
@@ -22,6 +20,10 @@ export interface LabelElement {
 
 
     strokeWidth?: number;
+    counterFormat?: string;
+    imageUrl?: string;
+    imageName?: string;
+    iconType?: string;
 }
 
 

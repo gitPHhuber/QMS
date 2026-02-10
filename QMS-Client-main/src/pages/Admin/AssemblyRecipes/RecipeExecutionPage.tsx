@@ -2,8 +2,8 @@ import React, { useEffect, useState } from "react";
 import { fetchProjects, ProjectModel } from "src/api/projectsApi";
 import { startAssemblyProcess, updateProcessStep, finishAssemblyProcess, AssemblyRecipe, AssemblyProcess } from "src/api/assemblyRecipesApi";
 import {
-    QrCode, Play, CheckCircle2, Circle, Flag,
-    Box, MonitorPlay, AlertTriangle
+    QrCode, CheckCircle2, Circle, Flag,
+    Box, MonitorPlay
 } from "lucide-react";
 import { Modal } from "src/components/Modal/Modal";
 import toast from "react-hot-toast";

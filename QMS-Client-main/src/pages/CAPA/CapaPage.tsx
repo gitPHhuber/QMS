@@ -6,9 +6,9 @@
 import React, { useCallback, useEffect, useState } from "react";
 import {
   CheckCircle2, Plus, Search, Loader2, ChevronRight, X,
-  Clock, Zap, ArrowRight
+  Clock, Zap
 } from "lucide-react";
-import { capaApi, ncApi } from "src/api/qmsApi";
+import { capaApi } from "src/api/qmsApi";
 import type { CapaShort, CapaStatus } from "src/api/qmsApi";
 
 const STATUS_FLOW: { key: CapaStatus; label: string; cls: string }[] = [

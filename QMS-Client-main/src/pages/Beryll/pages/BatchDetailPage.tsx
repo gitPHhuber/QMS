@@ -9,14 +9,10 @@ import {
   Building2,
   Server,
   CheckCircle2,
-  Clock,
-  XCircle,
-  HelpCircle,
   Edit,
   Save,
   X,
   Plus,
-  Trash2,
   User,
   ExternalLink
 } from "lucide-react";
@@ -44,7 +40,7 @@ export const BatchDetailPage: React.FC = observer(() => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const context = useContext(Context);
-  const currentUser = context?.user?.user;
+  const _currentUser = context?.user?.user;
 
   const [batch, setBatch] = useState<BeryllBatch | null>(null);
   const [loading, setLoading] = useState(true);
@@ -138,7 +134,7 @@ export const BatchDetailPage: React.FC = observer(() => {
     if (!batch || selectedServersToAdd.length === 0) return;
 
     try {
-      await assignServersToBatch(batch.id, selectedServersToAdd);
+      await assignServersToBatch(selectedServersToAdd, batch.id);
       setShowAddModal(false);
       setSelectedServersToAdd([]);
       await loadBatch();
@@ -186,9 +182,9 @@ export const BatchDetailPage: React.FC = observer(() => {
     );
   }
 
-  const progress = getStatusProgress(batch.stats);
+  const progress = getStatusProgress(batch.stats as unknown as Record<ServerStatus, number>);
   const totalServers = batch.servers?.length || 0;
-  const doneServers = batch.stats?.DONE || 0;
+  const _doneServers = batch.stats?.DONE || 0;
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 lg:p-6">
@@ -382,8 +378,8 @@ export const BatchDetailPage: React.FC = observer(() => {
                     </div>
 
                     <div className="flex items-center gap-4">
-                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${STATUS_COLORS[server.status]}`}>
-                        {STATUS_LABELS[server.status]}
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${STATUS_COLORS[server.status as ServerStatus]}`}>
+                        {STATUS_LABELS[server.status as ServerStatus]}
                       </span>
 
                       {server.assignedTo && (

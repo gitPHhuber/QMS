@@ -10,8 +10,7 @@ import {
   User,
   Plus,
   Trash2,
-  PackageCheck,
-  RotateCcw
+  PackageCheck
 } from "lucide-react";
 import {
   fetchDefectById,

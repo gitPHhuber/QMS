@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Save, Trash2, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
-import { apiClient } from "../../api";
+import { apiClient } from "../../api/apiClient";
 
 interface TicketRow {
   id: number | null;

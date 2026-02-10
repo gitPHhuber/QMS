@@ -10,7 +10,8 @@ import {
   AlignRight,
   Minus,
   Square,
-  Columns,
+
+
   GripHorizontal,
   ZoomIn,
   ZoomOut,
@@ -32,8 +33,8 @@ import {
   Layers,
   HelpCircle,
   BookOpen,
-  ChevronRight,
-  ChevronLeft,
+
+
 } from "lucide-react";
 import QRCode from "react-qr-code";
 import clsx from "clsx";
@@ -68,7 +69,7 @@ interface Props {
   initialWidth?: number;
   initialHeight?: number;
   initialLayout?: LabelElement[];
-  onSave?: (name: string, w: number, h: number, layout: LabelElement[]) => void;
+  onSave?: (name: string, w: number, h: number, layout: LabelElement[]) => void | Promise<void>;
   onClose?: () => void;
 }
 
@@ -290,9 +291,9 @@ export const LabelConstructor: React.FC<Props> = ({
   }, [normalizedLayout]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1.5);
-  const [showQrHelper, setShowQrHelper] = useState(false);
+  const [_showQrHelper, setShowQrHelper] = useState(false);
   const [showIconPicker, setShowIconPicker] = useState(false);
-  const [showCounterPreview, setShowCounterPreview] = useState(false);
+  const [_showCounterPreview, _setShowCounterPreview] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
 
 
@@ -663,7 +664,7 @@ export const LabelConstructor: React.FC<Props> = ({
   }, [customFonts]);
 
 
-  const deleteCustomFont = useCallback((fontName: string) => {
+  const _deleteCustomFont = useCallback((fontName: string) => {
     setCustomFonts((prev) => prev.filter((f) => f.name !== fontName));
     const styleEl = document.getElementById(`custom-font-${fontName.replace(/\s+/g, '-')}`);
     if (styleEl) styleEl.remove();

@@ -4,7 +4,6 @@ import {
   FileText,
   Cpu,
   Package,
-  Settings,
   Zap,
   Layout,
   Info,
@@ -186,7 +185,7 @@ export const KnowledgeBase: React.FC = () => {
               );
             }
 
-            const Icon = item.icon;
+            const Icon = item.icon as React.ElementType | undefined;
             const isActive = activeTab === item.id;
 
             return (
@@ -200,7 +199,7 @@ export const KnowledgeBase: React.FC = () => {
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <Icon size={18} className={isActive ? "text-indigo-600" : "text-slate-400"} />
+                  {Icon && <Icon size={18} className={isActive ? "text-indigo-600" : "text-slate-400"} />}
                   {item.label}
                 </div>
                 {isActive && <ChevronRight size={16} className="text-indigo-400"/>}

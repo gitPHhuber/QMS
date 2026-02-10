@@ -4,7 +4,7 @@ import {
   Trophy, TrendingUp, TrendingDown, Users, Search, Factory,
   Medal, Star, Loader2, BarChart3, Boxes, Calendar, X, Minus
 } from "lucide-react";
-import { fetchRankings, RankingResponse, RankingUser, RankingTeam, Period, RankingsParams, SparklinePoint } from "src/api/rankingsApi";
+import { fetchRankings, RankingResponse, Period, RankingsParams, SparklinePoint } from "src/api/rankingsApi";
 import { LineChart, Line, ResponsiveContainer } from "recharts";
 import clsx from "clsx";
 import dayjs from "dayjs";
@@ -52,7 +52,7 @@ const Sparkline: React.FC<{ data: SparklinePoint[]; color?: string }> = ({ data,
 };
 
 
-const ChangeIndicator: React.FC<{ change: number; showPercent?: boolean }> = ({ change, showPercent }) => {
+const ChangeIndicator: React.FC<{ change: number; showPercent?: boolean }> = ({ change }) => {
   if (change === 0) {
     return (
       <div className="flex items-center gap-1 text-slate-400">
@@ -78,7 +78,7 @@ const ChangeIndicator: React.FC<{ change: number; showPercent?: boolean }> = ({ 
 };
 
 const RankingsPage: React.FC = () => {
-  const navigate = useNavigate();
+  const _navigate = useNavigate();
   const [period, setPeriod] = useState<Period>("week");
   const [activeTab, setActiveTab] = useState<Tab>("users");
   const [data, setData] = useState<RankingResponse | null>(null);

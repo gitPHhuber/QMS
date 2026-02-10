@@ -7,8 +7,8 @@
 
 import React, { useEffect, useState } from "react";
 import {
-  Shield, FileText, AlertTriangle, CheckCircle2, XCircle,
-  Clock, Activity, TrendingUp, Loader2, RefreshCw,
+  Shield, FileText, AlertTriangle, CheckCircle2,
+  Clock, Activity, Loader2, RefreshCw,
   ChevronRight, Lock, Unlock
 } from "lucide-react";
 import { auditApi, documentsApi, ncApi } from "src/api/qmsApi";

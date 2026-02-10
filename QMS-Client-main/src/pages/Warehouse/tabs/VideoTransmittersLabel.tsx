@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import {
-    Printer, RefreshCw, RotateCw, ArrowRight,
-    Tv, Tag, Ruler, Trash2, FolderOpen, PenTool, LayoutTemplate, Bookmark,
+    Printer, RefreshCw, ArrowRight,
+    Tv, Tag, Ruler, Trash2, FolderOpen, PenTool, LayoutTemplate,
 
     Wine, Umbrella, ArrowUp, Snowflake, Flame, Package, AlertTriangle
 } from "lucide-react";
@@ -14,7 +14,6 @@ import {
     LabelElement
 } from "src/api/labelTemplatesApi";
 import { LabelConstructor } from "../components/LabelConstructor";
-import { Modal } from "src/components/Modal/Modal";
 import QRCode from "react-qr-code";
 import toast from "react-hot-toast";
 import clsx from "clsx";
@@ -353,7 +352,7 @@ export const VideoTransmittersLabel: React.FC = () => {
         setForm(prev => ({...prev, date: new Date().toLocaleString('ru-RU')}));
     };
 
-    const toggleRotation = () => {
+    const _toggleRotation = () => {
         setLabelSize({ width: labelSize.height, height: labelSize.width });
     };
 
@@ -390,7 +389,7 @@ export const VideoTransmittersLabel: React.FC = () => {
                     initialWidth={labelSize.width}
                     initialHeight={labelSize.height}
                     initialLayout={templateType === 'CUSTOM' ? customLayout : []}
-                    onSave={onSaveConstructor}
+                    onSave={onSaveConstructor as any}
                     onClose={() => setIsConstructorMode(false)}
                 />
             ) : (

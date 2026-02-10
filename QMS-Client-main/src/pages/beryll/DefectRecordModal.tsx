@@ -1,17 +1,19 @@
 
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { X, AlertTriangle, Server, Loader2, Search, ChevronDown } from "lucide-react";
+import { X, AlertTriangle, Loader2, Search, ChevronDown } from "lucide-react";
 import toast from "react-hot-toast";
-import { createDefectRecord, updateDefectRecord, BeryllDefectRecord, RepairPartType } from "src/api/beryllApi";
+import { createDefectRecord, updateDefectRecord } from "../../api/beryll/beryllExtendedApi";
+import type { BeryllDefectRecord, RepairPartType } from "../../api/beryll/beryllExtendedApi";
 
 interface Props {
-  isOpen: boolean;
+  isOpen?: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  servers: Array<{ id: number; apkSerialNumber: string; hostname?: string }>;
-  users: Array<{ id: number; name: string; surname: string }>;
+  servers?: Array<{ id: number; apkSerialNumber: string; hostname?: string }>;
+  users?: Array<{ id: number; name: string; surname: string }>;
   editRecord?: BeryllDefectRecord | null;
+  partTypes?: Array<{ value: string; label: string }>;
 }
 
 const PART_TYPES: Array<{ value: RepairPartType; label: string }> = [
@@ -244,7 +246,7 @@ const DefectRecordModal: React.FC<Props> = ({
   useEffect(() => {
     if (editRecord) {
 
-      const server = servers.find(s => s.id === editRecord.serverId);
+      const server = (servers || []).find(s => s.id === editRecord.serverId);
       setServerValue({
         serverId: editRecord.serverId,
         serverSerial: server?.apkSerialNumber || editRecord.serverSerial || ""
@@ -380,7 +382,7 @@ const DefectRecordModal: React.FC<Props> = ({
                   Сервер <span className="text-red-500">*</span>
                 </label>
                 <ServerCombobox
-                  servers={servers}
+                  servers={servers || []}
                   value={serverValue}
                   onChange={setServerValue}
                   placeholder="Поиск по S/N, hostname..."
@@ -472,7 +474,7 @@ const DefectRecordModal: React.FC<Props> = ({
                     className="w-full px-3 py-2 border rounded-lg"
                   >
                     <option value="">— Выб —</option>
-                    {users.map(u => (
+                    {(users || []).map(u => (
                       <option key={u.id} value={u.id}>
                         {u.surname} {u.name}
                       </option>

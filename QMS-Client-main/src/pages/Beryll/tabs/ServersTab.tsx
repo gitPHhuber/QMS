@@ -86,7 +86,7 @@ export const ServersTab: React.FC<ServersTabProps> = observer(({ onStatsUpdate }
 
   const [selectedServers, setSelectedServers] = useState<number[]>([]);
   const [showBatchModal, setShowBatchModal] = useState(false);
-  const [openMenuId, setOpenMenuId] = useState<number | null>(null);
+  const [_openMenuId, setOpenMenuId] = useState<number | null>(null);
 
 
   const loadData = async () => {
@@ -246,7 +246,7 @@ export const ServersTab: React.FC<ServersTabProps> = observer(({ onStatsUpdate }
     }
   };
 
-  const handleRelease = async (server: BeryllServer) => {
+  const _handleRelease = async (server: BeryllServer) => {
     setActionLoading(server.id);
     try {
       await releaseServer(server.id);

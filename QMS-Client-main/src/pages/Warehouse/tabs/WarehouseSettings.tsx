@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { fetchStockBalance, fetchAllLimits, saveLimit } from "src/api/warehouseApi";
 import { InventoryLimitModel, StockBalanceItem } from "src/types/WarehouseModels";
-import { Settings, Save, Search, AlertTriangle } from "lucide-react";
+import { Search, AlertTriangle, Settings } from "lucide-react";
 import toast from "react-hot-toast";
 
 export const WarehouseSettings: React.FC = () => {

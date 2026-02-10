@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Search, Loader2, AlertCircle, MapPin, ArrowRightLeft, Ruler, Trash2, ShoppingCart, Save } from "lucide-react";
+import { Search, Loader2, AlertCircle, MapPin, ArrowRightLeft, Trash2, ShoppingCart, Save } from "lucide-react";
 import { fetchBoxById, fetchBoxByQr, moveBoxesBatch } from "src/api/warehouseApi";
 import { InventoryBoxModel } from "src/types/WarehouseModels";
 import { SectionModel } from "src/store/StructureStore";
@@ -179,7 +179,7 @@ export const WarehouseMoves: React.FC<Props> = ({ sections }) => {
                              <div className="grid grid-cols-2 gap-3">
                                  <div>
                                      <label className="text-[10px] uppercase font-bold text-gray-500">Куда</label>
-                                     <select className="w-full p-2 border rounded text-sm bg-white outline-none" value={toSectionId} onChange={e => setToSectionId(e.target.value)}>
+                                     <select className="w-full p-2 border rounded text-sm bg-white outline-none" value={toSectionId} onChange={e => setToSectionId(e.target.value ? Number(e.target.value) : "")}>
                                          <option value="">(Текущее)</option>
                                          {sections.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}
                                      </select>

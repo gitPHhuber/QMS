@@ -2,15 +2,12 @@
 
 import { useState, useEffect, useCallback } from "react";
 import {
-  Settings,
   Server,
   ListChecks,
   Plus,
   Edit,
   Trash2,
   Save,
-  X,
-  GripVertical,
   Clock,
   RefreshCw,
   CheckCircle2,
@@ -19,7 +16,7 @@ import {
   RotateCcw,
   Eye,
   EyeOff,
-  FileImage
+  GripVertical
 } from "lucide-react";
 import {
   getChecklistTemplates,

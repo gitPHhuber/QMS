@@ -207,6 +207,8 @@ export interface BeryllDefectRecord {
   createdAt: string;
   updatedAt: string;
 
+  serverSerial?: string;
+  diagnosisResult?: string;
   server?: {
     id: number;
     apkSerialNumber: string;

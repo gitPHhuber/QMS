@@ -5,10 +5,8 @@ import { observer } from "mobx-react-lite";
 import {
   Archive,
   Search,
-  Server,
   RefreshCw,
   ExternalLink,
-  Download,
   Package,
   User,
   Calendar,
@@ -17,10 +15,7 @@ import {
   FileSpreadsheet,
   Copy,
   RotateCcw,
-  CheckSquare,
-  Square,
   AlertTriangle,
-  Clock,
   Info,
   Trash2
 } from "lucide-react";
@@ -33,8 +28,6 @@ import {
   deleteServer,
   BeryllServer,
   BeryllBatch,
-  STATUS_LABELS,
-  STATUS_COLORS,
   formatDateTime,
   formatDate
 } from "src/api/beryllApi";

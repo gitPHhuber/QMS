@@ -5,7 +5,7 @@ import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
   preview: {
-    host: "10.11.0.15",
+    host: "0.0.0.0",
     port: 4173,
   },
 
@@ -13,6 +13,9 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
+      workbox: {
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+      },
       includeAssets: [
         "favicon.ico",
         "apple-touch-icon.png",

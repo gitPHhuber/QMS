@@ -572,7 +572,7 @@ export const ProductionDashboard: React.FC = () => {
                   />
                   <Tooltip
                     contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}}
-                    formatter={(value: number) => [value.toLocaleString(), 'Выработка']}
+                    formatter={((value: number) => [value.toLocaleString(), 'Выработка']) as any}
                   />
                   <Bar dataKey="output" fill="#8b5cf6" radius={[0, 4, 4, 0]} />
                 </BarChart>

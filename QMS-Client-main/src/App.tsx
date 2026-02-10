@@ -10,7 +10,7 @@ import { useAuth } from "react-oidc-context";
 import { useNavigate, useLocation } from "react-router-dom";
 import { SELECT_PC_ROUTE } from "./utils/consts";
 import { check } from "./api/userApi";
-import { ShieldCheck, Lock, Unlock, Cpu, Activity, X, Sparkles } from "lucide-react";
+import { ShieldCheck, Lock, Cpu, X } from "lucide-react";
 import { Toaster } from 'react-hot-toast';
 
 const App = observer(() => {
