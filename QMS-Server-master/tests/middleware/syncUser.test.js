@@ -1,5 +1,5 @@
 const syncUserMiddleware = require('../../middleware/syncUserMiddleware');
-const { User, Role } = require('../../models/index');
+const { User, Role, Ability } = require('../../models/index');
 
 
 jest.mock('../../models/index', () => ({
@@ -9,7 +9,9 @@ jest.mock('../../models/index', () => ({
         update: jest.fn()
     },
     Role: {
-        findOne: jest.fn()
+        findAll: jest.fn(),
+        findOne: jest.fn(),
+        findOrCreate: jest.fn()
     },
     Ability: {}
 }));
@@ -36,58 +38,68 @@ describe('syncUserMiddleware', () => {
 
     test('Должен создать нового пользователя, если его нет', async () => {
 
-        User.findOne.mockResolvedValue(null);
+        Role.findAll.mockResolvedValue([
+            { name: 'WAREHOUSE_MASTER', id: 5 }
+        ]);
 
+        User.findOne.mockResolvedValue(null);
 
         const createdUser = {
             id: 10,
             login: 'testuser',
-            role: 'WAREHOUSE_MASTER',
+            name: 'Ivan',
+            surname: 'Ivanov',
+            roleId: 5,
             save: jest.fn()
         };
         User.create.mockResolvedValue(createdUser);
-
 
         Role.findOne.mockResolvedValue({ abilities: [{ code: 'warehouse.view' }] });
 
         await syncUserMiddleware(req, res, next);
 
-
         expect(User.create).toHaveBeenCalledWith(expect.objectContaining({
             login: 'testuser',
-            role: 'WAREHOUSE_MASTER'
+            roleId: 5
         }));
         expect(req.user).toBeDefined();
         expect(req.user.id).toBe(10);
+        expect(req.user.role).toBe('WAREHOUSE_MASTER');
         expect(req.user.abilities).toContain('warehouse.view');
         expect(next).toHaveBeenCalled();
     });
 
     test('Должен обновить роль существующего пользователя', async () => {
 
+        Role.findAll.mockResolvedValue([
+            { name: 'WAREHOUSE_MASTER', id: 5 },
+            { name: 'ASSEMBLER', id: 3 }
+        ]);
+
         const mockSave = jest.fn();
         const existingUser = {
             id: 20,
             login: 'testuser',
-            role: 'ASSEMBLER',
+            name: 'Ivan',
+            surname: 'Ivanov',
+            roleId: 3,
+            userRole: { name: 'ASSEMBLER' },
             save: mockSave
         };
-
 
         User.findOne.mockResolvedValue(existingUser);
         Role.findOne.mockResolvedValue({ abilities: [] });
 
         await syncUserMiddleware(req, res, next);
 
-
-        expect(existingUser.role).toBe('WAREHOUSE_MASTER');
-
+        expect(existingUser.roleId).toBe(5);
         expect(mockSave).toHaveBeenCalled();
+        expect(req.user.role).toBe('WAREHOUSE_MASTER');
         expect(next).toHaveBeenCalled();
     });
 
     test('Должен вернуть 500 при ошибке БД', async () => {
-        User.findOne.mockRejectedValue(new Error('DB Connection failed'));
+        Role.findAll.mockRejectedValue(new Error('DB Connection failed'));
 
         await syncUserMiddleware(req, res, next);
 

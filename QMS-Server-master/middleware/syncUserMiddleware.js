@@ -30,23 +30,28 @@ module.exports = async function (req, res, next) {
         const kcRoles = payload.realm_access?.roles || [];
 
         // Загружаем роли из БД динамически
-        const allDbRoles = await Role.findAll({ attributes: ['name'], order: [['id', 'ASC']] });
-        const dbRoleNames = allDbRoles.map(r => r.name);
+        const allDbRoles = await Role.findAll({ attributes: ['id', 'name'], order: [['id', 'ASC']] });
+        const dbRoleMap = new Map(allDbRoles.map(r => [r.name, r.id]));
 
         // Ищем первую KC-роль, которая есть в нашей БД
-        const matchedRole = kcRoles.find(r => dbRoleNames.includes(r));
+        const matchedRole = kcRoles.find(r => dbRoleMap.has(r));
         const DEFAULT_ROLE = process.env.DEFAULT_ROLE || 'VIEWER';
         const mainRole = matchedRole || DEFAULT_ROLE;
 
         // Если роли нет в БД — создаём автоматически (только для KC ролей, не системных)
-        if (!dbRoleNames.includes(mainRole) && mainRole !== DEFAULT_ROLE) {
-            await Role.findOrCreate({
+        let roleId = dbRoleMap.get(mainRole);
+        if (!roleId) {
+            const [created] = await Role.findOrCreate({
                 where: { name: mainRole },
                 defaults: { code: mainRole, description: 'Автоимпорт из Keycloak' }
             });
+            roleId = created.id;
         }
 
-        let user = await User.findOne({ where: { login } });
+        let user = await User.findOne({
+            where: { login },
+            include: [{ model: Role, as: 'userRole', attributes: ['id', 'name'] }]
+        });
 
         if (!user) {
             console.log(`Пользователь ${login} не найден. Создаем с ролью ${mainRole}...`);
@@ -55,7 +60,7 @@ module.exports = async function (req, res, next) {
                     login,
                     name,
                     surname,
-                    role: mainRole,
+                    roleId,
                     password: 'sso_managed_account',
                     img: null
                 });
@@ -66,9 +71,10 @@ module.exports = async function (req, res, next) {
             }
         } else {
 
-            if (user.role !== mainRole) {
-                console.log(`Обновление роли пользователя ${login}: ${user.role} -> ${mainRole}`);
-                user.role = mainRole;
+            if (user.roleId !== roleId) {
+                const oldRoleName = user.userRole ? user.userRole.name : user.roleId;
+                console.log(`Обновление роли пользователя ${login}: ${oldRoleName} -> ${mainRole}`);
+                user.roleId = roleId;
                 await user.save();
             }
         }
@@ -96,7 +102,7 @@ module.exports = async function (req, res, next) {
             login: user.login,
             name: user.name,
             surname: user.surname,
-            role: user.role,
+            role: mainRole,
             roles: kcRoles,
             abilities: abilities,
             keycloakId: keycloakUUID
