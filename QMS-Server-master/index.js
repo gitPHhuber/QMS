@@ -70,16 +70,16 @@ const initInitialData = async () => {
     }
 
 
-    const rolesData = {
-      SUPER_ADMIN: "Полный доступ (DevOps/Admin)",
-      QC_ENGINEER: "Инженер ОТК",
-      WAREHOUSE_MASTER: "Кладовщик",
-    };
+    const rolesData = [
+      { code: "SUPER_ADMIN", name: "SUPER_ADMIN", description: "Полный доступ (DevOps/Admin)" },
+      { code: "QC_ENGINEER", name: "QC_ENGINEER", description: "Инженер ОТК" },
+      { code: "WAREHOUSE_MASTER", name: "WAREHOUSE_MASTER", description: "Кладовщик" },
+    ];
 
-    for (const [name, desc] of Object.entries(rolesData)) {
+    for (const roleData of rolesData) {
       await models.Role.findOrCreate({
-        where: { name },
-        defaults: { description: desc }
+        where: { code: roleData.code },
+        defaults: roleData,
       });
     }
 

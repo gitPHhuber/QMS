@@ -101,6 +101,7 @@ const AuditLog = sequelize.define("audit_log", {
 
 const Role = sequelize.define("role", {
   id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  code: { type: DataTypes.STRING, unique: true, allowNull: false },
   name: { type: DataTypes.STRING, unique: true, allowNull: false },
   description: { type: DataTypes.STRING },
 });
