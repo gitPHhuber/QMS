@@ -216,14 +216,27 @@ const initInitialData = async () => {
 const start = async () => {
   try {
     await sequelize.authenticate();
-// AUTO-DISABLED: sequelize.sync disabled (use migrations)
+    console.log("[DB] Подключение к PostgreSQL установлено.");
 
+    // Синхронизация таблиц (только при DB_SYNC=true)
+    if (process.env.DB_SYNC === "true") {
+      console.log("[DB] DB_SYNC=true — выполняем sync({ alter: true })...");
+      await sequelize.sync({ alter: true });
+      console.log("[DB] Синхронизация таблиц завершена.");
+    }
 
-    await initInitialData();
+    // Инициализация ролей/прав — не блокирует старт сервера
+    try {
+      await initInitialData();
+    } catch (initErr) {
+      console.error(">>> [RBAC] Не удалось инициализировать роли/права.");
+      console.error(">>> Таблицы могут отсутствовать. Запустите: npm run db:reset");
+      console.error(">>> Подробности:", initErr.message);
+    }
 
     app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
   } catch (e) {
-    console.log(e);
+    console.error("[FATAL] Не удалось запустить сервер:", e.message);
   }
 };
 

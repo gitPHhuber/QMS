@@ -6,6 +6,9 @@
   "scripts": {
     "dev": "nodemon index.js",
     "start": "node index.js",
+    "db:reset": "node scripts/db-reset.js",
+    "db:sync": "cross-env DB_SYNC=true node index.js",
+    "setup": "node scripts/db-reset.js && node index.js",
     "test": "cross-env NODE_ENV=test jest --detectOpenHandles",
     "test:watch": "cross-env NODE_ENV=test jest --watch",
     "test:coverage": "cross-env NODE_ENV=test jest --coverage"
