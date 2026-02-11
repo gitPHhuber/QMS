@@ -25,7 +25,6 @@ export interface ProductionTask {
   projectId?: number | null;
 
   responsible?: { id: number; name: string; surname: string } | null;
-  targetSection?: { id: number; title: string } | null;
   project?: { id: number; title: string } | null;
 
   stats?: TaskStats;
