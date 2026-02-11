@@ -11,6 +11,10 @@ router.get("/auth", ...protect, (req, res) => {
     return res.json(req.user);
 });
 
+router.get("/check", ...protect, (req, res) => {
+    return res.json(req.user);
+});
+
 router.get("/", ...protect, userController.getUsers);
 
 router.get("/:id", ...protect, userController.getCurrentUser);
