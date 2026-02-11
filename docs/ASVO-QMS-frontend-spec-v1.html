@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ASVO-QMS — ТЗ Frontend v1</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  :root {
+    --bg: #080E14;
+    --surface: #0D1520;
+    --card: #111D2B;
+    --card-hover: #152436;
+    --border: #1A2D42;
+    --border-light: #1E3A54;
+    --accent: #2DD4A8;
+    --accent-dim: rgba(45,212,168,0.08);
+    --accent-glow: rgba(45,212,168,0.25);
+    --text: #E8EDF3;
+    --text-mid: #8899AB;
+    --text-dim: #4A5E72;
+    --red: #F06060;
+    --red-dim: rgba(240,96,96,0.12);
+    --amber: #E8A830;
+    --amber-dim: rgba(232,168,48,0.12);
+    --blue: #4A90E8;
+    --blue-dim: rgba(74,144,232,0.12);
+    --purple: #A06AE8;
+    --purple-dim: rgba(160,106,232,0.12);
+    --green: #2DD4A8;
+    --green-dim: rgba(45,212,168,0.12);
+    --grey: #3A4E62;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, sans-serif;
+    font-size: 14px;
+    line-height: 1.65;
+    padding: 0;
+  }
+
+  /* ─── Header ─── */
+  .doc-header {
+    background: linear-gradient(135deg, var(--surface), var(--card));
+    border-bottom: 1px solid var(--border);
+    padding: 48px 0 40px;
+    text-align: center;
+  }
+  .doc-header .logo {
+    display: inline-flex; align-items: center; gap: 12px;
+    margin-bottom: 24px;
+  }
+  .doc-header .logo-icon {
+    width: 48px; height: 48px; border-radius: 14px;
+    background: linear-gradient(135deg, var(--accent), rgba(45,212,168,0.6));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; font-weight: 800; color: var(--bg);
+  }
+  .doc-header .logo-text { font-size: 24px; font-weight: 800; color: var(--text); }
+  .doc-header .logo-badge {
+    background: var(--accent-dim); color: var(--accent);
+    padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 700;
+    border: 1px solid rgba(45,212,168,0.2);
+  }
+  .doc-header h1 {
+    font-size: 32px; font-weight: 800; letter-spacing: -0.5px;
+    margin-bottom: 8px;
+  }
+  .doc-header .subtitle { color: var(--text-mid); font-size: 16px; }
+
+  .meta-table {
+    display: inline-grid; grid-template-columns: auto auto;
+    gap: 2px; margin-top: 28px; text-align: left;
+    background: var(--border); border-radius: 10px; overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .meta-table dt {
+    background: var(--surface); padding: 8px 16px;
+    font-weight: 600; color: var(--text-dim); font-size: 12px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .meta-table dd {
+    background: var(--card); padding: 8px 20px;
+    font-weight: 500; color: var(--text); font-size: 13px;
+  }
+
+  /* ─── Layout ─── */
+  .container { max-width: 960px; margin: 0 auto; padding: 40px 32px; }
+
+  /* ─── Sections ─── */
+  .section { margin-bottom: 48px; }
+  .section-num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px; border-radius: 8px;
+    background: var(--accent-dim); color: var(--accent);
+    font-weight: 800; font-size: 14px; margin-right: 12px;
+    border: 1px solid rgba(45,212,168,0.2);
+    flex-shrink: 0;
+  }
+  h2.section-title {
+    display: flex; align-items: center;
+    font-size: 22px; font-weight: 800; letter-spacing: -0.3px;
+    margin-bottom: 20px; padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  h3 {
+    font-size: 15px; font-weight: 700; color: var(--accent);
+    margin: 24px 0 10px; letter-spacing: -0.2px;
+  }
+  h4 {
+    font-size: 13px; font-weight: 700; color: var(--text-mid);
+    margin: 16px 0 8px; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+
+  p { margin-bottom: 10px; color: var(--text); line-height: 1.7; }
+  .dim { color: var(--text-mid); }
+  .accent { color: var(--accent); }
+  .bold { font-weight: 700; }
+  .mono { font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+
+  /* ─── Lists ─── */
+  ul { list-style: none; margin: 8px 0 16px; }
+  ul li {
+    padding: 5px 0 5px 20px; position: relative;
+    color: var(--text); font-size: 13px;
+  }
+  ul li::before {
+    content: ''; position: absolute; left: 0; top: 12px;
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent); opacity: 0.6;
+  }
+  ul.dim-list li::before { background: var(--text-dim); }
+  ul.red-list li::before { background: var(--red); }
+
+  ol { margin: 8px 0 16px 20px; }
+  ol li { padding: 4px 0; font-size: 13px; }
+
+  /* ─── Tables ─── */
+  table {
+    width: 100%; border-collapse: separate; border-spacing: 0;
+    margin: 12px 0 20px; font-size: 13px;
+    border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+  }
+  th {
+    background: var(--surface); color: var(--text-dim);
+    font-weight: 700; font-size: 11px; text-transform: uppercase;
+    letter-spacing: 0.5px; padding: 10px 14px; text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 9px 14px; border-bottom: 1px solid rgba(26,45,66,0.5);
+    color: var(--text);
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(21,36,54,0.4); }
+
+  /* ─── Color Swatches ─── */
+  .color-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 8px; margin: 12px 0 20px;
+  }
+  .color-swatch {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 14px; border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--card); transition: all 0.15s;
+  }
+  .color-swatch:hover { border-color: var(--border-light); }
+  .color-dot {
+    width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .color-name { font-weight: 600; font-size: 12px; }
+  .color-hex { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-dim); }
+  .color-use { font-size: 11px; color: var(--text-dim); }
+
+  /* ─── Code Blocks ─── */
+  .code-block {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 16px 20px; margin: 10px 0 16px;
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    line-height: 1.8; color: var(--text-mid); overflow-x: auto;
+    white-space: pre;
+  }
+  .code-block .keyword { color: var(--purple); }
+  .code-block .string { color: var(--accent); }
+  .code-block .comment { color: var(--text-dim); font-style: italic; }
+  .code-block .create { color: var(--red); font-weight: 600; }
+  .code-block .update { color: var(--amber); font-weight: 600; }
+  .code-block .ready { color: var(--accent); }
+
+  /* ─── Cards ─── */
+  .info-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px 20px; margin: 10px 0;
+  }
+  .info-card.accent-border { border-left: 3px solid var(--accent); }
+  .info-card.red-border { border-left: 3px solid var(--red); }
+  .info-card.amber-border { border-left: 3px solid var(--amber); }
+  .info-card.blue-border { border-left: 3px solid var(--blue); }
+
+  .label {
+    display: inline-block; padding: 2px 10px; border-radius: 4px;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.3px;
+  }
+  .label-accent { background: var(--accent-dim); color: var(--accent); border: 1px solid rgba(45,212,168,0.2); }
+  .label-red { background: var(--red-dim); color: var(--red); border: 1px solid rgba(240,96,96,0.2); }
+  .label-amber { background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(232,168,48,0.2); }
+  .label-blue { background: var(--blue-dim); color: var(--blue); border: 1px solid rgba(74,144,232,0.2); }
+  .label-purple { background: var(--purple-dim); color: var(--purple); border: 1px solid rgba(160,106,232,0.2); }
+  .label-grey { background: rgba(58,78,98,0.15); color: var(--grey); border: 1px solid rgba(58,78,98,0.25); }
+
+  /* ─── Module Cards ─── */
+  .module-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 20px 24px; margin: 16px 0;
+  }
+  .module-card h3 { margin-top: 0; }
+  .module-meta {
+    display: flex; flex-wrap: wrap; gap: 12px; margin: 8px 0 14px;
+    font-size: 12px;
+  }
+  .module-meta span { display: flex; align-items: center; gap: 5px; }
+  .module-meta .key { color: var(--text-dim); }
+  .module-meta .val { color: var(--text); font-weight: 600; }
+
+  /* ─── Component Preview ─── */
+  .component-preview {
+    display: flex; flex-wrap: wrap; gap: 12px;
+    padding: 20px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 10px;
+    margin: 12px 0 20px; align-items: center;
+  }
+
+  .preview-badge {
+    padding: 3px 10px; border-radius: 4px;
+    font-size: 11px; font-weight: 700;
+  }
+  .preview-btn {
+    padding: 8px 20px; border-radius: 8px;
+    font-size: 13px; font-weight: 700; border: none;
+    cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+  }
+  .preview-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .preview-progress {
+    height: 6px; border-radius: 6px; overflow: hidden;
+    width: 120px;
+  }
+  .preview-progress-fill { height: 100%; border-radius: 6px; }
+
+  .preview-card-sample {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px; border-left: 3px solid var(--red);
+    width: 280px;
+  }
+
+  .preview-avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700;
+  }
+
+  /* ─── Priority Table ─── */
+  .priority-row { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+  .priority-icon { font-size: 12px; font-weight: 700; width: 24px; text-align: center; }
+
+  /* ─── Kanban Column Preview ─── */
+  .kanban-columns {
+    display: flex; gap: 8px; margin: 12px 0 20px; overflow-x: auto;
+  }
+  .kanban-col {
+    flex: 1; min-width: 140px; border-radius: 10px;
+    padding: 10px; text-align: center;
+  }
+  .kanban-col-header {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    font-size: 12px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.3px; margin-bottom: 8px;
+  }
+  .kanban-col-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  /* ─── Divider ─── */
+  .divider { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+
+  /* ─── Footer ─── */
+  .doc-footer {
+    text-align: center; padding: 32px;
+    border-top: 1px solid var(--border);
+    color: var(--text-dim); font-size: 12px;
+  }
+
+  /* ─── Timeline preview ─── */
+  .timeline-preview {
+    position: relative; padding-left: 24px; margin: 12px 0;
+  }
+  .timeline-preview::before {
+    content: ''; position: absolute; left: 8px; top: 4px; bottom: 4px;
+    width: 2px; background: var(--border);
+  }
+  .timeline-item { margin-bottom: 12px; position: relative; }
+  .timeline-item::before {
+    content: ''; position: absolute; left: -20px; top: 4px;
+    width: 12px; height: 12px; border-radius: 50%;
+    border: 2px solid var(--card);
+  }
+  .timeline-item.green::before { background: var(--accent); }
+  .timeline-item.red::before { background: var(--red); }
+  .timeline-item.blue::before { background: var(--blue); }
+  .timeline-date { font-size: 11px; color: var(--text-dim); }
+  .timeline-text { font-size: 13px; color: var(--text); }
+
+  @media print {
+    body { background: #fff; color: #111; }
+    .color-dot { border: 1px solid #ccc; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- HEADER -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="doc-header">
+  <div class="logo">
+    <div class="logo-icon">A</div>
+    <span class="logo-text">ASVO-QMS</span>
+    <span class="logo-badge">v2.0</span>
+  </div>
+  <h1>ТЕХНИЧЕСКОЕ ЗАДАНИЕ</h1>
+  <div class="subtitle">Редизайн UI и реализация модулей качества</div>
+
+  <dl class="meta-table">
+    <dt>Проект</dt><dd>ASVO-QMS v2.0</dd>
+    <dt>Автор</dt><dd>Костюков И.А., зам. тех. директора</dd>
+    <dt>Исполнитель</dt><dd>Frontend-разработчик</dd>
+    <dt>Дата</dt><dd>11.02.2026</dd>
+    <dt>Приоритет</dt><dd style="color:var(--red); font-weight:700">ВЫСОКИЙ</dd>
+    <dt>Дедлайн MVP</dt><dd style="color:var(--amber); font-weight:700">15.03.2026</dd>
+    <dt>Стек</dt><dd>React 18 + TypeScript + Tailwind CSS</dd>
+  </dl>
+</div>
+
+<div class="container">
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- 1. КОНТЕКСТ -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="section">
+  <h2 class="section-title"><span class="section-num">1</span>Контекст и цели</h2>
+
+  <p>ASVO-QMS — платформа управления качеством для производителей медицинских изделий по ISO 13485:2016. Система включает QMS, WMS и MES модули на единой платформе.</p>
+
+  <h3>Текущее состояние</h3>
+  <div class="info-card blue-border">
+    <ul>
+      <li><span class="bold">Backend:</span> 9 QMS-модулей реализованы (модели Sequelize, контроллеры, роутеры, сервисы)</li>
+      <li><span class="bold">Frontend:</span> реализованы только Documents, NC, CAPA (частично). Остальные 6 модулей — только backend</li>
+      <li><span class="bold">Задачи (Канбан):</span> работает, но в светлой теме — не соответствует общему дизайну</li>
+      <li><span class="bold">QMS Dashboard:</span> заглушка</li>
+    </ul>
+  </div>
+
+  <h3>Цели задачи</h3>
+  <ol>
+    <li><span class="bold">Переделать канбан-доску задач</span> в тёмную тему по прототипу</li>
+    <li><span class="bold">Реализовать UI для всех 10 QMS-модулей</span> (меню «Качество»)</li>
+    <li><span class="bold">Единый дизайн-язык:</span> тёмная тема, акцент <code style="color:var(--accent)">#2DD4A8</code></li>
+    <li><span class="bold">Подключить frontend</span> к существующим API-эндпоинтам</li>
+  </ol>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- 2. ДИЗАЙН-СИСТЕМА -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="section">
+  <h2 class="section-title"><span class="section-num">2</span>Дизайн-система</h2>
+
+  <h3>2.1 Цветовая палитра</h3>
+
+  <h4>Фоны и поверхности</h4>
+  <div class="color-grid">
+    <div class="color-swatch">
+      <div class="color-dot" style="background:#080E14"></div>
+      <div><div class="color-name">bg</div><div class="color-hex">#080E14</div><div class="color-use">Фон страницы</div></div>
+    </div>
+    <div class="color-swatch">
+      <div class="color-dot" style="background:#0D1520"></div>
+      <div><div class="color-name">surface</div><div class="color-hex">#0D1520</div><div class="color-use">Панели, сайдбар, header таблиц</div></div>
+    </div>
+    <div class="color-swatch">
+      <div class="color-dot" style="background:#111D2B"></div>
+      <div><div class="color-name">card</div><div class="color-hex">#111D2B</div><div class="color-use">Карточки, модальные окна</div></div>
+    </div>
+    <div class="color-swatch">
+      <div class="color-dot" style="background:#152436"></div>
+      <div><div class="color-name">card-hover</div><div class="color-hex">#152436</div><div class="color-use">Hover-состояние карточек</div></div>
+    </div>
+  </div>
+
+  <h4>Границы</h4>
+  <div class="color-grid">
+    <div class="color-swatch">
+      <div class="color-dot" style="background:#1A2D42"></div>
+      <div><div class="color-name">border</div><div class="color-hex">#1A2D42</div><div class="color-use">Основные границы</div></div>
+    </div>
+    <div class="color-swatch">
+      <div class="color-dot" style="background:#1E3A54"></div>
+      <div><div class="color-name">border-light</div><div class="color-hex">#1E3A54</div><div class="color-use">Hover, фокус, active state</div></div>
+    </div>
+  </div>
+
+  <h4>Акценты и семантика</h4>
+  <div class="color-grid">
+    <div class="color-swatch">
+      <div class="color-dot" style="background:#2DD4A8"></div>
+      <div><div class="color-name">accent / green</div><div class="color-hex">#2DD4A8</div><div class="color-use">Кнопки, ссылки, «Готово», «Одобрено»</div></div>
+    </div>
+    <div class="color-swatch">
+      <div class="color-dot" style="background:rgba(45,212,168,0.08)"></div>
+      <div><div class="color-name">accent-dim</div><div class="color-hex">rgba(45,212,168,0.08)</div><div class="color-use">Фон активных элементов, теги</div></div>
+    </div>
+    <div class="color-swatch">
+      <div class="color-dot" style="background:#F06060"></div>
+      <div><div class="color-name">red</div><div class="color-hex">#F06060</div><div class="color-use">Ошибки, критический, NC</div></div>
+    </div>
+    <div class="color-swatch">
+      <div class="color-dot" style="background:#E8A830"></div>
+      <div><div class="color-name">amber</div><div class="color-hex">#E8A830</div><div class="color-use">Предупреждения, «В работе»</div></div>
+    </div>
+    <div class="color-swatch">
+      <div class="color-dot" style="background:#4A90E8"></div>
+      <div><div class="color-name">blue</div><div class="color-hex">#4A90E8</div><div class="color-use">Информация, аудиты, «Новые»</div></div>
+    </div>
+    <div class="color-swatch">
+      <div class="color-dot" style="background:#A06AE8"></div>
+      <div><div class="color-name">purple</div><div class="color-hex">#A06AE8</div><div class="color-use">«На проверке», риски</div></div>
+    </div>
+    <div class="color-swatch">
+      <div class="color-dot" style="background:#3A4E62"></div>
+      <div><div class="color-name">grey</div><div class="color-hex">#3A4E62</div><div class="color-use">«Закрыто», неактивные элементы</div></div>
+    </div>
+  </div>
+
+  <h4>Текст</h4>
+  <div class="color-grid">
+    <div class="color-swatch">
+      <div class="color-dot" style="background:#E8EDF3"></div>
+      <div><div class="color-name">text</div><div class="color-hex">#E8EDF3</div><div class="color-use">Основной текст, заголовки</div></div>
+    </div>
+    <div class="color-swatch">
+      <div class="color-dot" style="background:#8899AB"></div>
+      <div><div class="color-name">text-mid</div><div class="color-hex">#8899AB</div><div class="color-use">Вторичный текст, описания</div></div>
+    </div>
+    <div class="color-swatch">
+      <div class="color-dot" style="background:#4A5E72"></div>
+      <div><div class="color-name">text-dim</div><div class="color-hex">#4A5E72</div><div class="color-use">Плейсхолдеры, мелкий текст</div></div>
+    </div>
+  </div>
+
+  <!-- ── Typography ── -->
+  <h3>2.2 Типографика</h3>
+  <table>
+    <tr><th>Элемент</th><th>Шрифт</th><th>Размер</th><th>Вес</th></tr>
+    <tr><td>Заголовок страницы</td><td>Inter</td><td>18px</td><td>700-800</td></tr>
+    <tr><td>Заголовок секции</td><td>Inter</td><td>14-15px</td><td>600-700</td></tr>
+    <tr><td>Текст в таблицах</td><td>Inter</td><td>13px</td><td>400-500</td></tr>
+    <tr><td>Мелкий текст (теги, даты)</td><td>Inter</td><td>11px</td><td>500-600</td></tr>
+    <tr><td>ID записей</td><td style="font-family:'JetBrains Mono',monospace; color:var(--accent)">JetBrains Mono</td><td>11px</td><td>600</td></tr>
+    <tr><td>Код, серийные номера</td><td style="font-family:'JetBrains Mono',monospace">JetBrains Mono</td><td>11-12px</td><td>400</td></tr>
+  </table>
+
+  <!-- ── Components Preview ── -->
+  <h3>2.3 Компоненты — визуальный референс</h3>
+
+  <h4>Бейджи (Badge / Label)</h4>
+  <div class="component-preview">
+    <span class="preview-badge" style="background:var(--red-dim); color:var(--red); border:1px solid rgba(240,96,96,0.3)">NC</span>
+    <span class="preview-badge" style="background:var(--amber-dim); color:var(--amber); border:1px solid rgba(232,168,48,0.3)">CAPA</span>
+    <span class="preview-badge" style="background:var(--purple-dim); color:var(--purple); border:1px solid rgba(160,106,232,0.3)">РИСК</span>
+    <span class="preview-badge" style="background:var(--blue-dim); color:var(--blue); border:1px solid rgba(74,144,232,0.3)">АУДИТ</span>
+    <span class="preview-badge" style="background:var(--accent-dim); color:var(--accent); border:1px solid rgba(45,212,168,0.2)">SOP</span>
+    <span class="preview-badge" style="background:rgba(58,78,98,0.15); color:var(--grey); border:1px solid rgba(58,78,98,0.25)">ЗАКРЫТО</span>
+  </div>
+  <p class="dim" style="font-size:12px">border-radius: 4px · font-size: 10-11px · font-weight: 700 · padding: 2px 7-10px · uppercase</p>
+
+  <h4>Кнопки</h4>
+  <div class="component-preview">
+    <button class="preview-btn" style="background:linear-gradient(135deg,#2DD4A8,rgba(45,212,168,0.8)); color:#080E14; box-shadow:0 2px 12px rgba(45,212,168,0.3)">+ Задача</button>
+    <button class="preview-btn" style="background:transparent; color:var(--accent); border:1px solid rgba(45,212,168,0.3)">📊 Отчёт</button>
+    <button class="preview-btn" style="background:transparent; color:var(--text-dim); border:1px solid var(--border); font-size:12px; padding:5px 14px">Фильтр</button>
+  </div>
+  <p class="dim" style="font-size:12px">Primary: gradient accent · Secondary: border accent · Small: border border, text-dim</p>
+
+  <h4>Status Dot</h4>
+  <div class="component-preview">
+    <span style="display:flex; align-items:center; gap:6px"><span class="preview-dot" style="background:var(--accent); box-shadow:0 0 6px rgba(45,212,168,0.4)"></span> Действует</span>
+    <span style="display:flex; align-items:center; gap:6px"><span class="preview-dot" style="background:var(--amber); box-shadow:0 0 6px rgba(232,168,48,0.4)"></span> В работе</span>
+    <span style="display:flex; align-items:center; gap:6px"><span class="preview-dot" style="background:var(--red); box-shadow:0 0 6px rgba(240,96,96,0.4)"></span> Открыто</span>
+    <span style="display:flex; align-items:center; gap:6px"><span class="preview-dot" style="background:var(--purple); box-shadow:0 0 6px rgba(160,106,232,0.4)"></span> На проверке</span>
+    <span style="display:flex; align-items:center; gap:6px"><span class="preview-dot" style="background:var(--blue); box-shadow:0 0 6px rgba(74,144,232,0.4)"></span> Запланирован</span>
+  </div>
+  <p class="dim" style="font-size:12px">width: 8px · height: 8px · border-radius: 50% · box-shadow: 0 0 6px {color}66</p>
+
+  <h4>Progress Bar</h4>
+  <div class="component-preview" style="flex-direction:column; gap:8px">
+    <div style="display:flex; align-items:center; gap:12px; width:100%">
+      <span style="font-size:12px; color:var(--text-dim); width:60px">92%</span>
+      <div class="preview-progress" style="background:var(--bg); flex:1"><div class="preview-progress-fill" style="width:92%; background:linear-gradient(90deg,rgba(45,212,168,0.5),#2DD4A8)"></div></div>
+    </div>
+    <div style="display:flex; align-items:center; gap:12px; width:100%">
+      <span style="font-size:12px; color:var(--text-dim); width:60px">65%</span>
+      <div class="preview-progress" style="background:var(--bg); flex:1"><div class="preview-progress-fill" style="width:65%; background:linear-gradient(90deg,rgba(232,168,48,0.5),#E8A830)"></div></div>
+    </div>
+    <div style="display:flex; align-items:center; gap:12px; width:100%">
+      <span style="font-size:12px; color:var(--text-dim); width:60px">25%</span>
+      <div class="preview-progress" style="background:var(--bg); flex:1"><div class="preview-progress-fill" style="width:25%; background:linear-gradient(90deg,rgba(240,96,96,0.5),#F06060)"></div></div>
+    </div>
+  </div>
+  <p class="dim" style="font-size:12px">height: 4-6px · border-radius: 6px · bg: var(--bg) · fill: linear-gradient(90deg, {color}88, {color})</p>
+
+  <h4>Avatar (инициалы)</h4>
+  <div class="component-preview">
+    <span class="preview-avatar" style="background:rgba(45,212,168,0.15); border:1.5px solid rgba(45,212,168,0.35); color:#2DD4A8">ИК</span>
+    <span class="preview-avatar" style="background:rgba(74,144,232,0.15); border:1.5px solid rgba(74,144,232,0.35); color:#4A90E8">АХ</span>
+    <span class="preview-avatar" style="background:rgba(232,168,48,0.15); border:1.5px solid rgba(232,168,48,0.35); color:#E8A830">АО</span>
+    <span class="preview-avatar" style="background:rgba(160,106,232,0.15); border:1.5px solid rgba(160,106,232,0.35); color:#A06AE8">ЕЯ</span>
+    <span class="preview-avatar" style="background:rgba(224,104,144,0.15); border:1.5px solid rgba(224,104,144,0.35); color:#E06890">ИЧ</span>
+  </div>
+  <p class="dim" style="font-size:12px">28px · border-radius: 50% · bg: {color}15 · border: 1.5px solid {color}55 · font-size: 10px · weight: 700</p>
+
+  <h4>Карточка задачи (Kanban Card)</h4>
+  <div class="component-preview">
+    <div class="preview-card-sample">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px">
+        <div style="display:flex; align-items:center; gap:6px">
+          <span style="font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--accent); font-weight:600">NC-089</span>
+          <span class="preview-badge" style="background:var(--red-dim); color:var(--red); border:1px solid rgba(240,96,96,0.3); font-size:9px">NC</span>
+        </div>
+        <span style="font-size:10px; color:var(--red); font-weight:700">▲▲</span>
+      </div>
+      <div style="font-size:13px; font-weight:500; color:var(--text); line-height:1.45; margin-bottom:10px">Расследование дефекта пайки разъёма J4 — root cause analysis</div>
+      <div style="height:4px; background:var(--bg); border-radius:4px; overflow:hidden; margin-bottom:10px"><div style="width:65%; height:100%; background:linear-gradient(90deg,rgba(232,168,48,0.5),#E8A830); border-radius:4px"></div></div>
+      <div style="display:flex; gap:4px; margin-bottom:10px">
+        <span style="font-size:10px; padding:2px 8px; border-radius:10px; background:var(--accent-dim); color:var(--text-mid)">RCA</span>
+        <span style="font-size:10px; padding:2px 8px; border-radius:10px; background:var(--accent-dim); color:var(--text-mid)">5 Why</span>
+      </div>
+      <div style="display:flex; align-items:center; justify-content:space-between">
+        <span class="preview-avatar" style="background:rgba(232,168,48,0.15); border:1.5px solid rgba(232,168,48,0.35); color:#E8A830; width:24px; height:24px; font-size:9px">АО</span>
+        <div style="display:flex; gap:10px; align-items:center; font-size:11px; color:var(--text-dim)">
+          <span>💬 8</span>
+          <span>📎 4</span>
+          <span style="color:var(--red)">⏰ 14.02</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="dim" style="font-size:12px">bg: card · border: 1px border · border-left: 3px solid {priority_color} · border-radius: 10px · padding: 14px · hover: translateY(-2px) + shadow</p>
+
+  <h4>Иконки</h4>
+  <p>Использовать <span class="bold">lucide-react</span>. В продакшне заменить emoji на SVG-иконки из lucide.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- 3. КАНБАН -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="section">
+  <h2 class="section-title"><span class="section-num">3</span>Задача 1: Редизайн канбан-доски</h2>
+
+  <div class="module-meta">
+    <span><span class="key">Файлы:</span> <span class="val mono">TasksPage.tsx, TasksList.tsx</span></span>
+    <span><span class="label label-red">ВЫСОКИЙ</span></span>
+    <span><span class="key">Срок:</span> <span class="val">3-4 дня</span></span>
+  </div>
+
+  <h3>3.1 Шапка страницы</h3>
+  <ul>
+    <li>Иконка (svg grid 2x2) + заголовок «Планирование проектов и задач»</li>
+    <li>Счётчик «Всего: N» с учётом активного фильтра</li>
+    <li>Поле поиска: width 180px → 240px при фокусе, border анимация</li>
+    <li>Dropdown «Все исполнители» — фильтр по assignee</li>
+    <li>Toggle «Канбан-доска | Проекты» — active: bg accent, color bg</li>
+    <li>Кнопка «+ Задача» — primary стиль с glow-тенью</li>
+  </ul>
+
+  <h3>3.2 Фильтры (pill-кнопки)</h3>
+  <div class="component-preview">
+    <span style="padding:4px 14px; border-radius:16px; font-size:12px; font-weight:600; border:1.5px solid var(--accent); background:rgba(45,212,168,0.1); color:var(--accent)">Все</span>
+    <span style="padding:4px 14px; border-radius:16px; font-size:12px; font-weight:600; border:1px solid var(--border); color:var(--text-dim)">NC</span>
+    <span style="padding:4px 14px; border-radius:16px; font-size:12px; font-weight:600; border:1px solid var(--border); color:var(--text-dim)">CAPA</span>
+    <span style="padding:4px 14px; border-radius:16px; font-size:12px; font-weight:600; border:1px solid var(--border); color:var(--text-dim)">Риск</span>
+    <span style="padding:4px 14px; border-radius:16px; font-size:12px; font-weight:600; border:1px solid var(--border); color:var(--text-dim)">Аудит</span>
+    <span style="padding:4px 14px; border-radius:16px; font-size:12px; font-weight:600; border:1px solid var(--border); color:var(--text-dim)">Обучение</span>
+  </div>
+  <p class="dim" style="font-size:12px">Active: border {type_color} + bg {type_color}18 + color {type_color} · Inactive: border border + color text-dim</p>
+
+  <h3>3.3 Колонки канбана</h3>
+  <div class="kanban-columns">
+    <div class="kanban-col" style="background:rgba(74,144,232,0.05); border-top:2px solid rgba(74,144,232,0.4)">
+      <div class="kanban-col-header"><span class="kanban-col-dot" style="background:#4A90E8; box-shadow:0 0 8px rgba(74,144,232,0.4)"></span><span style="color:#4A90E8">НОВЫЕ</span></div>
+    </div>
+    <div class="kanban-col" style="background:rgba(232,168,48,0.05); border-top:2px solid rgba(232,168,48,0.4)">
+      <div class="kanban-col-header"><span class="kanban-col-dot" style="background:#E8A830; box-shadow:0 0 8px rgba(232,168,48,0.4)"></span><span style="color:#E8A830">В РАБОТЕ</span></div>
+    </div>
+    <div class="kanban-col" style="background:rgba(160,106,232,0.05); border-top:2px solid rgba(160,106,232,0.4)">
+      <div class="kanban-col-header"><span class="kanban-col-dot" style="background:#A06AE8; box-shadow:0 0 8px rgba(160,106,232,0.4)"></span><span style="color:#A06AE8">НА ПРОВЕРКЕ</span></div>
+    </div>
+    <div class="kanban-col" style="background:rgba(45,212,168,0.05); border-top:2px solid rgba(45,212,168,0.4)">
+      <div class="kanban-col-header"><span class="kanban-col-dot" style="background:#2DD4A8; box-shadow:0 0 8px rgba(45,212,168,0.4)"></span><span style="color:#2DD4A8">ГОТОВО</span></div>
+    </div>
+    <div class="kanban-col" style="background:rgba(58,78,98,0.05); border-top:2px solid rgba(58,78,98,0.4)">
+      <div class="kanban-col-header"><span class="kanban-col-dot" style="background:#3A4E62; box-shadow:0 0 8px rgba(58,78,98,0.4)"></span><span style="color:#3A4E62">ЗАКРЫТО</span></div>
+    </div>
+  </div>
+
+  <h3>3.4 Приоритеты</h3>
+  <table>
+    <tr><th>Ключ</th><th>Название</th><th>Цвет</th><th>Иконка</th><th>border-left</th></tr>
+    <tr><td>critical</td><td>Критический</td><td><span style="color:var(--red)">#F06060</span></td><td style="color:var(--red); font-weight:700">▲▲</td><td>3px solid <span style="color:var(--red)">#F06060</span>66</td></tr>
+    <tr><td>high</td><td>Высокий</td><td><span style="color:#E87040">#E87040</span></td><td style="color:#E87040; font-weight:700">▲</td><td>3px solid #E8704066</td></tr>
+    <tr><td>medium</td><td>Средний</td><td><span style="color:var(--amber)">#E8A830</span></td><td style="color:var(--amber); font-weight:700">●</td><td>3px solid <span style="color:var(--amber)">#E8A830</span>66</td></tr>
+    <tr><td>low</td><td>Низкий</td><td><span style="color:var(--blue)">#4A90E8</span></td><td style="color:var(--blue); font-weight:700">▼</td><td>3px solid <span style="color:var(--blue)">#4A90E8</span>66</td></tr>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- 4. QMS МОДУЛИ -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="section">
+  <h2 class="section-title"><span class="section-num">4</span>QMS-модули: UI и функционал</h2>
+
+  <h3>4.0 Общая навигация и роутинг</h3>
+  <p>Меню «Качество» в хедере → dropdown → 10 пунктов. Внутри QMS — сайдбар 220px с дублированием навигации.</p>
+
+  <div class="code-block"><span class="comment">// routes.ts — добавить:</span>
+/quality/dashboard   → <span class="ready">QmsDashboardPage</span>        <span class="comment">// переписать</span>
+/quality/documents   → <span class="ready">DocumentsPage</span>           <span class="comment">// доработать</span>
+/quality/nc          → <span class="ready">NonconformityPage</span>       <span class="comment">// доработать</span>
+/quality/capa        → <span class="ready">CapaPage</span>                <span class="comment">// доработать</span>
+/quality/risks       → <span class="create">RiskPage</span>                <span class="comment">// СОЗДАТЬ</span>
+/quality/suppliers   → <span class="create">SupplierPage</span>            <span class="comment">// СОЗДАТЬ</span>
+/quality/audits      → <span class="create">AuditPage</span>              <span class="comment">// СОЗДАТЬ</span>
+/quality/training    → <span class="create">TrainingPage</span>            <span class="comment">// СОЗДАТЬ</span>
+/quality/equipment   → <span class="create">EquipmentPage</span>           <span class="comment">// СОЗДАТЬ</span>
+/quality/review      → <span class="create">ManagementReviewPage</span>    <span class="comment">// СОЗДАТЬ</span>
+
+<span class="comment">// Обёртка:</span>
+<span class="keyword">QmsLayout.tsx</span> — сайдбар + outlet для /quality/* страниц</div>
+
+  <!-- ── EACH MODULE ── -->
+
+  <div class="module-card" style="border-left:3px solid var(--accent)">
+    <h3>4.1 📊 Дашборд</h3>
+    <div class="module-meta">
+      <span><span class="key">Файл:</span> <span class="val mono">pages/QMS/QmsDashboardPage.tsx</span></span>
+      <span><span class="label label-amber">ПЕРЕПИСАТЬ</span></span>
+      <span><span class="key">API:</span> <span class="val">агрегация из всех QMS-эндпоинтов</span></span>
+    </div>
+    <ul>
+      <li><span class="bold">KPI-карточки (5 шт.):</span> Документы <span class="label label-blue">247</span>, Несоответствия <span class="label label-red">8</span>, CAPA <span class="label label-amber">15</span>, Аудиты <span class="label label-accent">92%</span>, Риски <span class="label label-purple">34</span></li>
+      <li><span class="bold">Матрица рисков 5×5</span> (мини-версия) — цветовое кодирование, точки с кол-вом рисков</li>
+      <li><span class="bold">Лента активности (Timeline)</span> — последние 10 действий из audit log</li>
+      <li><span class="bold">Виджет просроченных CAPA</span> — ID, описание, дней просрочки (бейдж red)</li>
+      <li><span class="bold">Виджет сроков калибровки</span> — оборудование с ближайшими сроками</li>
+      <li><span class="bold">Виджет обучения</span> — progress bars по отделам</li>
+    </ul>
+  </div>
+
+  <div class="module-card">
+    <h3>4.2 📄 Документы</h3>
+    <div class="module-meta">
+      <span><span class="key">Файл:</span> <span class="val mono">pages/Documents/DocumentsPage.tsx</span></span>
+      <span><span class="label label-amber">ДОРАБОТАТЬ</span></span>
+      <span><span class="key">API:</span> <span class="val mono">/api/documents</span></span>
+      <span><span class="label label-accent">Backend ГОТОВ</span></span>
+    </div>
+    <ul>
+      <li>Табличный реестр: ID, Название, Тип (SOP/РИ/Форма/РК), Версия, Статус, Владелец, Даты</li>
+      <li>Вкладки-фильтры: Все | SOP | РИ | Формы | РК | На согласовании | Просрочен пересмотр</li>
+      <li>Workflow согласования: Черновик → Проверка → Согласование → Утверждение → Действует</li>
+      <li>Статусы: <span style="display:inline-flex; align-items:center; gap:4px"><span class="preview-dot" style="background:var(--accent)"></span> Действует</span> · <span style="display:inline-flex; align-items:center; gap:4px"><span class="preview-dot" style="background:var(--amber)"></span> На согласовании</span> · <span style="display:inline-flex; align-items:center; gap:4px"><span class="preview-dot" style="background:var(--text-dim)"></span> Черновик</span> · <span style="display:inline-flex; align-items:center; gap:4px"><span class="preview-dot" style="background:var(--blue)"></span> На пересмотре</span></li>
+      <li>Блок статистики: 4 числа с цветами</li>
+    </ul>
+  </div>
+
+  <div class="module-card">
+    <h3>4.3 ⚠️ Несоответствия</h3>
+    <div class="module-meta">
+      <span><span class="key">Файл:</span> <span class="val mono">pages/Nonconformity/NonconformityPage.tsx</span></span>
+      <span><span class="label label-amber">ДОРАБОТАТЬ</span></span>
+      <span><span class="key">API:</span> <span class="val mono">/api/nc</span></span>
+      <span><span class="label label-accent">Backend ГОТОВ</span></span>
+    </div>
+    <ul>
+      <li>KPI: Открыто <span class="label label-red">8</span>, Расследование <span class="label label-amber">5</span>, CAPA создано <span class="label label-purple">12</span>, Закрыто <span class="label label-accent">23</span></li>
+      <li>Таблица: ID, Описание, Источник, Критичность (Крит./Знач./Незнач.), Статус, Продукт, Дата, Ответственный</li>
+      <li>6-шаговый workflow: Регистрация → Расследование (5 Why, Ishikawa) → Диспозиция → CAPA → Верификация → Закрытие</li>
+      <li>Pareto-диаграмма источников NC (горизонтальные progress bars)</li>
+    </ul>
+  </div>
+
+  <div class="module-card">
+    <h3>4.4 🔄 CAPA</h3>
+    <div class="module-meta">
+      <span><span class="key">Файл:</span> <span class="val mono">pages/CAPA/CapaPage.tsx</span></span>
+      <span><span class="label label-amber">ДОРАБОТАТЬ</span></span>
+      <span><span class="key">API:</span> <span class="val mono">/api/capa</span></span>
+      <span><span class="label label-accent">Backend ГОТОВ</span></span>
+    </div>
+    <ul>
+      <li>KPI: Активных <span class="label label-blue">15</span>, Просрочено <span class="label label-red">5</span>, Эффективность <span class="label label-accent">87%</span>, Ср. срок <span class="label label-amber">18д</span></li>
+      <li>Таблица: ID, Тип (<span class="label label-red">CA</span> / <span class="label label-amber">PA</span>), Описание, Источник, Статус, Срок, Ответственный, Прогресс-бар</li>
+      <li>Визуализация 8D: D1-D8 блоки, заполненные — bg accent-dim + border accent</li>
+      <li>Просроченные сроки: color red</li>
+    </ul>
+  </div>
+
+  <div class="module-card" style="border-left:3px solid var(--red)">
+    <h3>4.5 🎯 Риски — <span style="color:var(--red)">СОЗДАТЬ</span></h3>
+    <div class="module-meta">
+      <span><span class="key">Создать:</span> <span class="val mono">pages/Risk/RiskPage.tsx</span></span>
+      <span><span class="label label-red">НОВАЯ</span></span>
+      <span><span class="key">API:</span> <span class="val mono">/api/risks</span></span>
+      <span><span class="label label-accent">Backend ГОТОВ</span></span>
+    </div>
+    <ul>
+      <li>KPI: Всего <span class="label label-blue">34</span>, Высокие <span class="label label-red">6</span>, Средние <span class="label label-amber">14</span>, Низкие <span class="label label-accent">14</span></li>
+      <li>Таблица: ID, Описание, Категория, Начальный P×S=Level, Остаточный, Статус, Меры</li>
+      <li><span class="bold">Матрица 5×5 (ISO 14971):</span> Probability (1-5) × Severity (1-5)</li>
+      <li>Цвета ячеек: 1-4 <span style="color:var(--accent)">■</span> green · 5-9 <span style="color:var(--amber)">■</span> amber · 10-16 <span style="color:#f97316">■</span> orange · 17-25 <span style="color:var(--red)">■</span> red</li>
+      <li>Ячейки с рисками: увеличенный шрифт, жирная рамка, точка</li>
+    </ul>
+  </div>
+
+  <div class="module-card" style="border-left:3px solid var(--red)">
+    <h3>4.6 🏭 Поставщики — <span style="color:var(--red)">СОЗДАТЬ</span></h3>
+    <div class="module-meta">
+      <span><span class="key">Создать:</span> <span class="val mono">pages/Supplier/SupplierPage.tsx</span></span>
+      <span><span class="label label-red">НОВАЯ</span></span>
+      <span><span class="key">API:</span> <span class="val mono">/api/suppliers</span></span>
+      <span><span class="key">Backend:</span> <span class="val">SupplierScoringService.js — ГОТОВ</span></span>
+    </div>
+    <ul>
+      <li>Таблица: ID, Наименование, Тип (Критический <span class="label label-red">●</span> / Основной <span class="label label-blue">●</span> / Вспомогательный), Рейтинг (progress bar + число), Статус, Продукция, След. оценка</li>
+      <li>Рейтинг: ≥80 <span style="color:var(--accent)">green</span> · ≥60 <span style="color:var(--amber)">amber</span> · &lt;60 <span style="color:var(--red)">red</span></li>
+      <li>Критерии оценки (6 карточек): Качество 30%, Доставка 20%, Документация 20%, Коммуникация 10%, Цена 10%, Соответствие 10%</li>
+    </ul>
+  </div>
+
+  <div class="module-card" style="border-left:3px solid var(--red)">
+    <h3>4.7 📋 Аудиты — <span style="color:var(--red)">СОЗДАТЬ</span></h3>
+    <div class="module-meta">
+      <span><span class="key">Создать:</span> <span class="val mono">pages/Audit/AuditPage.tsx</span></span>
+      <span><span class="label label-red">НОВАЯ</span></span>
+      <span><span class="key">API:</span> <span class="val mono">/api/audits</span></span>
+    </div>
+    <ul>
+      <li>Вкладки: План | Проведение | Замечания | Отчёты</li>
+      <li>Таблица: ID, Тип, Процесс/Раздел ISO, Статус, Ведущий аудитор, Даты, Замечания</li>
+      <li><span class="bold">Годовой план-матрица:</span> строки = процессы ISO (4.2, 5.6, 7.1...), столбцы = 12 месяцев, ячейки = <span style="color:var(--accent)">■</span> проведён / <span style="color:var(--blue)">■</span> запланирован</li>
+      <li>Замечания: <span class="label label-red">Major</span> <span class="label label-amber">Minor</span> <span class="label label-blue">Наблюдение</span> <span class="label label-accent">Рекомендация</span></li>
+    </ul>
+  </div>
+
+  <div class="module-card" style="border-left:3px solid var(--red)">
+    <h3>4.8 📚 Обучение — <span style="color:var(--red)">СОЗДАТЬ</span></h3>
+    <div class="module-meta">
+      <span><span class="key">Создать:</span> <span class="val mono">pages/Training/TrainingPage.tsx</span></span>
+      <span><span class="label label-red">НОВАЯ</span></span>
+      <span><span class="key">API:</span> <span class="val mono">/api/training</span></span>
+    </div>
+    <ul>
+      <li>Таблица: Сотрудник, Должность, Тема, Статус, Дата, Балл, Действует до</li>
+      <li><span class="bold">Матрица компетенций:</span> строки = сотрудники, столбцы = навыки</li>
+      <li>Уровни: <span style="color:var(--accent)">●●●</span> Эксперт · <span style="color:var(--blue)">●●</span> Обучен · <span style="color:var(--amber)">●</span> Базовый · <span style="color:var(--red)">—</span> Не пройдено</li>
+    </ul>
+  </div>
+
+  <div class="module-card" style="border-left:3px solid var(--red)">
+    <h3>4.9 🔧 Оборудование — <span style="color:var(--red)">СОЗДАТЬ</span></h3>
+    <div class="module-meta">
+      <span><span class="key">Создать:</span> <span class="val mono">pages/Equipment/EquipmentPage.tsx</span></span>
+      <span><span class="label label-red">НОВАЯ</span></span>
+      <span><span class="key">API:</span> <span class="val mono">/api/equipment</span></span>
+    </div>
+    <ul>
+      <li>Таблица: ID, Наименование, Тип, S/N (mono), Расположение, Статус, Калибровки, Дней до</li>
+      <li>Бейдж «Дней до»: <span class="label label-red">-10д</span> просрочено · <span class="label label-amber">4д</span> скоро · <span class="label label-accent">18д</span> норма</li>
+      <li>Паспорт оборудования: key-value карточка</li>
+      <li>История калибровок: Timeline с результатами и погрешностями</li>
+    </ul>
+  </div>
+
+  <div class="module-card" style="border-left:3px solid var(--red)">
+    <h3>4.10 👔 Анализ руководства — <span style="color:var(--red)">СОЗДАТЬ</span></h3>
+    <div class="module-meta">
+      <span><span class="key">Создать:</span> <span class="val mono">pages/Review/ManagementReviewPage.tsx</span></span>
+      <span><span class="label label-red">НОВАЯ</span></span>
+      <span><span class="key">API:</span> <span class="val mono">/api/reviews</span></span>
+    </div>
+    <ul>
+      <li>Таблица: ID, Период, Дата, Статус, Председатель, Решений, Действий</li>
+      <li><span class="bold">Входные данные (ISO 13485, п.5.6.2):</span> 8 карточек — аудиты, обратная связь, KPI, CAPA, нормативка, риски, рекомендации, обучение</li>
+      <li>Решения и действия: <span class="label label-accent">Выполнено</span> <span class="label label-amber">В работе</span> <span class="label label-grey">Не начато</span></li>
+    </ul>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- 5. API -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="section">
+  <h2 class="section-title"><span class="section-num">5</span>API-эндпоинты</h2>
+
+  <table>
+    <tr><th>Модуль</th><th>Эндпоинт</th><th>Методы</th><th>Backend</th></tr>
+    <tr><td>Документы</td><td class="mono">/api/documents</td><td>GET POST PUT DELETE</td><td><span class="label label-accent">ГОТОВ</span></td></tr>
+    <tr><td>NC</td><td class="mono">/api/nc</td><td>GET POST PUT</td><td><span class="label label-accent">ГОТОВ</span></td></tr>
+    <tr><td>CAPA</td><td class="mono">/api/capa</td><td>GET POST PUT</td><td><span class="label label-accent">ГОТОВ</span></td></tr>
+    <tr><td>Риски</td><td class="mono">/api/risks</td><td>GET POST PUT</td><td><span class="label label-accent">ГОТОВ</span></td></tr>
+    <tr><td>Поставщики</td><td class="mono">/api/suppliers</td><td>GET POST PUT</td><td><span class="label label-amber">Нужен контроллер</span></td></tr>
+    <tr><td>Аудиты</td><td class="mono">/api/audits</td><td>GET POST PUT</td><td><span class="label label-amber">Нужен контроллер</span></td></tr>
+    <tr><td>Обучение</td><td class="mono">/api/training</td><td>GET POST PUT</td><td><span class="label label-amber">Нужен контроллер</span></td></tr>
+    <tr><td>Оборудование</td><td class="mono">/api/equipment</td><td>GET POST PUT</td><td><span class="label label-amber">Нужен контроллер</span></td></tr>
+    <tr><td>Анализ рук-ва</td><td class="mono">/api/reviews</td><td>GET POST PUT</td><td><span class="label label-amber">Нужен контроллер</span></td></tr>
+  </table>
+
+  <div class="info-card accent-border">
+    <p style="margin:0"><span class="bold" style="color:var(--accent)">Важно:</span> Для модулей где API ещё не готов — сначала создать страницу с моковыми данными, затем подключить API.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- 6. ФАЙЛОВАЯ СТРУКТУРА -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="section">
+  <h2 class="section-title"><span class="section-num">6</span>Файловая структура</h2>
+
+  <div class="code-block">src/
+  pages/
+    QMS/
+      <span class="keyword">QmsLayout.tsx</span>              <span class="comment">← обёртка с сайдбаром</span>
+      <span class="update">QmsDashboardPage.tsx</span>       <span class="comment">← переписать</span>
+    Documents/
+      <span class="update">DocumentsPage.tsx</span>          <span class="comment">← доработать</span>
+    Nonconformity/
+      <span class="update">NonconformityPage.tsx</span>      <span class="comment">← доработать</span>
+    CAPA/
+      <span class="update">CapaPage.tsx</span>               <span class="comment">← доработать</span>
+    Risk/
+      <span class="create">RiskPage.tsx</span>               <span class="comment">← СОЗДАТЬ</span>
+    Supplier/
+      <span class="create">SupplierPage.tsx</span>           <span class="comment">← СОЗДАТЬ</span>
+    Audit/
+      <span class="create">AuditPage.tsx</span>              <span class="comment">← СОЗДАТЬ</span>
+    Training/
+      <span class="create">TrainingPage.tsx</span>           <span class="comment">← СОЗДАТЬ</span>
+    Equipment/
+      <span class="create">EquipmentPage.tsx</span>          <span class="comment">← СОЗДАТЬ</span>
+    Review/
+      <span class="create">ManagementReviewPage.tsx</span>   <span class="comment">← СОЗДАТЬ</span>
+    Tasks/
+      <span class="update">TasksPage.tsx</span>              <span class="comment">← переписать (канбан)</span>
+      <span class="update">TasksList.tsx</span>              <span class="comment">← переписать</span>
+
+  components/qms/                   <span class="comment">← shared UI</span>
+    <span class="keyword">Badge.tsx</span>
+    <span class="keyword">StatusDot.tsx</span>
+    <span class="keyword">ProgressBar.tsx</span>
+    <span class="keyword">StatCard.tsx</span>
+    <span class="keyword">DataTable.tsx</span>               <span class="comment">← reusable table</span>
+    <span class="keyword">Timeline.tsx</span>
+    <span class="keyword">KpiRow.tsx</span>
+
+  api/
+    <span class="update">qmsApi.ts</span>                    <span class="comment">← дополнить эндпоинтами</span></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- 7. ПРИОРИТЕТЫ И СРОКИ -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="section">
+  <h2 class="section-title"><span class="section-num">7</span>Приоритеты и сроки</h2>
+
+  <table>
+    <tr><th>#</th><th>Задача</th><th>Приоритет</th><th>Оценка</th><th>Зависит от</th></tr>
+    <tr><td>1</td><td>Shared компоненты (Badge, Table, StatCard, ProgressBar...)</td><td><span class="label label-red">P0</span></td><td>1 день</td><td>—</td></tr>
+    <tr><td>2</td><td>QmsLayout + сайдбар + роутинг</td><td><span class="label label-red">P0</span></td><td>0.5 дня</td><td>—</td></tr>
+    <tr><td>3</td><td>Редизайн канбан-доски</td><td><span class="label label-amber">P1</span></td><td>3-4 дня</td><td>#1</td></tr>
+    <tr><td>4</td><td>QMS Dashboard</td><td><span class="label label-amber">P1</span></td><td>2 дня</td><td>#1, #2</td></tr>
+    <tr><td>5</td><td>Доработка Documents</td><td><span class="label label-amber">P1</span></td><td>1 день</td><td>#1, #2</td></tr>
+    <tr><td>6</td><td>Доработка NC + CAPA</td><td><span class="label label-amber">P1</span></td><td>2 дня</td><td>#1, #2</td></tr>
+    <tr><td>7</td><td>Risk Page + матрица 5×5</td><td><span class="label label-amber">P1</span></td><td>2 дня</td><td>#1, #2</td></tr>
+    <tr><td>8</td><td>Supplier Page</td><td><span class="label label-blue">P2</span></td><td>1.5 дня</td><td>#1, #2</td></tr>
+    <tr><td>9</td><td>Audit Page + годовой план</td><td><span class="label label-blue">P2</span></td><td>2 дня</td><td>#1, #2</td></tr>
+    <tr><td>10</td><td>Training Page + матрица компет.</td><td><span class="label label-blue">P2</span></td><td>1.5 дня</td><td>#1, #2</td></tr>
+    <tr><td>11</td><td>Equipment Page</td><td><span class="label label-blue">P2</span></td><td>1.5 дня</td><td>#1, #2</td></tr>
+    <tr><td>12</td><td>Management Review Page</td><td><span class="label label-blue">P2</span></td><td>1 день</td><td>#1, #2</td></tr>
+  </table>
+
+  <div class="info-card accent-border" style="margin-top:16px">
+    <p style="margin:0"><span class="bold" style="color:var(--accent)">Итого:</span> 18-20 рабочих дней (~4 недели). При 2 разработчиках: 2-2.5 недели.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- 8. КРИТЕРИИ ПРИЁМКИ -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="section">
+  <h2 class="section-title"><span class="section-num">8</span>Критерии приёмки</h2>
+
+  <h3>Обязательно</h3>
+  <ol>
+    <li>Все 10 QMS-модулей доступны через меню «Качество»</li>
+    <li>Канбан-доска полностью в тёмной теме с информативными карточками</li>
+    <li>Единый дизайн-язык: цвета, шрифты, компоненты из раздела 2</li>
+    <li>Таблицы с сортировкой и sticky-заголовками</li>
+    <li>Shared компоненты переиспользуются во всех модулях</li>
+    <li>Страницы работают с моковыми данными, если API не готов</li>
+    <li>Нет ошибок TypeScript (strict mode)</li>
+    <li>Responsive: корректно на 1280px+ (десктоп-приоритет)</li>
+  </ol>
+
+  <h3>Желательно</h3>
+  <ul class="dim-list">
+    <li>Drag-and-drop карточек между колонками канбана</li>
+    <li>Анимации при hover и переходах между модулями</li>
+    <li>Экспорт таблиц в Excel</li>
+    <li>Печатные формы для аудитов и анализа руководства</li>
+  </ul>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- 9. ПРОТОТИПЫ -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="section">
+  <h2 class="section-title"><span class="section-num">9</span>Прототипы</h2>
+
+  <p>К ТЗ прилагаются два интерактивных React-прототипа. Открыть в любом React-проекте для визуального референса:</p>
+
+  <div class="info-card" style="display:flex; gap:16px; margin-top:12px">
+    <div style="flex:1; padding:12px; background:var(--surface); border-radius:8px; border:1px solid var(--border)">
+      <div style="font-weight:700; color:var(--accent); margin-bottom:4px; font-size:13px">kanban-board.jsx</div>
+      <div style="font-size:12px; color:var(--text-mid)">Канбан-доска задач — тёмная тема, карточки с данными, фильтры, колонки</div>
+    </div>
+    <div style="flex:1; padding:12px; background:var(--surface); border-radius:8px; border:1px solid var(--border)">
+      <div style="font-weight:700; color:var(--accent); margin-bottom:4px; font-size:13px">qms-modules-design.jsx</div>
+      <div style="font-size:12px; color:var(--text-mid)">Все 10 QMS-модулей — таблицы, KPI, матрицы, workflow</div>
+    </div>
+  </div>
+
+  <p style="margin-top:12px" class="dim">Прототипы используют inline-стили. В продакшне заменить на Tailwind CSS классы.</p>
+</div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- FOOTER -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="doc-footer">
+  ASVOTECH · ASVO-QMS · ISO 13485:2016 · Confidential · v1.0 · 11.02.2026
+</div>
+
+</body>
+</html>
