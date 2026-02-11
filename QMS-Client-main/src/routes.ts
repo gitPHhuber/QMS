@@ -31,6 +31,7 @@ import AuditsPage from "./pages/Quality/AuditsPage";
 import TrainingPage from "./pages/Quality/TrainingPage";
 import EquipmentPage from "./pages/Quality/EquipmentPage";
 import ReviewPage from "./pages/Quality/ReviewPage";
+import { QmsPrototypePage } from "./pages/QMS/QmsPrototypePage";
 
 import {
   ADMIN_PCs_ROUTE,
@@ -61,6 +62,7 @@ import {
   TRAINING_ROUTE,
   EQUIPMENT_ROUTE,
   REVIEW_ROUTE,
+  QMS_PROTOTYPE_ROUTE,
 } from "./utils/consts";
 
 export const authRoutes = [
@@ -80,6 +82,7 @@ export const authRoutes = [
   { path: TRAINING_ROUTE, Component: TrainingPage },
   { path: EQUIPMENT_ROUTE, Component: EquipmentPage },
   { path: REVIEW_ROUTE, Component: ReviewPage },
+  { path: QMS_PROTOTYPE_ROUTE, Component: QmsPrototypePage },
 ];
 
 export const adminRoutes = [

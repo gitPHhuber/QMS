@@ -34,3 +34,4 @@ export const INTERNAL_AUDITS_ROUTE = '/qms/audits';
 export const TRAINING_ROUTE = '/qms/training';
 export const EQUIPMENT_ROUTE = '/qms/equipment';
 export const REVIEW_ROUTE = '/qms/review';
+export const QMS_PROTOTYPE_ROUTE = '/qms/prototype';
