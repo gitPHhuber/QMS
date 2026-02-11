@@ -13,7 +13,7 @@ const Section = sequelize.define("production_section", {
       key: 'id'
     }
   },
-});
+}, { freezeTableName: true });
 
 const Team = sequelize.define("production_team", {
   id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
@@ -31,7 +31,7 @@ const Team = sequelize.define("production_team", {
       key: 'id'
     }
   },
-});
+}, { freezeTableName: true });
 
 module.exports = {
   Section,

@@ -27,7 +27,7 @@ const PC = sequelize.define("PC", {
   ip: { type: DataTypes.STRING, unique: true, allowNull: false },
   pc_name: { type: DataTypes.STRING, allowNull: false },
   cabinet: { type: DataTypes.STRING },
-});
+}, { tableName: "pcs" });
 
 const Session = sequelize.define("session", {
   id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
@@ -36,7 +36,7 @@ const Session = sequelize.define("session", {
     type: DataTypes.SMALLINT,
     allowNull: true,
     references: {
-      model: "PCs",
+      model: "pcs",
       key: "id",
     },
   },

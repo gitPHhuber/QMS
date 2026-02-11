@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "nodemon index.js",
     "start": "node index.js",
+    "db:reset": "node scripts/db-reset.js",
+    "db:migrate": "npx sequelize-cli db:migrate",
     "test": "cross-env NODE_ENV=test jest --detectOpenHandles",
     "test:watch": "cross-env NODE_ENV=test jest --watch",
     "test:coverage": "cross-env NODE_ENV=test jest --coverage"
