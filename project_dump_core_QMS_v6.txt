@@ -24,6 +24,7 @@ PROJECT CORE FILES OVERVIEW
 - QMS-Client-main/src/components/Modal/Modal.tsx
 - QMS-Client-main/src/components/common/Preloader.tsx
 - QMS-Client-main/src/components/common/PreloaderMini.tsx
+- QMS-Client-main/src/hooks/useAppAuth.ts
 - QMS-Client-main/src/index.css
 - QMS-Client-main/src/main.tsx
 - QMS-Client-main/src/pages/Admin/AdminPCs/AdminEditPC.tsx
@@ -39,6 +40,7 @@ PROJECT CORE FILES OVERVIEW
 - QMS-Client-main/src/pages/Admin/Main/StructureSection.tsx
 - QMS-Client-main/src/pages/Admin/Main/UsersSection.tsx
 - QMS-Client-main/src/pages/Admin/Main/WarehouseSection.tsx
+- QMS-Client-main/src/pages/Admin/Modules/ModulesPage.tsx
 - QMS-Client-main/src/pages/Admin/RBAC/AdminRightsPage.tsx
 - QMS-Client-main/src/pages/Admin/Structure/StructurePage.tsx
 - QMS-Client-main/src/pages/Admin/Warehouse/WarehousePage.tsx
@@ -78,6 +80,7 @@ PROJECT CORE FILES OVERVIEW
 - QMS-Client-main/src/pages/Warehouse/utils.ts
 - QMS-Client-main/src/routes.ts
 - QMS-Client-main/src/setupTests.ts
+- QMS-Client-main/src/store/ModuleStore.ts
 - QMS-Client-main/src/store/StructureStore.ts
 - QMS-Client-main/src/store/UserStore.ts
 - QMS-Client-main/src/store/__tests__/UserStore.test.ts
@@ -125,6 +128,7 @@ PROJECT CORE FILES OVERVIEW
 - QMS-Mobile/mes-pwa/tsconfig.node.json
 - QMS-Mobile/mes-pwa/vite.config.ts
 - QMS-Server-master/config/config.js
+- QMS-Server-master/config/modules.js
 - QMS-Server-master/controllers/ProjectController.js
 - QMS-Server-master/controllers/TaskController.js
 - QMS-Server-master/controllers/auditController.js
@@ -152,6 +156,7 @@ PROJECT CORE FILES OVERVIEW
 - QMS-Server-master/middleware/ErrorHandlingMiddleware.js
 - QMS-Server-master/middleware/authMiddleware.js
 - QMS-Server-master/middleware/checkAbilityMiddleware.js
+- QMS-Server-master/middleware/checkModuleMiddleware.js
 - QMS-Server-master/middleware/checkRoleMiddleware.js
 - QMS-Server-master/middleware/syncUserMiddleware.js
 - QMS-Server-master/migrations/20250126-add-structure-manager-fields.js
@@ -355,7 +360,7 @@ import { observer } from "mobx-react-lite";
 import { useContext, useEffect, useState, useRef } from "react";
 import { Context, getSavedPath, clearSavedPath } from "./main";
 import { Preloader } from "./components/common/Preloader";
-import { useAuth } from "react-oidc-context";
+import { useAppAuth as useAuth } from "./hooks/useAppAuth";
 import { useNavigate, useLocation } from "react-router-dom";
 import { SELECT_PC_ROUTE } from "./utils/consts";
 import { check } from "./api/userApi";
@@ -390,13 +395,18 @@ const App = observer(() => {
   }, []);
 
   if (!context) throw new Error("Context required");
-  const { user } = context;
+  const { user, modules } = context;
 
 
   useEffect(() => {
     if (auth.isAuthenticated && auth.user) {
       localStorage.setItem('token', auth.user.access_token);
       setIsUserLoading(true);
+
+      
+      if (!modules.config) {
+        modules.fetchModules();
+      }
 
       check()
         .then((userData) => {
@@ -1669,7 +1679,7 @@ import Logo from "assets/images/logo.svg";
 import { NavLink, useLocation } from "react-router-dom";
 import { observer } from "mobx-react-lite";
 import { Context } from "src/main";
-import { useAuth } from "react-oidc-context";
+import { useAppAuth as useAuth } from "src/hooks/useAppAuth";
 import { Menu, Transition } from "@headlessui/react";
 import { setSessionOnline } from "src/api/userApi";
 import { DateTimeDisplay } from "./DateTimeDisplay";
@@ -1677,9 +1687,9 @@ import clsx from "clsx";
 
 
 import {
-  Shield, Archive,
+  Shield, ShieldCheck, Archive,
   ClipboardList, User, LogOut,
-  ChevronDown, FileText, AlertTriangle, CheckCircle2, LayoutDashboard,
+  ChevronDown, FileText, AlertTriangle, ClipboardCheck, BarChart3, LayoutDashboard,
 } from "lucide-react";
 
 
@@ -1707,7 +1717,7 @@ export const Header: React.FC = observer(() => {
   const _location = useLocation();
 
   if (!context) throw new Error("Context required");
-  const { user } = context;
+  const { user, modules } = context;
 
 
   const [isVisible, setIsVisible] = useState(true);
@@ -1766,27 +1776,30 @@ export const Header: React.FC = observer(() => {
       icon: ClipboardList,
       to: TASKS_ROUTE,
     },
-    {
-      label: "QMS",
-      icon: Shield,
+    
+    ...(modules.hasGroup('qms') ? [{
+      label: "Качество",
+      icon: ShieldCheck,
       children: [
-        { label: "Дашборд QMS", to: QMS_DASHBOARD_ROUTE, icon: LayoutDashboard },
-        { label: "Документы", to: DOCUMENTS_ROUTE, icon: FileText },
-        { label: "Несоответствия", to: NC_ROUTE, icon: AlertTriangle },
-        { label: "CAPA", to: CAPA_ROUTE, icon: CheckCircle2 },
-      ],
-    },
-    {
+        modules.isEnabled('qms.dashboard') ? { label: "Дашборд", to: QMS_DASHBOARD_ROUTE, icon: BarChart3 } : null,
+        modules.isEnabled('qms.dms')       ? { label: "Документы", to: DOCUMENTS_ROUTE, icon: FileText } : null,
+        modules.isEnabled('qms.nc')        ? { label: "Несоответствия", to: NC_ROUTE, icon: AlertTriangle } : null,
+        modules.isEnabled('qms.capa')      ? { label: "CAPA", to: CAPA_ROUTE, icon: ClipboardCheck } : null,
+      ].filter(Boolean) as { label: string; to: string; icon?: React.ElementType }[],
+    } as NavItem] : []),
+    
+    ...(modules.hasGroup('wms') ? [{
       label: "Склад",
       icon: Archive,
       to: WAREHOUSE_ROUTE,
-      permissions: ["warehouse.view"]
-    },
+      permissions: ["warehouse.view"],
+    }] : []),
+    
     {
       label: "Админ",
       icon: Shield,
       to: ADMIN_ROUTE,
-      permissions: ["admin.access"]
+      permissions: ["admin.access"],
     },
   ];
 
@@ -1883,6 +1896,11 @@ export const Header: React.FC = observer(() => {
         )}
 
         <div className="flex items-center gap-4 min-w-max">
+          {modules.config?.tier === 'dev-all' && (
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-yellow-900/30 border border-yellow-700/50 text-yellow-400">
+              DEV — все модули
+            </span>
+          )}
           <div className="hidden xl:block text-right">
              <DateTimeDisplay />
           </div>
@@ -2140,6 +2158,42 @@ export const PreloaderMini: React.FC = () => {
 };
 
 ================================================================================
+FILE: QMS-Client-main/src/hooks/useAppAuth.ts
+================================================================================
+
+import { useAuth as useOidcAuth } from "react-oidc-context";
+
+const AUTH_MODE = import.meta.env.VITE_AUTH_MODE || 'keycloak';
+
+const devAuth = {
+  isAuthenticated: true,
+  isLoading: false,
+  user: {
+    access_token: 'dev-bypass-token',
+    profile: {
+      sub: 'dev-user-001',
+      preferred_username: 'developer',
+      given_name: 'Dev',
+      family_name: 'User',
+      realm_access: { roles: ['SUPER_ADMIN'] },
+    },
+  },
+  signinRedirect: () => Promise.resolve(),
+  signoutRedirect: () => {
+    window.location.href = '/';
+    return Promise.resolve();
+  },
+  error: null,
+};
+
+export function useAppAuth() {
+  if (AUTH_MODE === 'dev-bypass') {
+    return devAuth as any;
+  }
+  return useOidcAuth();
+}
+
+================================================================================
 FILE: QMS-Client-main/src/index.css
 ================================================================================
 
@@ -2188,11 +2242,13 @@ import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "react-oidc-context";
 import UserStore from "./store/UserStore.ts";
 import StructureStore from "./store/StructureStore.ts";
+import ModuleStore from "./store/ModuleStore.ts";
 
 
 interface IContext {
   user: UserStore;
   structureStore: StructureStore;
+  modules: ModuleStore;
 }
 
 export const Context = React.createContext<IContext | null>(null);
@@ -2242,20 +2298,30 @@ const oidcConfig = {
 };
 
 
+const AUTH_MODE = import.meta.env.VITE_AUTH_MODE || 'keycloak';
+
+const AuthWrapper = ({ children }: { children: React.ReactNode }) => {
+  if (AUTH_MODE === 'dev-bypass') {
+    return <>{children}</>;
+  }
+  return <AuthProvider {...oidcConfig}>{children}</AuthProvider>;
+};
+
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <AuthProvider {...oidcConfig}>
+    <Context.Provider
+      value={{
+        user: new UserStore(),
+        structureStore: new StructureStore(),
+        modules: new ModuleStore(),
+      }}
+    >
       <BrowserRouter>
-        <Context.Provider
-          value={{
-            user: new UserStore(),
-            structureStore: new StructureStore(),
-          }}
-        >
+        <AuthWrapper>
           <App />
-        </Context.Provider>
+        </AuthWrapper>
       </BrowserRouter>
-    </AuthProvider>
+    </Context.Provider>
   </React.StrictMode>
 );
 
@@ -2534,6 +2600,7 @@ import {
   Plus,
   ArrowUpRight,
   Settings,
+  Blocks,
 } from "lucide-react";
 
 import { CreatePC } from "./CreateModals/CreatePC";
@@ -2545,6 +2612,7 @@ import {
   STRUCTURE_ROUTE,
   AUDIT_LOG_ROUTE,
   ADMIN_WAREHOUSE_ROUTE,
+  ADMIN_MODULES_ROUTE,
 } from "src/utils/consts";
 
 import {
@@ -2714,6 +2782,17 @@ export const AdminPanel: React.FC = observer(() => {
             link={ADMIN_WAREHOUSE_ROUTE}
             colorClass="bg-white border-slate-200 hover:border-emerald-400"
             iconColorClass="bg-emerald-50 text-emerald-600"
+          />
+        )}
+
+        {(canManageUsers || user.can("rbac.manage")) && (
+          <BentoItem
+            title="Модули"
+            subtitle="Тариф и активные модули"
+            icon={Blocks}
+            link={ADMIN_MODULES_ROUTE}
+            colorClass="bg-gradient-to-br from-violet-50 to-purple-50 border border-purple-100 hover:shadow-lg"
+            iconColorClass="bg-purple-100 text-purple-600"
           />
         )}
       </div>
@@ -4019,6 +4098,103 @@ export const WarehouseSection: React.FC = () => {
     </div>
   );
 };
+
+================================================================================
+FILE: QMS-Client-main/src/pages/Admin/Modules/ModulesPage.tsx
+================================================================================
+
+import React, { useContext, useEffect } from 'react';
+import { observer } from 'mobx-react-lite';
+import { Context } from 'src/main';
+import {
+  Shield, FileText, Archive, Factory,
+  CheckCircle, XCircle, Package, Crown, Globe
+} from 'lucide-react';
+
+const GROUP_META: Record<string, { label: string; icon: React.ElementType; color: string }> = {
+  core:    { label: 'Ядро',              icon: Shield,        color: 'text-blue-400' },
+  qms:     { label: 'Качество (QMS)',    icon: FileText,      color: 'text-teal-400' },
+  wms:     { label: 'Склад (WMS)',       icon: Archive,       color: 'text-amber-400' },
+  mes:     { label: 'Производство (MES)',icon: Factory,       color: 'text-orange-400' },
+  erp:     { label: 'Планирование (ERP)',icon: Package,       color: 'text-purple-400' },
+  ru:      { label: 'Российская специфика', icon: Globe,      color: 'text-red-400' },
+  premium: { label: 'Premium',           icon: Crown,         color: 'text-yellow-400' },
+  addon:   { label: 'Дополнительные',    icon: Package,       color: 'text-gray-400' },
+};
+
+export const ModulesPage: React.FC = observer(() => {
+  const context = useContext(Context);
+  if (!context) throw new Error('Context required');
+  const { modules } = context;
+
+  useEffect(() => {
+    if (!modules.config) modules.fetchModules();
+  }, []);
+
+  if (modules.loading) {
+    return <div className="p-6 text-asvo-muted">Загрузка модулей...</div>;
+  }
+
+  const config = modules.config!;
+  const grouped = new Map<string, typeof config.modules>();
+
+  for (const mod of config.modules) {
+    if (!grouped.has(mod.group)) grouped.set(mod.group, []);
+    grouped.get(mod.group)!.push(mod);
+  }
+
+  return (
+    <div className="p-6 max-w-4xl">
+      <h1 className="text-xl font-bold text-asvo-light mb-1">Модули системы</h1>
+      <p className="text-sm text-asvo-muted mb-6">
+        Тариф: <span className="text-asvo-accent font-bold">{modules.tierName}</span>
+        {' \u2022 '}
+        Активно: {config.enabled.length} из {config.modules.length} модулей
+        {' \u2022 '}
+        Пользователей: до {config.maxUsers}
+      </p>
+
+      <div className="space-y-6">
+        {Array.from(grouped.entries()).map(([group, mods]) => {
+          const meta = GROUP_META[group] || { label: group, icon: Package, color: 'text-gray-400' };
+          const Icon = meta.icon;
+          const enabledInGroup = mods.filter(m => m.enabled).length;
+
+          return (
+            <div key={group} className="bg-asvo-dark-2 rounded-xl border border-asvo-dark-3/50 p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Icon size={18} className={meta.color} />
+                <h2 className="text-sm font-bold text-asvo-light">{meta.label}</h2>
+                <span className="text-xs text-asvo-muted ml-auto">
+                  {enabledInGroup}/{mods.length}
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {mods.map(mod => (
+                  <div
+                    key={mod.code}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
+                      mod.enabled
+                        ? 'bg-asvo-dark-3/30 text-asvo-light'
+                        : 'bg-asvo-dark/50 text-asvo-muted/50'
+                    }`}
+                  >
+                    {mod.enabled
+                      ? <CheckCircle size={14} className="text-emerald-400 flex-shrink-0" />
+                      : <XCircle size={14} className="text-asvo-dark-3 flex-shrink-0" />
+                    }
+                    <span className={mod.enabled ? '' : 'line-through'}>{mod.name}</span>
+                    <code className="text-[10px] text-asvo-muted/50 ml-auto">{mod.code}</code>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+});
 
 ================================================================================
 FILE: QMS-Client-main/src/pages/Admin/RBAC/AdminRightsPage.tsx
@@ -13745,6 +13921,7 @@ import { InventoryPage } from "./pages/Warehouse/InventoryPage";
 import TasksPage from "./pages/Tasks/TasksPage";
 
 import { AdminRightsPage } from "./pages/Admin/RBAC/AdminRightsPage";
+import { ModulesPage } from "./pages/Admin/Modules/ModulesPage";
 
 
 import { QmsDashboardPage } from "./pages/QMS/QmsDashboardPage";
@@ -13768,6 +13945,7 @@ import {
   WAREHOUSE_INVENTORY_ROUTE,
   TASKS_ROUTE,
   ADMIN_RBAC_ROUTE,
+  ADMIN_MODULES_ROUTE,
   LOGIN_ROUTE,
   REGISTRATION_ROUTE,
   QMS_DASHBOARD_ROUTE,
@@ -13797,6 +13975,7 @@ export const adminRoutes = [
   { path: ADMIN_USERS_ROUTE, Component: AdminUsers },
   { path: ADMIN_WAREHOUSE_ROUTE, Component: AdminWarehousePage },
   { path: ADMIN_RBAC_ROUTE, Component: AdminRightsPage },
+  { path: ADMIN_MODULES_ROUTE, Component: ModulesPage },
 ];
 
 export const publicRoutes = [
@@ -13811,6 +13990,92 @@ FILE: QMS-Client-main/src/setupTests.ts
 ================================================================================
 
 import '@testing-library/jest-dom';
+================================================================================
+FILE: QMS-Client-main/src/store/ModuleStore.ts
+================================================================================
+
+import { makeAutoObservable, runInAction } from 'mobx';
+import { $host } from '../api/index';
+
+export interface ModuleInfo {
+  code: string;
+  name: string;
+  group: string;
+  enabled: boolean;
+}
+
+export interface ModulesConfig {
+  tier: string;
+  enabled: string[];
+  groups: string[];
+  maxUsers: number;
+  modules: ModuleInfo[];
+}
+
+export default class ModuleStore {
+  config: ModulesConfig | null = null;
+  loading = true;
+  error: string | null = null;
+
+  constructor() {
+    makeAutoObservable(this);
+  }
+
+  async fetchModules() {
+    try {
+      this.loading = true;
+      const { data } = await $host.get<ModulesConfig>('/api/system/modules');
+      runInAction(() => {
+        this.config = data;
+        this.error = null;
+      });
+    } catch (e: any) {
+      console.error('Failed to fetch modules config:', e);
+      runInAction(() => {
+        
+        this.config = {
+          tier: 'fallback',
+          enabled: [],
+          groups: ['core', 'qms', 'wms'],
+          maxUsers: 999,
+          modules: [],
+        };
+        this.error = e?.message || 'Failed to load modules';
+      });
+    } finally {
+      runInAction(() => { this.loading = false; });
+    }
+  }
+
+  
+  isEnabled(code: string): boolean {
+    if (!this.config) return true; 
+    if (this.config.tier === 'fallback') return true; 
+    if (this.config.enabled.includes(code)) return true;
+    
+    return this.config.enabled.some(m => m.startsWith(code + '.'));
+  }
+
+  
+  hasGroup(group: string): boolean {
+    if (!this.config) return true;
+    if (this.config.tier === 'fallback') return true;
+    return this.config.groups.includes(group);
+  }
+
+  get tierName(): string {
+    const names: Record<string, string> = {
+      start: 'Старт', standard: 'Стандарт', pro: 'Про',
+      industry: 'Индустрия', 'dev-all': 'Разработка', fallback: 'Все модули',
+    };
+    return names[this.config?.tier || ''] || this.config?.tier || '—';
+  }
+
+  get enabledCount(): number {
+    return this.config?.enabled.length || 0;
+  }
+}
+
 ================================================================================
 FILE: QMS-Client-main/src/store/StructureStore.ts
 ================================================================================
@@ -14217,6 +14482,7 @@ export const STRUCTURE_ROUTE = '/admin/structure';
 export const AUDIT_LOG_ROUTE = '/admin/audit-log';
 export const ADMIN_WAREHOUSE_ROUTE = '/admin/warehouse';
 export const ADMIN_RBAC_ROUTE = '/admin/rbac';
+export const ADMIN_MODULES_ROUTE = '/admin/modules';
 
 export const LOGIN_ROUTE = '/login';
 export const SELECT_PC_ROUTE = '/select-pc-for-start-session';
@@ -18788,6 +19054,233 @@ module.exports = {
 };
 
 ================================================================================
+FILE: QMS-Server-master/config/modules.js
+================================================================================
+
+
+
+
+
+
+
+
+
+
+const MODULE_CATALOG = {
+  
+  'core.auth':          { name: 'Аутентификация',           group: 'core', alwaysOn: true },
+  'core.users':         { name: 'Пользователи',              group: 'core', alwaysOn: true },
+  'core.audit':         { name: 'Журнал аудита',             group: 'core', alwaysOn: true },
+  'core.esign':         { name: 'Электронные подписи',       group: 'core', depends: ['core.auth'] },
+  'core.admin':         { name: 'Администрирование',         group: 'core', alwaysOn: true },
+  'core.tasks':         { name: 'Задачи и проекты',          group: 'core', alwaysOn: true },
+  'core.notifications': { name: 'Уведомления',               group: 'core', depends: [] },
+
+  
+  'qms.dms':         { name: 'Документы СМК',              group: 'qms', depends: [] },
+  'qms.changes':     { name: 'Управление изменениями',     group: 'qms', depends: ['qms.dms'] },
+  'qms.nc':          { name: 'Несоответствия',              group: 'qms', depends: [] },
+  'qms.capa':        { name: 'CAPA',                        group: 'qms', depends: ['qms.nc'] },
+  'qms.complaints':  { name: 'Жалобы потребителей',         group: 'qms', depends: ['qms.nc'] },
+  'qms.risk':        { name: 'Управление рисками',         group: 'qms', depends: [] },
+  'qms.design':      { name: 'Управление проектированием', group: 'qms', depends: ['qms.dms', 'qms.risk', 'qms.changes'] },
+  'qms.validation':  { name: 'Валидация процессов',        group: 'qms', depends: ['qms.equipment', 'qms.dms'] },
+  'qms.supplier':    { name: 'Поставщики',                  group: 'qms', depends: [] },
+  'qms.audit':       { name: 'Внутренние аудиты',          group: 'qms', depends: ['qms.nc'] },
+  'qms.training':    { name: 'Обучение',                    group: 'qms', depends: [] },
+  'qms.equipment':   { name: 'Оборудование',               group: 'qms', depends: [] },
+  'qms.review':      { name: 'Анализ руководства',         group: 'qms', depends: [] },
+  'qms.pms':         { name: 'Пострег. мониторинг',        group: 'qms', depends: ['qms.complaints', 'qms.nc'] },
+  'qms.dashboard':   { name: 'Дашборд QMS',                group: 'qms', depends: [] },
+
+  
+  'wms.warehouse':    { name: 'Склад',                     group: 'wms', depends: [] },
+  'wms.movements':    { name: 'Перемещения',               group: 'wms', depends: ['wms.warehouse'] },
+  'wms.analytics':    { name: 'Аналитика склада',          group: 'wms', depends: ['wms.warehouse'] },
+  'wms.inventory':    { name: 'Инвентаризация',            group: 'wms', depends: ['wms.warehouse'] },
+  'wms.labels':       { name: 'Этикетки',                  group: 'wms', depends: ['wms.warehouse'] },
+  'wms.alerts':       { name: 'Оповещения склада',         group: 'wms', depends: ['wms.warehouse'] },
+  'wms.traceability': { name: 'Прослеживаемость',          group: 'wms', depends: ['wms.warehouse'] },
+
+  
+  'mes.routes':   { name: 'Маршруты сборки',          group: 'mes', depends: [] },
+  'mes.orders':   { name: 'Произв. задания',          group: 'mes', depends: ['mes.routes'] },
+  'mes.quality':  { name: 'Контроль качества',         group: 'mes', depends: ['mes.routes', 'qms.nc'] },
+  'mes.dhr':      { name: 'DHR',                       group: 'mes', depends: ['mes.routes'] },
+  'mes.dmr':      { name: 'DMR',                       group: 'mes', depends: [] },
+  'mes.kpi':      { name: 'KPI производства',          group: 'mes', depends: ['mes.routes'] },
+
+  
+  'erp.bom':         { name: 'Спецификации (BOM)',     group: 'erp', depends: [] },
+  'erp.mrp':         { name: 'Планирование MRP',       group: 'erp', depends: ['erp.bom', 'wms.warehouse'] },
+  'erp.procurement': { name: 'Закупки',                 group: 'erp', depends: ['erp.bom', 'qms.supplier'] },
+  'erp.costs':       { name: 'Себестоимость',           group: 'erp', depends: ['erp.bom'] },
+
+  
+  'ru.gost':      { name: 'ГОСТ / ЕСКД шаблоны',        group: 'ru', depends: ['qms.dms'] },
+  'ru.rzn':       { name: 'Росздравнадзор',              group: 'ru', depends: ['qms.complaints'] },
+  'ru.1c':        { name: 'Интеграция 1С',               group: 'ru', depends: ['wms.warehouse'] },
+  'ru.metrology': { name: 'Метрологическое обеспечение', group: 'ru', depends: ['qms.equipment'] },
+
+  
+  'premium.ai':         { name: 'ИИ-ассистент',          group: 'premium', depends: ['qms.nc', 'qms.capa'] },
+  'premium.readiness':  { name: 'Готовность к аудиту',    group: 'premium', depends: [] },
+  'premium.analytics':  { name: 'Аналитика Pro',          group: 'premium', depends: [] },
+  'premium.lms':        { name: 'eLearning / LMS',        group: 'premium', depends: ['qms.training'] },
+  'premium.portal':     { name: 'Портал клиентов',        group: 'premium', depends: ['qms.dms', 'qms.complaints'] },
+  'premium.multisite':  { name: 'Multi-Site',             group: 'premium', depends: ['core.users'] },
+
+  
+  'addon.mobile': { name: 'Мобильное приложение', group: 'addon', depends: [] },
+  'addon.pdf':    { name: 'PDF-отчёты',           group: 'addon', depends: [] },
+  'addon.excel':  { name: 'Excel-импорт',         group: 'addon', depends: [] },
+};
+
+const TIER_PRESETS = {
+  start: [
+    'qms.dms', 'qms.nc', 'qms.dashboard',
+    'addon.pdf',
+  ],
+  standard: [
+    'qms.dms', 'qms.nc', 'qms.capa', 'qms.complaints',
+    'qms.risk', 'qms.dashboard',
+    'wms.warehouse', 'wms.movements',
+    'ru.gost',
+    'addon.pdf', 'addon.excel',
+  ],
+  pro: [
+    'qms.dms', 'qms.changes', 'qms.nc', 'qms.capa', 'qms.complaints',
+    'qms.risk', 'qms.supplier', 'qms.audit', 'qms.training',
+    'qms.equipment', 'qms.review', 'qms.dashboard',
+    'core.esign', 'core.notifications',
+    'wms.warehouse', 'wms.movements', 'wms.analytics',
+    'wms.inventory', 'wms.labels', 'wms.alerts',
+    'ru.gost', 'ru.rzn',
+    'premium.readiness',
+    'addon.mobile', 'addon.pdf', 'addon.excel',
+  ],
+  industry: [
+    'qms.dms', 'qms.changes', 'qms.nc', 'qms.capa', 'qms.complaints',
+    'qms.risk', 'qms.design', 'qms.validation',
+    'qms.supplier', 'qms.audit', 'qms.training',
+    'qms.equipment', 'qms.review', 'qms.pms', 'qms.dashboard',
+    'core.esign', 'core.notifications',
+    'wms.warehouse', 'wms.movements', 'wms.analytics',
+    'wms.inventory', 'wms.labels', 'wms.alerts', 'wms.traceability',
+    'mes.routes', 'mes.orders', 'mes.quality',
+    'mes.dhr', 'mes.dmr', 'mes.kpi',
+    'ru.gost', 'ru.rzn', 'ru.1c', 'ru.metrology',
+    'premium.readiness', 'premium.analytics',
+    'addon.mobile', 'addon.pdf', 'addon.excel',
+  ],
+};
+
+class ModuleManager {
+  constructor() {
+    const tier = process.env.MODULES_TIER;
+    const explicit = process.env.MODULES_ENABLED;
+
+    if (explicit) {
+      this.enabled = new Set(explicit.split(',').map(m => m.trim()));
+      this.tier = 'custom';
+    } else if (tier && TIER_PRESETS[tier]) {
+      this.enabled = new Set(TIER_PRESETS[tier]);
+      this.tier = tier;
+    } else {
+      
+      this.enabled = new Set(Object.keys(MODULE_CATALOG));
+      this.tier = 'dev-all';
+    }
+
+    
+    for (const [code, mod] of Object.entries(MODULE_CATALOG)) {
+      if (mod.alwaysOn) this.enabled.add(code);
+    }
+
+    this._resolveDependencies();
+  }
+
+  _resolveDependencies() {
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const code of this.enabled) {
+        const mod = MODULE_CATALOG[code];
+        if (!mod || !mod.depends) continue;
+        for (const dep of mod.depends) {
+          if (!this.enabled.has(dep)) {
+            this.enabled.add(dep);
+            changed = true;
+          }
+        }
+      }
+    }
+  }
+
+  
+  isEnabled(moduleCode) {
+    if (this.enabled.has(moduleCode)) return true;
+    
+    for (const code of this.enabled) {
+      if (code.startsWith(moduleCode + '.')) return true;
+    }
+    return false;
+  }
+
+  getEnabledGroups() {
+    const groups = new Set();
+    for (const code of this.enabled) {
+      const mod = MODULE_CATALOG[code];
+      if (mod) groups.add(mod.group);
+    }
+    return [...groups];
+  }
+
+  
+  toClientConfig() {
+    const modules = [];
+    for (const [code, mod] of Object.entries(MODULE_CATALOG)) {
+      modules.push({
+        code,
+        name: mod.name,
+        group: mod.group,
+        enabled: this.enabled.has(code) || !!mod.alwaysOn,
+      });
+    }
+    return {
+      tier: this.tier,
+      enabled: [...this.enabled],
+      groups: this.getEnabledGroups(),
+      maxUsers: this._getMaxUsers(),
+      modules,
+    };
+  }
+
+  _getMaxUsers() {
+    const limits = { start: 5, standard: 15, pro: 50, industry: 200, 'dev-all': 999, custom: 999 };
+    return limits[this.tier] || 999;
+  }
+
+  
+  printStatus() {
+    const enabledCount = [...this.enabled].length;
+    const groups = this.getEnabledGroups();
+    console.log('╔══════════════════════════════════════╗');
+    console.log('║       ASVO-QMS Module System         ║');
+    console.log('╠══════════════════════════════════════╣');
+    console.log(`║  Тариф:   ${this.tier.padEnd(26)}║`);
+    console.log(`║  Модулей: ${String(enabledCount).padEnd(26)}║`);
+    console.log(`║  Группы:  ${groups.join(', ').padEnd(26)}║`);
+    console.log(`║  Юзеров:  до ${String(this._getMaxUsers()).padEnd(23)}║`);
+    console.log('╚══════════════════════════════════════╝');
+  }
+}
+
+const moduleManager = new ModuleManager();
+
+module.exports = { moduleManager, MODULE_CATALOG, TIER_PRESETS };
+
+================================================================================
 FILE: QMS-Server-master/controllers/ProjectController.js
 ================================================================================
 
@@ -20463,7 +20956,7 @@ module.exports = new SessionController();
 FILE: QMS-Server-master/controllers/structureController.js
 ================================================================================
 
-const { Section, Team, User } = require("../models/index");
+const { Section, Team, User, Role } = require("../models/index");
 const ApiError = require("../error/ApiError");
 const { logAudit } = require("../utils/auditLogger");
 const { Op } = require("sequelize");
@@ -20512,12 +21005,15 @@ class StructureController {
 
   async getUnassignedUsers(req, res, next) {
     try {
+      const superAdminRole = await Role.findOne({ where: { name: "SUPER_ADMIN" } });
+      const whereClause = { teamId: { [Op.is]: null } };
+      if (superAdminRole) {
+        whereClause.roleId = { [Op.ne]: superAdminRole.id };
+      }
       const users = await User.findAll({
-        where: {
-          teamId: { [Op.is]: null },
-          role: { [Op.notIn]: ["SUPER_ADMIN"] }
-        },
-        attributes: ["id", "name", "surname", "login", "role", "img"],
+        where: whereClause,
+        attributes: ["id", "name", "surname", "login", "img"],
+        include: [{ model: Role, as: "userRole", attributes: ["name"] }],
         order: [["surname", "ASC"]]
       });
       return res.json(users);
@@ -20674,7 +21170,7 @@ FILE: QMS-Server-master/controllers/userController.js
 ================================================================================
 
 const ApiError = require("../error/ApiError");
-const { User, Session } = require("../models/index");
+const { User, Session, Role } = require("../models/index");
 const jwt = require("jsonwebtoken");
 const uuid = require("uuid");
 const path = require("path");
@@ -20799,11 +21295,18 @@ class UserController {
         );
       }
 
-      const user = await User.create({ login, password, role, name, surname });
+      let roleId = null;
+      const roleName = role || 'USER';
+      if (roleName) {
+        const roleEntity = await Role.findOne({ where: { name: roleName } });
+        if (roleEntity) roleId = roleEntity.id;
+      }
+
+      const user = await User.create({ login, password, roleId, name, surname });
       const token = generateJWT(
         user.id,
         user.login,
-        user.role,
+        roleName,
         user.name,
         user.surname,
         null
@@ -20821,7 +21324,10 @@ class UserController {
       if (!login || !password) {
         return next(ApiError.badRequest("нет логина или пароля в запросе"));
       }
-      const currentUser = await User.findOne({ where: { login } });
+      const currentUser = await User.findOne({
+        where: { login },
+        include: [{ model: Role, as: "userRole", attributes: ["name"] }]
+      });
       if (!currentUser) {
         return next(ApiError.internal("Такого пользователя нет"));
       }
@@ -20841,10 +21347,11 @@ class UserController {
         );
       }
 
+      const roleName = currentUser.userRole ? currentUser.userRole.name : 'USER';
       const token = generateJWT(
         currentUser.id,
         currentUser.login,
-        currentUser.role,
+        roleName,
         currentUser.name,
         currentUser.surname,
         currentUser.img
@@ -22777,6 +23284,7 @@ FILE: QMS-Server-master/index.js
 require("dotenv").config();
 const express = require("express");
 const sequelize = require("./db");
+const { moduleManager } = require('./config/modules');
 const models = require("./models/index");
 const cors = require("cors");
 const fileUpload = require("express-fileupload");
@@ -22991,6 +23499,7 @@ const initInitialData = async () => {
 
 const start = async () => {
   try {
+    moduleManager.printStatus();
     await sequelize.authenticate();
 
 
@@ -23153,6 +23662,28 @@ module.exports = function (requiredSlug) {
 };
 
 ================================================================================
+FILE: QMS-Server-master/middleware/checkModuleMiddleware.js
+================================================================================
+
+const { moduleManager } = require('../config/modules');
+const ApiError = require('../error/ApiError');
+
+
+
+
+
+module.exports = function checkModule(moduleCode) {
+  return function (req, res, next) {
+    if (moduleManager.isEnabled(moduleCode)) {
+      return next();
+    }
+    return next(ApiError.forbidden(
+      `Модуль "${moduleCode}" не включён в текущий тариф (${moduleManager.tier}).`
+    ));
+  };
+};
+
+================================================================================
 FILE: QMS-Server-master/middleware/checkRoleMiddleware.js
 ================================================================================
 
@@ -23184,6 +23715,7 @@ module.exports = function (role) {
 ================================================================================
 FILE: QMS-Server-master/middleware/syncUserMiddleware.js
 ================================================================================
+
 
 
 
@@ -23233,6 +23765,16 @@ module.exports = async function (req, res, next) {
             });
         }
 
+        
+        const roleEntity = await Role.findOne({
+            where: { name: mainRole },
+            include: [{
+                model: Ability,
+                as: "abilities",
+                through: { attributes: [] }
+            }]
+        });
+
         let user = await User.findOne({ where: { login } });
 
         if (!user) {
@@ -23242,7 +23784,7 @@ module.exports = async function (req, res, next) {
                     login,
                     name,
                     surname,
-                    role: mainRole,
+                    roleId: roleEntity ? roleEntity.id : null,
                     password: 'sso_managed_account',
                     img: null
                 });
@@ -23253,29 +23795,16 @@ module.exports = async function (req, res, next) {
             }
         } else {
 
-            if (user.role !== mainRole) {
-                console.log(`Обновление роли пользователя ${login}: ${user.role} -> ${mainRole}`);
-                user.role = mainRole;
+            if (user.roleId !== (roleEntity ? roleEntity.id : null)) {
+                console.log(`Обновление роли пользователя ${login}: roleId ${user.roleId} -> ${roleEntity ? roleEntity.id : null} (${mainRole})`);
+                user.roleId = roleEntity ? roleEntity.id : null;
                 await user.save();
             }
         }
 
         let abilities = [];
-        try {
-            const roleEntity = await Role.findOne({
-                where: { name: mainRole },
-                include: [{
-                    model: Ability,
-                    as: "abilities",
-                    through: { attributes: [] }
-                }]
-            });
-
-            if (roleEntity && roleEntity.abilities) {
-                abilities = roleEntity.abilities.map(ab => ab.code);
-            }
-        } catch (e) {
-            console.error("Ошибка при загрузке прав (abilities):", e.message);
+        if (roleEntity && roleEntity.abilities) {
+            abilities = roleEntity.abilities.map(ab => ab.code);
         }
 
         req.user = {
@@ -23283,7 +23812,7 @@ module.exports = async function (req, res, next) {
             login: user.login,
             name: user.name,
             surname: user.surname,
-            role: user.role,
+            role: mainRole,
             roles: kcRoles,
             abilities: abilities,
             keycloakId: keycloakUUID
@@ -25563,7 +26092,6 @@ const User = sequelize.define("user", {
   id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
   login: { type: DataTypes.STRING, unique: true },
   password: { type: DataTypes.STRING },
-  role: { type: DataTypes.STRING, defaultValue: "USER" },
   name: { type: DataTypes.STRING },
   surname: { type: DataTypes.STRING },
   img: { type: DataTypes.STRING },
@@ -27005,56 +27533,48 @@ module.exports = router;
 FILE: QMS-Server-master/routes/index.js
 ================================================================================
 
-
 const Router = require("express");
 const router = new Router();
+const { moduleManager } = require("../config/modules");
+const checkModule = require("../middleware/checkModuleMiddleware");
+
 
 const userRouter = require("./userRouter");
 const sessionRouter = require("./sessionRouter");
 const pcRouter = require("./pcRouter");
-
 const rbacRouter = require("./rbacRouter");
 const structureRouter = require("./structureRouter");
 const auditRouter = require("./auditRouter");
-
-const warehouseRouter = require("./warehouseRouter");
-
 const taskRouter = require("./taskRouter");
 const projectRouter = require("./projectRouter");
-
-
-const documentRouter = require("./documentRouter");
-const ncCapaRouter = require("./ncCapaRouter");
-const riskRouter = require("./riskRouter");
-
-
-
 
 router.use("/users", userRouter);
 router.use("/sessions", sessionRouter);
 router.use("/pcs", pcRouter);
-
 router.use("/rbac", rbacRouter);
 router.use("/structure", structureRouter);
 router.use("/audit", auditRouter);
-
-
-
-
-router.use("/warehouse", warehouseRouter);
-
 router.use("/tasks", taskRouter);
 router.use("/projects", projectRouter);
 
 
+if (moduleManager.isEnabled('qms.dms')) {
+  const documentRouter = require("./documentRouter");
+  router.use("/documents", checkModule('qms.dms'), documentRouter);
+}
+
+if (moduleManager.isEnabled('qms.nc') || moduleManager.isEnabled('qms.capa')) {
+  const ncCapaRouter = require("./ncCapaRouter");
+  router.use("/nc", checkModule('qms.nc'), ncCapaRouter);
+}
+
+if (moduleManager.isEnabled('qms.risk')) {
+  const riskRouter = require("./riskRouter");
+  router.use("/risks", checkModule('qms.risk'), riskRouter);
+}
 
 
 
-router.use("/documents", documentRouter);
-
-router.use("/nc", ncCapaRouter);
-
-router.use("/risks", riskRouter);
 
 
 
@@ -27062,6 +27582,35 @@ router.use("/risks", riskRouter);
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+if (moduleManager.isEnabled('wms')) {
+  const warehouseRouter = require("./warehouseRouter");
+  router.use("/warehouse", checkModule('wms.warehouse'), warehouseRouter);
+}
+
+
+
+
+
+
+
+router.get("/system/modules", (req, res) => {
+  res.json(moduleManager.toClientConfig());
+});
 
 module.exports = router;
 
@@ -31368,7 +31917,9 @@ jest.mock('../../models/index', () => ({
         update: jest.fn()
     },
     Role: {
-        findOne: jest.fn()
+        findAll: jest.fn(),
+        findOne: jest.fn(),
+        findOrCreate: jest.fn()
     },
     Ability: {}
 }));
@@ -31395,26 +31946,25 @@ describe('syncUserMiddleware', () => {
 
     test('Должен создать нового пользователя, если его нет', async () => {
 
-        User.findOne.mockResolvedValue(null);
+        Role.findAll.mockResolvedValue([{ name: 'WAREHOUSE_MASTER' }, { name: 'VIEWER' }]);
 
+        Role.findOne.mockResolvedValue({ id: 6, name: 'WAREHOUSE_MASTER', abilities: [{ code: 'warehouse.view' }] });
+
+        User.findOne.mockResolvedValue(null);
 
         const createdUser = {
             id: 10,
             login: 'testuser',
-            role: 'WAREHOUSE_MASTER',
+            roleId: 6,
             save: jest.fn()
         };
         User.create.mockResolvedValue(createdUser);
 
-
-        Role.findOne.mockResolvedValue({ abilities: [{ code: 'warehouse.view' }] });
-
         await syncUserMiddleware(req, res, next);
-
 
         expect(User.create).toHaveBeenCalledWith(expect.objectContaining({
             login: 'testuser',
-            role: 'WAREHOUSE_MASTER'
+            roleId: 6
         }));
         expect(req.user).toBeDefined();
         expect(req.user.id).toBe(10);
@@ -31424,29 +31974,29 @@ describe('syncUserMiddleware', () => {
 
     test('Должен обновить роль существующего пользователя', async () => {
 
+        Role.findAll.mockResolvedValue([{ name: 'WAREHOUSE_MASTER' }, { name: 'ASSEMBLER' }]);
+
+        Role.findOne.mockResolvedValue({ id: 6, name: 'WAREHOUSE_MASTER', abilities: [] });
+
         const mockSave = jest.fn();
         const existingUser = {
             id: 20,
             login: 'testuser',
-            role: 'ASSEMBLER',
+            roleId: 3,
             save: mockSave
         };
 
-
         User.findOne.mockResolvedValue(existingUser);
-        Role.findOne.mockResolvedValue({ abilities: [] });
 
         await syncUserMiddleware(req, res, next);
 
-
-        expect(existingUser.role).toBe('WAREHOUSE_MASTER');
-
+        expect(existingUser.roleId).toBe(6);
         expect(mockSave).toHaveBeenCalled();
         expect(next).toHaveBeenCalled();
     });
 
     test('Должен вернуть 500 при ошибке БД', async () => {
-        User.findOne.mockRejectedValue(new Error('DB Connection failed'));
+        Role.findAll.mockRejectedValue(new Error('DB Connection failed'));
 
         await syncUserMiddleware(req, res, next);
 
