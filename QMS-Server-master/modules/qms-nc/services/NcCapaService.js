@@ -25,8 +25,9 @@ const NC_TRANSITIONS = {
 
 // Допустимые переходы состояний CAPA (state machine)
 const CAPA_TRANSITIONS = {
-  INITIATED: ["PLANNING"],
-  PLANNING: ["PLAN_APPROVED", "INITIATED"],
+  INITIATED: ["INVESTIGATING", "PLANNING"],
+  INVESTIGATING: ["PLANNING", "INITIATED"],
+  PLANNING: ["PLAN_APPROVED", "INVESTIGATING", "INITIATED"],
   PLAN_APPROVED: ["IMPLEMENTING"],
   IMPLEMENTING: ["VERIFYING"],
   VERIFYING: ["EFFECTIVE", "INEFFECTIVE"],
@@ -38,7 +39,7 @@ const CAPA_TRANSITIONS = {
 // Поля NC, которые можно обновлять через updateNC
 const NC_UPDATABLE_FIELDS = [
   "title", "description", "source", "classification", "assignedToId",
-  "rootCause", "rootCauseMethod", "disposition", "dispositionRationale",
+  "rootCause", "rootCauseMethod", "disposition", "dispositionJustification",
   "containmentAction", "dueDate", "priority",
 ];
 

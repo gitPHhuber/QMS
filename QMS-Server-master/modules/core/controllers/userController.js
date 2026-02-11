@@ -176,7 +176,19 @@ class UserController {
         return next(ApiError.internal("Такого пользователя нет"));
       }
 
-      const isPasswordValid = await bcrypt.compare(password, currentUser.password);
+      // Support both bcrypt-hashed and legacy plaintext passwords.
+      // Legacy plaintext passwords are rehashed on successful login.
+      let isPasswordValid = false;
+      const isHashed = currentUser.password && currentUser.password.startsWith("$2");
+      if (isHashed) {
+        isPasswordValid = await bcrypt.compare(password, currentUser.password);
+      } else {
+        isPasswordValid = password === currentUser.password;
+        if (isPasswordValid) {
+          const hashed = await bcrypt.hash(password, SALT_ROUNDS);
+          await User.update({ password: hashed }, { where: { id: currentUser.id } });
+        }
+      }
       if (!isPasswordValid) {
         return next(ApiError.badRequest("неверный пароль"));
       }
