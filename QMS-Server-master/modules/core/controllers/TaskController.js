@@ -95,11 +95,6 @@ class TaskController {
                 attributes: ["id", "name", "surname"]
             },
             {
-                model: Section,
-                as: "targetSection",
-                attributes: ["id", "title"]
-            },
-            {
                 model: Project,
                 as: "project",
                 attributes: ["id", "title"]
@@ -172,7 +167,6 @@ class TaskController {
       const task = await ProductionTask.findByPk(id, {
         include: [
             { model: User, as: "responsible", attributes: ["id", "name", "surname"] },
-            { model: Section, as: "targetSection", attributes: ["id", "title"] },
             { model: Project, as: "project", attributes: ["id", "title"] }
         ]
       });

@@ -8,12 +8,12 @@ const checkAbility = require("../../core/middleware/checkAbilityMiddleware");
 const protect = [authMiddleware, syncUserMiddleware];
 
 // Stats (static route FIRST)
-router.get("/stats", ...protect, checkAbility("review.view"), ctrl.getStats);
+router.get("/stats", ...protect, checkAbility("review.read"), ctrl.getStats);
 
 // CRUD
-router.get("/",      ...protect, checkAbility("review.view"),   ctrl.getAll);
-router.get("/:id",   ...protect, checkAbility("review.view"),   ctrl.getOne);
-router.post("/",     ...protect, checkAbility("review.create"), ctrl.create);
+router.get("/",      ...protect, checkAbility("review.read"),   ctrl.getAll);
+router.get("/:id",   ...protect, checkAbility("review.read"),   ctrl.getOne);
+router.post("/",     ...protect, checkAbility("review.manage"), ctrl.create);
 router.put("/:id",   ...protect, checkAbility("review.manage"), ctrl.update);
 
 // Actions sub-resource

@@ -106,6 +106,8 @@ async function main() {
       { code: "risk.update", description: "Обновление оценки рисков" },
       { code: "risk.assess", description: "Проведение оценки рисков" },
       { code: "risk.accept", description: "Принятие остаточного риска" },
+      { code: "internal-audit.read", description: "Просмотр внутренних аудитов" },
+      { code: "internal-audit.manage", description: "Управление внутренними аудитами" },
       { code: "supplier.read", description: "Просмотр поставщиков" },
       { code: "supplier.manage", description: "Управление поставщиками" },
       { code: "training.read", description: "Просмотр записей обучения" },
@@ -165,6 +167,7 @@ async function main() {
       "capa.view", "capa.create", "capa.manage", "capa.verify",
       "risk.read", "risk.create", "risk.update", "risk.assess", "risk.accept",
       "supplier.read", "supplier.manage",
+      "internal-audit.read", "internal-audit.manage",
       "training.read", "training.manage",
       "equipment.read", "equipment.calibrate",
       "review.read", "review.manage",
@@ -178,6 +181,7 @@ async function main() {
       "capa.view", "capa.create",
       "risk.read", "risk.create", "risk.update", "risk.assess",
       "supplier.read",
+      "internal-audit.read",
       "training.read", "training.manage",
       "equipment.read", "equipment.calibrate",
       "review.read",
@@ -187,6 +191,7 @@ async function main() {
     await assign("QMS_AUDITOR", [
       "dms.view", "nc.view", "capa.view", "risk.read",
       "supplier.read", "training.read", "equipment.read", "review.read",
+      "internal-audit.read", "internal-audit.manage",
       "qms.audit.view", "qms.audit.verify", "qms.audit.report",
       "analytics.view", "audit.log.view",
     ]);
@@ -206,7 +211,7 @@ async function main() {
     ]);
     await assign("VIEWER", [
       "dms.view", "nc.view", "capa.view", "risk.read",
-      "supplier.read", "training.read", "equipment.read",
+      "supplier.read", "internal-audit.read", "training.read", "equipment.read",
       "review.read", "analytics.view",
     ]);
 
