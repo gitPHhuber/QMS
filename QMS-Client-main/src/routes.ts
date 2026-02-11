@@ -25,6 +25,12 @@ import { QmsDashboardPage } from "./pages/QMS/QmsDashboardPage";
 import { DocumentsPage } from "./pages/Documents/DocumentsPage";
 import { NonconformityPage } from "./pages/Nonconformity/NonconformityPage";
 import { CapaPage } from "./pages/CAPA/CapaPage";
+import RisksPage from "./pages/Quality/RisksPage";
+import SuppliersPage from "./pages/Quality/SuppliersPage";
+import AuditsPage from "./pages/Quality/AuditsPage";
+import TrainingPage from "./pages/Quality/TrainingPage";
+import EquipmentPage from "./pages/Quality/EquipmentPage";
+import ReviewPage from "./pages/Quality/ReviewPage";
 
 import {
   ADMIN_PCs_ROUTE,
@@ -49,6 +55,12 @@ import {
   DOCUMENTS_ROUTE,
   NC_ROUTE,
   CAPA_ROUTE,
+  RISKS_ROUTE,
+  SUPPLIERS_ROUTE,
+  INTERNAL_AUDITS_ROUTE,
+  TRAINING_ROUTE,
+  EQUIPMENT_ROUTE,
+  REVIEW_ROUTE,
 } from "./utils/consts";
 
 export const authRoutes = [
@@ -62,6 +74,12 @@ export const authRoutes = [
   { path: DOCUMENTS_ROUTE, Component: DocumentsPage },
   { path: NC_ROUTE, Component: NonconformityPage },
   { path: CAPA_ROUTE, Component: CapaPage },
+  { path: RISKS_ROUTE, Component: RisksPage },
+  { path: SUPPLIERS_ROUTE, Component: SuppliersPage },
+  { path: INTERNAL_AUDITS_ROUTE, Component: AuditsPage },
+  { path: TRAINING_ROUTE, Component: TrainingPage },
+  { path: EQUIPMENT_ROUTE, Component: EquipmentPage },
+  { path: REVIEW_ROUTE, Component: ReviewPage },
 ];
 
 export const adminRoutes = [
