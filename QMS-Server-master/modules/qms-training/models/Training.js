@@ -89,6 +89,6 @@ const CompetencyMatrix = sequelize.define("competency_matrix", {
 
 // Ассоциации
 TrainingPlan.hasMany(TrainingRecord, { as: "records", foreignKey: "trainingPlanId" });
-TrainingRecord.belongsTo(TrainingPlan, { foreignKey: "trainingPlanId" });
+TrainingRecord.belongsTo(TrainingPlan, { as: "trainingPlan", foreignKey: "trainingPlanId" });
 
 module.exports = { TrainingPlan, TrainingRecord, CompetencyMatrix };

@@ -35,7 +35,6 @@ module.exports = {
     if (m.ProductionTask) {
       m.ProductionTask.belongsTo(m.User, { foreignKey: 'responsibleId', as: 'responsible' });
       m.ProductionTask.belongsTo(m.User, { foreignKey: 'createdById', as: 'createdBy' });
-      m.ProductionTask.belongsTo(m.Section, { foreignKey: 'targetSectionId', as: 'targetSection' });
       if (m.Project) {
         m.ProductionTask.belongsTo(m.Project, { foreignKey: 'projectId', as: 'project' });
       }

@@ -23,8 +23,16 @@ const statusColor: Record<string, string> = {
   OVERDUE: 'bg-red-900/40 text-red-400',
 };
 
+interface AuditPlanItem {
+  id: number;
+  title: string;
+  year: number;
+  status: string;
+}
+
 const AuditsPage: React.FC = () => {
   const [schedules, setSchedules] = useState<AuditScheduleItem[]>([]);
+  const [plans, setPlans] = useState<AuditPlanItem[]>([]);
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -37,12 +45,14 @@ const AuditsPage: React.FC = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [schedulesData, statsData] = await Promise.all([
+      const [schedulesData, statsData, plansData] = await Promise.all([
         internalAuditsApi.getSchedules(),
         internalAuditsApi.getStats(),
+        internalAuditsApi.getPlans(),
       ]);
       setSchedules(schedulesData.rows || []);
       setStats(statsData);
+      setPlans(plansData.rows || []);
     } catch (e) {
       console.error('AuditsPage loadData error:', e);
     } finally {
@@ -51,10 +61,16 @@ const AuditsPage: React.FC = () => {
   };
 
   const handleCreate = async () => {
+    if (!form.auditPlanId) return;
     try {
       setCreating(true);
-      const data: any = { title: form.title, scope: form.scope, isoClause: form.isoClause, plannedDate: form.plannedDate };
-      if (form.auditPlanId) data.auditPlanId = parseInt(form.auditPlanId);
+      const data: any = {
+        title: form.title,
+        scope: form.scope,
+        isoClause: form.isoClause,
+        plannedDate: form.plannedDate,
+        auditPlanId: parseInt(form.auditPlanId),
+      };
       await internalAuditsApi.createSchedule(data);
       setShowCreate(false);
       setForm({ title: '', scope: '', isoClause: '', plannedDate: '', auditPlanId: '' });
@@ -165,6 +181,10 @@ const AuditsPage: React.FC = () => {
           <div className="bg-slate-800 border border-slate-700 rounded-xl p-6 w-full max-w-lg space-y-4">
             <h2 className="text-lg font-bold text-slate-100">Новый аудит</h2>
             <div className="space-y-3">
+              <select value={form.auditPlanId} onChange={e => setForm({ ...form, auditPlanId: e.target.value })} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 text-sm focus:border-teal-500/50 focus:outline-none">
+                <option value="">Выберите план аудита</option>
+                {plans.map(p => <option key={p.id} value={p.id}>{p.title} ({p.year})</option>)}
+              </select>
               <input type="text" placeholder="Тема аудита" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 text-sm focus:border-teal-500/50 focus:outline-none" />
               <input type="text" placeholder="Область аудита" value={form.scope} onChange={e => setForm({ ...form, scope: e.target.value })} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 text-sm focus:border-teal-500/50 focus:outline-none" />
               <div className="grid grid-cols-2 gap-3">
@@ -174,7 +194,7 @@ const AuditsPage: React.FC = () => {
             </div>
             <div className="flex justify-end gap-3 pt-2">
               <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-sm text-slate-400 hover:text-slate-200 transition-colors">Отмена</button>
-              <button onClick={handleCreate} disabled={creating || !form.title} className="px-4 py-2 bg-teal-600 hover:bg-teal-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors">
+              <button onClick={handleCreate} disabled={creating || !form.title || !form.auditPlanId} className="px-4 py-2 bg-teal-600 hover:bg-teal-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors">
                 {creating ? 'Создание...' : 'Создать'}
               </button>
             </div>

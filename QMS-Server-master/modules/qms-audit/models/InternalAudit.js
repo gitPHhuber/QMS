@@ -74,7 +74,7 @@ const AuditFinding = sequelize.define("audit_finding", {
 
 // Ассоциации
 AuditPlan.hasMany(AuditSchedule, { as: "audits", foreignKey: "auditPlanId" });
-AuditSchedule.belongsTo(AuditPlan, { foreignKey: "auditPlanId" });
+AuditSchedule.belongsTo(AuditPlan, { as: "auditPlan", foreignKey: "auditPlanId" });
 
 AuditSchedule.hasMany(AuditFinding, { as: "findings", foreignKey: "auditScheduleId" });
 AuditFinding.belongsTo(AuditSchedule, { foreignKey: "auditScheduleId" });

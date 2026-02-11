@@ -8,22 +8,22 @@ const checkAbility = require("../../core/middleware/checkAbilityMiddleware");
 const protect = [authMiddleware, syncUserMiddleware];
 
 // Stats (static route FIRST)
-router.get("/stats", ...protect, checkAbility("training.view"), ctrl.getStats);
+router.get("/stats", ...protect, checkAbility("training.read"), ctrl.getStats);
 
 // Plans
-router.get("/plans",      ...protect, checkAbility("training.view"),   ctrl.getPlans);
-router.get("/plans/:id",  ...protect, checkAbility("training.view"),   ctrl.getPlanOne);
-router.post("/plans",     ...protect, checkAbility("training.create"), ctrl.createPlan);
+router.get("/plans",      ...protect, checkAbility("training.read"),   ctrl.getPlans);
+router.get("/plans/:id",  ...protect, checkAbility("training.read"),   ctrl.getPlanOne);
+router.post("/plans",     ...protect, checkAbility("training.manage"), ctrl.createPlan);
 router.put("/plans/:id",  ...protect, checkAbility("training.manage"), ctrl.updatePlan);
 
 // Records
-router.get("/records",      ...protect, checkAbility("training.view"),   ctrl.getRecords);
-router.post("/records",     ...protect, checkAbility("training.create"), ctrl.createRecord);
+router.get("/records",      ...protect, checkAbility("training.read"),   ctrl.getRecords);
+router.post("/records",     ...protect, checkAbility("training.manage"), ctrl.createRecord);
 router.put("/records/:id",  ...protect, checkAbility("training.manage"), ctrl.updateRecord);
 
 // Competency Matrix
-router.get("/competency",      ...protect, checkAbility("training.view"),   ctrl.getCompetency);
-router.post("/competency",     ...protect, checkAbility("training.create"), ctrl.createCompetency);
+router.get("/competency",      ...protect, checkAbility("training.read"),   ctrl.getCompetency);
+router.post("/competency",     ...protect, checkAbility("training.manage"), ctrl.createCompetency);
 router.put("/competency/:id",  ...protect, checkAbility("training.manage"), ctrl.updateCompetency);
 
 module.exports = router;
