@@ -1,203 +1,253 @@
-import React, { useEffect, useState } from 'react';
-import { GraduationCap, Plus, Search, CheckCircle, XCircle, Clock } from 'lucide-react';
-import { trainingApi } from '../../api/qmsApi';
+import React, { useState } from "react";
+import {
+  GraduationCap,
+  Plus,
+  Download,
+  Users,
+  UserCheck,
+  CalendarClock,
+  AlertCircle,
+  Grid3X3,
+  Calendar,
+  Award,
+} from "lucide-react";
+import KpiRow from "../../components/qms/KpiRow";
+import ActionBtn from "../../components/qms/ActionBtn";
+import Badge from "../../components/qms/Badge";
+import DataTable from "../../components/qms/DataTable";
+import Card from "../../components/qms/Card";
+import SectionTitle from "../../components/qms/SectionTitle";
 
-interface TrainingRecord {
-  id: number;
-  title: string;
-  type: string;
-  trainingDate: string;
-  assessmentScore: number | null;
-  passed: boolean | null;
-  status: string;
-  trainee?: { id: number; name: string; surname: string };
-  trainingPlan?: { id: number; title: string; year: number };
+/* ------------------------------------------------------------------ */
+/*  Mock data                                                          */
+/* ------------------------------------------------------------------ */
+
+interface TrainingRow {
+  [key: string]: unknown;
+  employee: string;
+  position: string;
+  department: string;
+  training: string;
+  status: "passed" | "in_progress" | "assigned" | "overdue";
+  date: string;
+  certificate: string;
 }
 
-const statusColor: Record<string, string> = {
-  PLANNED: 'bg-blue-900/40 text-blue-400',
-  COMPLETED: 'bg-green-900/40 text-green-400',
-  FAILED: 'bg-red-900/40 text-red-400',
-  EXPIRED: 'bg-orange-900/40 text-orange-400',
+const TRAINING_DATA: TrainingRow[] = [
+  { employee: "Костюков И.",   position: "Инженер по качеству", department: "ОТК",          training: "ISO 13485:2016 Основы",   status: "passed",      date: "15.01.2026", certificate: "Да" },
+  { employee: "Холтобин А.",   position: "Начальник ОТК",       department: "ОТК",          training: "Внутренний аудитор ISO",  status: "passed",      date: "20.01.2026", certificate: "Да" },
+  { employee: "Омельченко А.", position: "Монтажник",            department: "Производство", training: "IPC-A-610 Класс 3",      status: "in_progress", date: "10.02.2026", certificate: "\u2014" },
+  { employee: "Яровой Е.",     position: "Инженер-технолог",     department: "Производство", training: "ESD-защита",              status: "assigned",    date: "15.02.2026", certificate: "\u2014" },
+  { employee: "Чирков И.",     position: "Метролог",             department: "Метрология",   training: "Калибровка ISO 17025",   status: "overdue",     date: "01.02.2026", certificate: "\u2014" },
+  { employee: "Петров Д.",     position: "Кладовщик",            department: "Склад",        training: "GMP для склада",          status: "assigned",    date: "20.02.2026", certificate: "\u2014" },
+];
+
+/* ---- Status badge mapping ---- */
+
+const STATUS_CFG: Record<TrainingRow["status"], { label: string; color: string; bg: string }> = {
+  passed:      { label: "Пройдено",    color: "#2DD4A8", bg: "rgba(45,212,168,0.12)" },
+  in_progress: { label: "В процессе",  color: "#4A90E8", bg: "rgba(74,144,232,0.12)" },
+  assigned:    { label: "Назначено",   color: "#E8A830", bg: "rgba(232,168,48,0.12)" },
+  overdue:     { label: "Просрочено",  color: "#F06060", bg: "rgba(240,96,96,0.12)" },
 };
 
-const typeLabels: Record<string, string> = {
-  ONBOARDING: 'Адаптация',
-  PROCEDURE: 'Процедуры',
-  EQUIPMENT: 'Оборудование',
-  GMP: 'GMP',
-  SAFETY: 'Безопасность',
-  REGULATORY: 'Регуляторные',
-  SOFTWARE: 'ПО',
-  RETRAINING: 'Переподготовка',
+/* ---- Competency matrix ---- */
+
+const SKILLS = ["ISO 13485", "IPC-A-610", "Пайка SMD", "ESD", "GMP"];
+
+interface CompetencyRow {
+  name: string;
+  levels: number[]; // 0-3
+}
+
+const COMPETENCY: CompetencyRow[] = [
+  { name: "Костюков И.",   levels: [3, 2, 1, 3, 2] },
+  { name: "Холтобин А.",   levels: [3, 3, 2, 2, 3] },
+  { name: "Омельченко А.", levels: [2, 3, 3, 2, 1] },
+  { name: "Яровой Е.",     levels: [2, 1, 2, 3, 2] },
+  { name: "Чирков И.",     levels: [1, 2, 3, 1, 1] },
+];
+
+const LEVEL_CFG: Record<number, { dots: string; cls: string }> = {
+  3: { dots: "\u25CF\u25CF\u25CF", cls: "bg-[rgba(45,212,168,0.20)] text-[#2DD4A8]" },
+  2: { dots: "\u25CF\u25CF",       cls: "bg-[rgba(74,144,232,0.20)] text-[#4A90E8]" },
+  1: { dots: "\u25CF",             cls: "bg-[rgba(232,168,48,0.20)] text-[#E8A830]" },
+  0: { dots: "\u2014",             cls: "bg-[rgba(240,96,96,0.20)] text-[#F06060]" },
 };
+
+/* ---- View toggle ---- */
+
+type View = "table" | "matrix";
+
+/* ================================================================== */
+/*  Component                                                          */
+/* ================================================================== */
 
 const TrainingPage: React.FC = () => {
-  const [records, setRecords] = useState<TrainingRecord[]>([]);
-  const [stats, setStats] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [showCreate, setShowCreate] = useState(false);
-  const [form, setForm] = useState({ title: '', type: 'PROCEDURE', trainingDate: '', userId: '', description: '' });
-  const [creating, setCreating] = useState(false);
+  const [view, setView] = useState<View>("table");
 
-  useEffect(() => { loadData(); }, []);
+  /* ---- columns for DataTable ---- */
 
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const [recordsData, statsData] = await Promise.all([
-        trainingApi.getRecords(),
-        trainingApi.getStats(),
-      ]);
-      setRecords(recordsData.rows || []);
-      setStats(statsData);
-    } catch (e) {
-      console.error('TrainingPage loadData error:', e);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const columns = [
+    {
+      key: "employee",
+      label: "Сотрудник",
+      render: (r: TrainingRow) => (
+        <span className="font-medium text-asvo-text">{r.employee}</span>
+      ),
+    },
+    {
+      key: "position",
+      label: "Должность",
+      render: (r: TrainingRow) => <span className="text-asvo-text-mid">{r.position}</span>,
+    },
+    {
+      key: "department",
+      label: "Отдел",
+      render: (r: TrainingRow) => <span className="text-asvo-text-mid">{r.department}</span>,
+    },
+    {
+      key: "training",
+      label: "Обучение",
+      render: (r: TrainingRow) => <span className="text-asvo-text">{r.training}</span>,
+    },
+    {
+      key: "status",
+      label: "Статус",
+      align: "center" as const,
+      render: (r: TrainingRow) => {
+        const s = STATUS_CFG[r.status];
+        return <Badge color={s.color} bg={s.bg}>{s.label}</Badge>;
+      },
+    },
+    {
+      key: "date",
+      label: "Дата",
+      render: (r: TrainingRow) => (
+        <span className="flex items-center gap-1 text-asvo-text-mid">
+          <Calendar size={12} className="text-asvo-text-dim" />
+          {r.date}
+        </span>
+      ),
+    },
+    {
+      key: "certificate",
+      label: "Сертификат",
+      align: "center" as const,
+      render: (r: TrainingRow) =>
+        r.certificate === "Да" ? (
+          <span className="flex items-center justify-center gap-1 text-asvo-accent">
+            <Award size={13} />
+            Да
+          </span>
+        ) : (
+          <span className="text-asvo-text-dim">{r.certificate}</span>
+        ),
+    },
+  ];
 
-  const handleCreate = async () => {
-    try {
-      setCreating(true);
-      const data: any = { ...form };
-      if (data.userId) data.userId = parseInt(data.userId);
-      await trainingApi.createRecord(data);
-      setShowCreate(false);
-      setForm({ title: '', type: 'PROCEDURE', trainingDate: '', userId: '', description: '' });
-      await loadData();
-    } catch (e) {
-      console.error('Create training error:', e);
-    } finally {
-      setCreating(false);
-    }
-  };
-
-  const filtered = records.filter(i =>
-    i.title?.toLowerCase().includes(search.toLowerCase()) ||
-    i.trainee?.surname?.toLowerCase().includes(search.toLowerCase()) ||
-    i.trainee?.name?.toLowerCase().includes(search.toLowerCase())
-  );
+  /* ---- render ---- */
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-5 bg-asvo-bg min-h-screen">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-emerald-500/10 rounded-lg">
-            <GraduationCap className="text-emerald-400" size={24} />
+          <div className="p-2.5 bg-asvo-accent-dim rounded-xl">
+            <GraduationCap size={22} className="text-asvo-accent" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-100">Обучение персонала</h1>
-            <p className="text-slate-400 text-sm">ISO 13485 &sect;6.2 &mdash; Компетентность и обучение</p>
+            <h1 className="text-xl font-bold text-asvo-text">Обучение персонала</h1>
+            <p className="text-xs text-asvo-text-dim">ISO 13485 &sect;6.2 &mdash; Компетентность, обучение, осведомлённость</p>
           </div>
         </div>
-        <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-lg transition-colors text-sm font-medium">
-          <Plus size={16} />
-          Новая запись
-        </button>
-      </div>
 
-      {/* Stats */}
-      {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { label: 'Всего записей', value: stats.totalRecords, color: 'text-slate-100' },
-            { label: 'Завершено', value: stats.completed, color: 'text-green-400' },
-            { label: 'Запланировано', value: stats.planned, color: 'text-blue-400' },
-            { label: 'Не пройдено', value: stats.failed, color: 'text-red-400' },
-          ].map(s => (
-            <div key={s.label} className="bg-slate-800/60 border border-slate-700 rounded-xl p-4">
-              <div className={`text-2xl font-bold ${s.color}`}>{s.value}</div>
-              <div className="text-xs text-slate-400">{s.label}</div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Search */}
-      <div className="flex gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
-          <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Поиск по теме или сотруднику..." className="w-full pl-10 pr-4 py-2 bg-slate-800/60 border border-slate-700 rounded-lg text-slate-200 placeholder:text-slate-500 focus:border-teal-500/50 focus:outline-none text-sm" />
+        <div className="flex items-center gap-2">
+          <ActionBtn variant="primary" icon={<Plus size={15} />}>+ Назначить обучение</ActionBtn>
+          <ActionBtn
+            variant="secondary"
+            color="#A06AE8"
+            icon={<Grid3X3 size={15} />}
+            onClick={() => setView(view === "matrix" ? "table" : "matrix")}
+          >
+            Матрица компетенций
+          </ActionBtn>
+          <ActionBtn variant="secondary" icon={<Download size={15} />}>Экспорт</ActionBtn>
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-slate-800/60 border border-slate-700 rounded-xl overflow-hidden">
-        <table className="w-full">
-          <thead>
-            <tr className="bg-slate-800/80 border-b border-slate-700">
-              <th className="text-left px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">Сотрудник</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">Тема</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">Тип</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">Дата</th>
-              <th className="text-center px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">Оценка</th>
-              <th className="text-center px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">Статус</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr><td colSpan={6} className="text-center py-8 text-slate-500">Загрузка...</td></tr>
-            ) : filtered.length === 0 ? (
-              <tr><td colSpan={6} className="text-center py-8 text-slate-500">Нет данных</td></tr>
-            ) : filtered.map(item => (
-              <tr key={item.id} className="border-b border-slate-700/50 hover:bg-slate-700/20 transition-colors">
-                <td className="px-4 py-3 text-sm text-slate-200">
-                  {item.trainee ? `${item.trainee.surname} ${item.trainee.name}` : '-'}
-                </td>
-                <td className="px-4 py-3 text-sm text-slate-200">{item.title}</td>
-                <td className="px-4 py-3 text-sm text-slate-300">{typeLabels[item.type] || item.type}</td>
-                <td className="px-4 py-3 text-sm text-slate-300">
-                  {item.trainingDate ? new Date(item.trainingDate).toLocaleDateString('ru') : '-'}
-                </td>
-                <td className="px-4 py-3 text-center">
-                  {item.assessmentScore != null ? (
-                    <div className="flex items-center justify-center gap-1">
-                      {item.passed ? <CheckCircle size={14} className="text-green-400" /> : <XCircle size={14} className="text-red-400" />}
-                      <span className="text-sm text-slate-200">{item.assessmentScore}</span>
-                    </div>
-                  ) : <span className="text-slate-500">-</span>}
-                </td>
-                <td className="px-4 py-3 text-center">
-                  <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${statusColor[item.status] || 'text-slate-400'}`}>
-                    {item.status}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {/* KPI Row */}
+      <KpiRow
+        items={[
+          { label: "Всего сотрудников", value: 42, icon: <Users size={18} />,         color: "#4A90E8" },
+          { label: "Обучено",           value: 38, icon: <UserCheck size={18} />,      color: "#2DD4A8" },
+          { label: "План обучения",     value: 15, icon: <CalendarClock size={18} />,  color: "#E8A830" },
+          { label: "Просрочено",        value: 2,  icon: <AlertCircle size={18} />,    color: "#F06060" },
+        ]}
+      />
 
-      {/* Create Modal */}
-      {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-slate-800 border border-slate-700 rounded-xl p-6 w-full max-w-lg space-y-4">
-            <h2 className="text-lg font-bold text-slate-100">Новая запись обучения</h2>
-            <div className="space-y-3">
-              <input type="text" placeholder="Тема обучения" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 text-sm focus:border-teal-500/50 focus:outline-none" />
-              <textarea placeholder="Описание" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 text-sm focus:border-teal-500/50 focus:outline-none h-20 resize-none" />
-              <div className="grid grid-cols-2 gap-3">
-                <select value={form.type} onChange={e => setForm({ ...form, type: e.target.value })} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 text-sm focus:border-teal-500/50 focus:outline-none">
-                  {Object.entries(typeLabels).map(([k, v]) => (
-                    <option key={k} value={k}>{v}</option>
+      {/* ---- View: Table ---- */}
+      {view === "table" && <DataTable columns={columns} data={TRAINING_DATA} />}
+
+      {/* ---- View: Competency Matrix ---- */}
+      {view === "matrix" && (
+        <Card>
+          <SectionTitle>Матрица компетенций</SectionTitle>
+
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr>
+                  <th className="text-left text-[10px] font-semibold text-asvo-text-dim uppercase tracking-wider px-3 py-2.5">
+                    Сотрудник
+                  </th>
+                  {SKILLS.map((sk) => (
+                    <th key={sk} className="text-center text-[10px] font-semibold text-asvo-text-dim uppercase tracking-wider px-3 py-2.5">
+                      {sk}
+                    </th>
                   ))}
-                </select>
-                <input type="date" value={form.trainingDate} onChange={e => setForm({ ...form, trainingDate: e.target.value })} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 text-sm focus:border-teal-500/50 focus:outline-none" />
-              </div>
-              <input type="number" placeholder="ID сотрудника" value={form.userId} onChange={e => setForm({ ...form, userId: e.target.value })} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 text-sm focus:border-teal-500/50 focus:outline-none" />
-            </div>
-            <div className="flex justify-end gap-3 pt-2">
-              <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-sm text-slate-400 hover:text-slate-200 transition-colors">Отмена</button>
-              <button onClick={handleCreate} disabled={creating || !form.title} className="px-4 py-2 bg-teal-600 hover:bg-teal-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors">
-                {creating ? 'Создание...' : 'Создать'}
-              </button>
-            </div>
+                </tr>
+              </thead>
+              <tbody>
+                {COMPETENCY.map((row) => (
+                  <tr key={row.name} className="border-t border-asvo-border/40">
+                    <td className="px-3 py-2.5 text-[13px] font-medium text-asvo-text whitespace-nowrap">
+                      {row.name}
+                    </td>
+                    {row.levels.map((lvl, ci) => {
+                      const cfg = LEVEL_CFG[lvl];
+                      return (
+                        <td key={ci} className="px-3 py-2.5 text-center">
+                          <span
+                            className={`inline-flex items-center justify-center rounded-lg text-[12px] font-bold px-2.5 py-1 min-w-[44px] ${cfg.cls}`}
+                          >
+                            {cfg.dots}
+                          </span>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        </div>
+
+          {/* Legend */}
+          <div className="flex items-center gap-5 mt-4 text-[11px] text-asvo-text-dim">
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block w-3 h-3 rounded-sm bg-[rgba(45,212,168,0.20)]" /> 3 &mdash; Эксперт
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block w-3 h-3 rounded-sm bg-[rgba(74,144,232,0.20)]" /> 2 &mdash; Специалист
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block w-3 h-3 rounded-sm bg-[rgba(232,168,48,0.20)]" /> 1 &mdash; Базовый
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block w-3 h-3 rounded-sm bg-[rgba(240,96,96,0.20)]" /> 0 &mdash; Отсутствует
+            </span>
+          </div>
+        </Card>
       )}
     </div>
   );

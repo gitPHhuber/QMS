@@ -8,27 +8,20 @@ export default {
     extend: {
       colors: {
         asvo: {
-          // Backgrounds
           bg:           '#080E14',
           surface:      '#0D1520',
+          'surface-2':  '#162231',
+          'surface-3':  '#1C2D40',
           card:         '#111D2B',
           'card-hover': '#152436',
-
-          // Borders
           border:       '#1A2D42',
           'border-lt':  '#1E3A54',
-
-          // Accent
           accent:       '#2DD4A8',
-          'accent-dim': 'rgba(45,212,168,0.08)',
+          'accent-dim': 'rgba(45,212,168,0.15)',
           'accent-glow':'rgba(45,212,168,0.25)',
-
-          // Text
           text:         '#E8EDF3',
           'text-mid':   '#8899AB',
           'text-dim':   '#4A5E72',
-
-          // Semantic
           red:          '#F06060',
           'red-dim':    'rgba(240,96,96,0.12)',
           amber:        '#E8A830',

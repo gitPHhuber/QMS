@@ -1,210 +1,215 @@
-import React, { useEffect, useState } from 'react';
-import { Truck, Plus, Search, Star, AlertTriangle } from 'lucide-react';
-import { suppliersApi } from '../../api/qmsApi';
+import React from 'react';
+import {
+  Truck, Plus, Search, Award, ShieldCheck, FileText,
+  Clock, Headphones, BadgeCheck, Package,
+} from 'lucide-react';
+import KpiRow from '../../components/qms/KpiRow';
+import ActionBtn from '../../components/qms/ActionBtn';
+import Badge from '../../components/qms/Badge';
+import DataTable from '../../components/qms/DataTable';
+import SectionTitle from '../../components/qms/SectionTitle';
+import ProgressBar from '../../components/qms/ProgressBar';
 
-interface Supplier {
-  id: number;
-  code: string;
+/* ───── types ───── */
+interface SupplierRow {
+  id: string;
   name: string;
   category: string;
-  criticality: string;
-  qualificationStatus: string;
-  overallScore: number | null;
-  nextEvaluationDate: string | null;
-  evaluations?: Array<{ evaluationDate: string; totalScore: number }>;
+  rating: number;
+  status: string;
+  lastAudit: string;
+  certs: string;
+  [key: string]: unknown;
 }
 
-const criticalityColor: Record<string, string> = {
-  CRITICAL: 'bg-red-900/40 text-red-400 border-red-700/50',
-  MAJOR: 'bg-orange-900/40 text-orange-400 border-orange-700/50',
-  MINOR: 'bg-green-900/40 text-green-400 border-green-700/50',
+/* ───── mock data ───── */
+const SUPPLIERS: SupplierRow[] = [
+  { id: 'SUP-001', name: 'ООО "Резонанс"',         category: 'Компоненты',  rating: 92, status: 'Одобрен',       lastAudit: '15.01.2026', certs: 'ISO 9001' },
+  { id: 'SUP-003', name: 'АО "ПКБ Электро"',       category: 'PCB',         rating: 85, status: 'Одобрен',       lastAudit: '20.12.2025', certs: 'ISO 9001, IPC' },
+  { id: 'SUP-005', name: 'ИП Волков',               category: 'Крепёж',      rating: 67, status: 'Условный',      lastAudit: '10.11.2025', certs: '\u2014' },
+  { id: 'SUP-007', name: 'ООО "МетаПласт"',         category: 'Корпуса',     rating: 78, status: 'Одобрен',       lastAudit: '05.01.2026', certs: 'ISO 9001' },
+  { id: 'SUP-012', name: 'Shenzhen Sensors Co.',     category: 'Датчики',     rating: 45, status: 'Заблокирован', lastAudit: '01.09.2025', certs: '\u2014' },
+  { id: 'SUP-015', name: 'ООО "КалибрПро"',         category: 'Калибровка',  rating: 91, status: 'Одобрен',       lastAudit: '20.01.2026', certs: 'ISO 17025' },
+];
+
+/* ───── badge helpers ───── */
+const statusMap: Record<string, { color: string; bg: string }> = {
+  'Одобрен':       { color: '#2DD4A8', bg: 'rgba(45,212,168,0.14)' },
+  'Условный':      { color: '#E8A830', bg: 'rgba(232,168,48,0.14)' },
+  'Заблокирован':  { color: '#F06060', bg: 'rgba(240,96,96,0.14)' },
+  'Новый':         { color: '#4A90E8', bg: 'rgba(74,144,232,0.14)' },
 };
 
-const qualStatusColor: Record<string, string> = {
-  QUALIFIED: 'bg-green-900/40 text-green-400',
-  PENDING: 'bg-yellow-900/40 text-yellow-400',
-  CONDITIONAL: 'bg-orange-900/40 text-orange-400',
-  SUSPENDED: 'bg-red-900/40 text-red-400',
-  DISQUALIFIED: 'bg-slate-700/40 text-slate-400',
+const categoryMap: Record<string, { color: string; bg: string }> = {
+  'Компоненты':  { color: '#4A90E8', bg: 'rgba(74,144,232,0.14)' },
+  'PCB':         { color: '#A06AE8', bg: 'rgba(160,106,232,0.14)' },
+  'Крепёж':      { color: '#E8A830', bg: 'rgba(232,168,48,0.14)' },
+  'Корпуса':     { color: '#E87040', bg: 'rgba(232,112,64,0.14)' },
+  'Датчики':     { color: '#F06060', bg: 'rgba(240,96,96,0.14)' },
+  'Калибровка':  { color: '#2DD4A8', bg: 'rgba(45,212,168,0.14)' },
 };
+
+/** ProgressBar color based on rating */
+const barColor = (v: number) => {
+  if (v >= 80) return 'green' as const;
+  if (v >= 60) return 'amber' as const;
+  return 'red' as const;
+};
+
+/* ───── table columns ───── */
+const columns = [
+  {
+    key: 'id',
+    label: 'ID',
+    width: '90px',
+    render: (r: SupplierRow) => <span className="font-mono text-asvo-accent">{r.id}</span>,
+  },
+  {
+    key: 'name',
+    label: 'Название',
+    render: (r: SupplierRow) => <span className="text-asvo-text">{r.name}</span>,
+  },
+  {
+    key: 'category',
+    label: 'Категория',
+    align: 'center' as const,
+    render: (r: SupplierRow) => {
+      const c = categoryMap[r.category];
+      return <Badge color={c?.color} bg={c?.bg}>{r.category}</Badge>;
+    },
+  },
+  {
+    key: 'rating',
+    label: 'Рейтинг',
+    width: '140px',
+    render: (r: SupplierRow) => (
+      <div className="space-y-1">
+        <div className="flex items-center justify-between text-xs">
+          <ProgressBar value={r.rating} color={barColor(r.rating)} />
+          <span className="ml-2 text-asvo-text font-semibold whitespace-nowrap">{r.rating}%</span>
+        </div>
+      </div>
+    ),
+  },
+  {
+    key: 'status',
+    label: 'Статус',
+    align: 'center' as const,
+    render: (r: SupplierRow) => {
+      const c = statusMap[r.status];
+      return <Badge color={c?.color} bg={c?.bg}>{r.status}</Badge>;
+    },
+  },
+  {
+    key: 'lastAudit',
+    label: 'Последний аудит',
+    render: (r: SupplierRow) => <span className="text-asvo-text-mid">{r.lastAudit}</span>,
+  },
+  {
+    key: 'certs',
+    label: 'Сертификаты',
+    render: (r: SupplierRow) => <span className="text-asvo-text-mid">{r.certs}</span>,
+  },
+];
+
+/* ───── evaluation criteria ───── */
+interface Criterion {
+  label: string;
+  weight: string;
+  color: string;
+  icon: React.ReactNode;
+}
+
+const CRITERIA: Criterion[] = [
+  { label: 'Качество продукции', weight: '30%', color: '#2DD4A8', icon: <Award size={18} /> },
+  { label: 'Сроки поставки',    weight: '20%', color: '#4A90E8', icon: <Clock size={18} /> },
+  { label: 'Цена',              weight: '15%', color: '#E8A830', icon: <Package size={18} /> },
+  { label: 'Документация',      weight: '15%', color: '#A06AE8', icon: <FileText size={18} /> },
+  { label: 'Сервис',            weight: '10%', color: '#E87040', icon: <Headphones size={18} /> },
+  { label: 'Сертификация',      weight: '10%', color: '#2DD4A8', icon: <BadgeCheck size={18} /> },
+];
+
+/* ════════════════════════════════════════════════════ */
 
 const SuppliersPage: React.FC = () => {
-  const [items, setItems] = useState<Supplier[]>([]);
-  const [stats, setStats] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [showCreate, setShowCreate] = useState(false);
-  const [form, setForm] = useState({ name: '', legalName: '', category: 'COMPONENT', criticality: 'MAJOR', contactPerson: '', email: '', phone: '' });
-  const [creating, setCreating] = useState(false);
+  const [search, setSearch] = React.useState('');
 
-  useEffect(() => { loadData(); }, []);
-
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const [itemsData, statsData] = await Promise.all([
-        suppliersApi.getAll(),
-        suppliersApi.getStats(),
-      ]);
-      setItems(itemsData.rows || []);
-      setStats(statsData);
-    } catch (e) {
-      console.error('SuppliersPage loadData error:', e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCreate = async () => {
-    try {
-      setCreating(true);
-      await suppliersApi.create(form);
-      setShowCreate(false);
-      setForm({ name: '', legalName: '', category: 'COMPONENT', criticality: 'MAJOR', contactPerson: '', email: '', phone: '' });
-      await loadData();
-    } catch (e) {
-      console.error('Create supplier error:', e);
-    } finally {
-      setCreating(false);
-    }
-  };
-
-  const filtered = items.filter(i =>
-    i.name.toLowerCase().includes(search.toLowerCase()) ||
-    i.code?.toLowerCase().includes(search.toLowerCase())
+  const filtered = SUPPLIERS.filter(
+    (r) =>
+      r.name.toLowerCase().includes(search.toLowerCase()) ||
+      r.id.toLowerCase().includes(search.toLowerCase()),
   );
 
+  /* ───── KPI ───── */
+  const kpis = [
+    { label: 'Всего поставщиков', value: 28,     color: '#4A90E8', icon: <Truck size={18} /> },
+    { label: 'Одобренных',        value: 22,     color: '#2DD4A8', icon: <ShieldCheck size={18} /> },
+    { label: 'На аудите',         value: 3,      color: '#E8A830', icon: <Search size={18} /> },
+    { label: 'Заблокированных',   value: 2,      color: '#F06060', icon: <Package size={18} /> },
+    { label: 'Средний рейтинг',   value: '78%',  color: '#2DD4A8', icon: <Award size={18} /> },
+  ];
+
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
+    <div className="min-h-screen bg-asvo-bg p-6 space-y-6">
+      {/* ── Header ── */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-blue-500/10 rounded-lg">
-            <Truck className="text-blue-400" size={24} />
+          <div className="p-2 rounded-lg" style={{ background: 'rgba(74,144,232,0.12)' }}>
+            <Truck className="text-[#4A90E8]" size={24} />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-100">Поставщики</h1>
-            <p className="text-slate-400 text-sm">ISO 13485 &sect;7.4 &mdash; Управление поставщиками</p>
+            <h1 className="text-2xl font-bold text-asvo-text">Поставщики</h1>
+            <p className="text-asvo-text-dim text-sm">ISO 13485 &sect;7.4 &mdash; Управление поставщиками</p>
           </div>
         </div>
-        <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-lg transition-colors text-sm font-medium">
-          <Plus size={16} />
-          Новый поставщик
-        </button>
+
+        <div className="flex items-center gap-2">
+          <ActionBtn icon={<Plus size={15} />}>Новый поставщик</ActionBtn>
+        </div>
       </div>
 
-      {/* Stats */}
-      {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          {[
-            { label: 'Всего', value: stats.total, color: 'text-slate-100' },
-            { label: 'Квалифицированы', value: stats.qualified, color: 'text-green-400' },
-            { label: 'На рассмотрении', value: stats.pending, color: 'text-yellow-400' },
-            { label: 'Приостановлены', value: stats.suspended, color: 'text-red-400' },
-            { label: 'Критичные', value: stats.critical, color: 'text-orange-400' },
-          ].map(s => (
-            <div key={s.label} className="bg-slate-800/60 border border-slate-700 rounded-xl p-4">
-              <div className={`text-2xl font-bold ${s.color}`}>{s.value}</div>
-              <div className="text-xs text-slate-400">{s.label}</div>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* ── KPI Row ── */}
+      <KpiRow items={kpis} />
 
-      {/* Search */}
+      {/* ── Search ── */}
       <div className="flex gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
-          <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Поиск по коду или названию..." className="w-full pl-10 pr-4 py-2 bg-slate-800/60 border border-slate-700 rounded-lg text-slate-200 placeholder:text-slate-500 focus:border-teal-500/50 focus:outline-none text-sm" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-asvo-text-dim" size={16} />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Поиск по ID или названию..."
+            className="w-full pl-10 pr-4 py-2 bg-asvo-surface-2 border border-asvo-border rounded-lg text-asvo-text placeholder:text-asvo-text-dim focus:border-asvo-accent/50 focus:outline-none text-sm"
+          />
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-slate-800/60 border border-slate-700 rounded-xl overflow-hidden">
-        <table className="w-full">
-          <thead>
-            <tr className="bg-slate-800/80 border-b border-slate-700">
-              <th className="text-left px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">Код</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">Название</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">Категория</th>
-              <th className="text-center px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">Критичность</th>
-              <th className="text-center px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">Квалификация</th>
-              <th className="text-center px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">Скор</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">Оценка</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr><td colSpan={7} className="text-center py-8 text-slate-500">Загрузка...</td></tr>
-            ) : filtered.length === 0 ? (
-              <tr><td colSpan={7} className="text-center py-8 text-slate-500">Нет данных</td></tr>
-            ) : filtered.map(item => (
-              <tr key={item.id} className="border-b border-slate-700/50 hover:bg-slate-700/20 transition-colors">
-                <td className="px-4 py-3 text-sm font-mono text-teal-400">{item.code}</td>
-                <td className="px-4 py-3 text-sm text-slate-200">{item.name}</td>
-                <td className="px-4 py-3 text-sm text-slate-300">{item.category}</td>
-                <td className="px-4 py-3 text-center">
-                  <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium border ${criticalityColor[item.criticality] || 'text-slate-400'}`}>
-                    {item.criticality}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-center">
-                  <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${qualStatusColor[item.qualificationStatus] || 'text-slate-400'}`}>
-                    {item.qualificationStatus}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-sm text-center">
-                  {item.overallScore != null ? (
-                    <div className="flex items-center justify-center gap-1">
-                      <Star size={12} className={item.overallScore >= 80 ? 'text-green-400' : item.overallScore >= 60 ? 'text-yellow-400' : 'text-red-400'} />
-                      <span className="text-slate-200">{item.overallScore}</span>
-                    </div>
-                  ) : <span className="text-slate-500">-</span>}
-                </td>
-                <td className="px-4 py-3 text-sm text-slate-400">
-                  {item.evaluations?.[0]?.evaluationDate ? new Date(item.evaluations[0].evaluationDate).toLocaleDateString('ru') : '-'}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {/* ── Table ── */}
+      <DataTable columns={columns} data={filtered} />
 
-      {/* Create Modal */}
-      {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-slate-800 border border-slate-700 rounded-xl p-6 w-full max-w-lg space-y-4">
-            <h2 className="text-lg font-bold text-slate-100">Новый поставщик</h2>
-            <div className="space-y-3">
-              <input type="text" placeholder="Наименование" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 text-sm focus:border-teal-500/50 focus:outline-none" />
-              <input type="text" placeholder="Юридическое название" value={form.legalName} onChange={e => setForm({ ...form, legalName: e.target.value })} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 text-sm focus:border-teal-500/50 focus:outline-none" />
-              <div className="grid grid-cols-2 gap-3">
-                <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 text-sm focus:border-teal-500/50 focus:outline-none">
-                  {['RAW_MATERIAL', 'COMPONENT', 'SERVICE', 'EQUIPMENT', 'PACKAGING', 'SOFTWARE', 'SUBCONTRACTOR'].map(c => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
-                <select value={form.criticality} onChange={e => setForm({ ...form, criticality: e.target.value })} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 text-sm focus:border-teal-500/50 focus:outline-none">
-                  {['CRITICAL', 'MAJOR', 'MINOR'].map(c => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
-              </div>
-              <input type="text" placeholder="Контактное лицо" value={form.contactPerson} onChange={e => setForm({ ...form, contactPerson: e.target.value })} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 text-sm focus:border-teal-500/50 focus:outline-none" />
-              <div className="grid grid-cols-2 gap-3">
-                <input type="email" placeholder="Email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 text-sm focus:border-teal-500/50 focus:outline-none" />
-                <input type="text" placeholder="Телефон" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 text-sm focus:border-teal-500/50 focus:outline-none" />
-              </div>
+      {/* ── Evaluation Criteria ── */}
+      <SectionTitle>Критерии оценки поставщиков</SectionTitle>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {CRITERIA.map((c) => (
+          <div
+            key={c.label}
+            className="bg-asvo-surface-2 border border-asvo-border rounded-xl p-3 flex items-center gap-3"
+          >
+            <div
+              className="p-2 rounded-lg"
+              style={{ background: `${c.color}18` }}
+            >
+              <span style={{ color: c.color }}>{c.icon}</span>
             </div>
-            <div className="flex justify-end gap-3 pt-2">
-              <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-sm text-slate-400 hover:text-slate-200 transition-colors">Отмена</button>
-              <button onClick={handleCreate} disabled={creating || !form.name} className="px-4 py-2 bg-teal-600 hover:bg-teal-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors">
-                {creating ? 'Создание...' : 'Создать'}
-              </button>
+            <div className="flex-1 min-w-0">
+              <div className="text-[13px] text-asvo-text font-medium truncate">{c.label}</div>
             </div>
+            <div className="text-sm font-bold" style={{ color: c.color }}>{c.weight}</div>
           </div>
-        </div>
-      )}
+        ))}
+      </div>
     </div>
   );
 };
