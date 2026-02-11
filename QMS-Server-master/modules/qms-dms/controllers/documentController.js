@@ -1,8 +1,6 @@
 /**
  * documentController.js — REST API контроллер DMS
- * 
- * НОВЫЙ ФАЙЛ: controllers/documentController.js
- * 
+ *
  * Endpoints (через routes/documentRouter.js):
  *   GET    /api/documents/            — Реестр документов
  *   GET    /api/documents/stats       — Статистика DMS
@@ -22,6 +20,17 @@
 const ApiError = require("../../../error/ApiError");
 const DocumentService = require("../services/DocumentService");
 
+// Хелпер: бизнес-ошибки (throw new Error) → 400, остальные → 500
+const handleError = (e, next) => {
+  if (e instanceof ApiError) return next(e);
+  // Бизнес-ошибки из сервиса содержат понятное сообщение
+  if (e.message && !e.message.includes("Cannot") && !e.message.includes("SQLITE") && !e.message.includes("ECONNREFUSED")) {
+    return next(ApiError.badRequest(e.message));
+  }
+  console.error("DocumentController error:", e);
+  return next(ApiError.internal("Внутренняя ошибка сервера"));
+};
+
 class DocumentController {
   // ── Реестр ──
 
@@ -39,7 +48,7 @@ class DocumentController {
       });
       return res.json(result);
     } catch (e) {
-      next(ApiError.badRequest(e.message));
+      handleError(e, next);
     }
   }
 
@@ -49,7 +58,7 @@ class DocumentController {
       if (!doc) return next(ApiError.notFound("Документ не найден"));
       return res.json(doc);
     } catch (e) {
-      next(ApiError.badRequest(e.message));
+      handleError(e, next);
     }
   }
 
@@ -58,7 +67,7 @@ class DocumentController {
       const stats = await DocumentService.getStats();
       return res.json(stats);
     } catch (e) {
-      next(ApiError.badRequest(e.message));
+      handleError(e, next);
     }
   }
 
@@ -67,7 +76,7 @@ class DocumentController {
       const approvals = await DocumentService.getPendingApprovals(req.user.id);
       return res.json(approvals);
     } catch (e) {
-      next(ApiError.badRequest(e.message));
+      handleError(e, next);
     }
   }
 
@@ -76,7 +85,7 @@ class DocumentController {
       const docs = await DocumentService.getOverdueReviews();
       return res.json(docs);
     } catch (e) {
-      next(ApiError.badRequest(e.message));
+      handleError(e, next);
     }
   }
 
@@ -96,7 +105,7 @@ class DocumentController {
 
       return res.status(201).json(result);
     } catch (e) {
-      next(ApiError.badRequest(e.message));
+      handleError(e, next);
     }
   }
 
@@ -112,7 +121,7 @@ class DocumentController {
       );
       return res.status(201).json(version);
     } catch (e) {
-      next(ApiError.badRequest(e.message));
+      handleError(e, next);
     }
   }
 
@@ -130,7 +139,7 @@ class DocumentController {
 
       return res.json(version);
     } catch (e) {
-      next(ApiError.badRequest(e.message));
+      handleError(e, next);
     }
   }
 
@@ -151,7 +160,7 @@ class DocumentController {
 
       return res.json(version);
     } catch (e) {
-      next(ApiError.badRequest(e.message));
+      handleError(e, next);
     }
   }
 
@@ -170,7 +179,7 @@ class DocumentController {
 
       return res.json(approval);
     } catch (e) {
-      next(ApiError.badRequest(e.message));
+      handleError(e, next);
     }
   }
 
@@ -179,7 +188,7 @@ class DocumentController {
       const version = await DocumentService.makeEffective(req, Number(req.params.id));
       return res.json(version);
     } catch (e) {
-      next(ApiError.badRequest(e.message));
+      handleError(e, next);
     }
   }
 
@@ -200,7 +209,7 @@ class DocumentController {
 
       return res.json(distributions);
     } catch (e) {
-      next(ApiError.badRequest(e.message));
+      handleError(e, next);
     }
   }
 
@@ -209,7 +218,7 @@ class DocumentController {
       const dist = await DocumentService.acknowledge(req, Number(req.params.id));
       return res.json(dist);
     } catch (e) {
-      next(ApiError.badRequest(e.message));
+      handleError(e, next);
     }
   }
 }

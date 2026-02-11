@@ -1,10 +1,19 @@
 /**
  * ncCapaController.js — REST API для NC и CAPA
- * НОВЫЙ ФАЙЛ: controllers/ncCapaController.js
  */
 
 const ApiError = require("../../../error/ApiError");
 const NcCapaService = require("../services/NcCapaService");
+
+// Хелпер: бизнес-ошибки → 400, инфраструктурные → 500
+const handleError = (e, next) => {
+  if (e instanceof ApiError) return next(e);
+  if (e.message && !e.message.includes("Cannot") && !e.message.includes("ECONNREFUSED")) {
+    return next(ApiError.badRequest(e.message));
+  }
+  console.error("NcCapaController error:", e);
+  return next(ApiError.internal("Внутренняя ошибка сервера"));
+};
 
 class NcCapaController {
   // ── NC ──
@@ -12,7 +21,7 @@ class NcCapaController {
     try {
       const result = await NcCapaService.getNCList(req.query);
       return res.json(result);
-    } catch (e) { next(ApiError.badRequest(e.message)); }
+    } catch (e) { handleError(e, next); }
   }
 
   async getNcOne(req, res, next) {
@@ -22,14 +31,14 @@ class NcCapaController {
       const nc = await NcCapaService.getNCDetail(id);
       if (!nc) return next(ApiError.notFound("NC не найдена"));
       return res.json(nc);
-    } catch (e) { next(ApiError.badRequest(e.message)); }
+    } catch (e) { handleError(e, next); }
   }
 
   async createNc(req, res, next) {
     try {
       const nc = await NcCapaService.createNC(req, req.body);
       return res.status(201).json(nc);
-    } catch (e) { next(ApiError.badRequest(e.message)); }
+    } catch (e) { handleError(e, next); }
   }
 
   async updateNc(req, res, next) {
@@ -38,7 +47,7 @@ class NcCapaController {
       if (isNaN(id)) return next(ApiError.badRequest("Некорректный ID"));
       const nc = await NcCapaService.updateNC(req, id, req.body);
       return res.json(nc);
-    } catch (e) { next(ApiError.badRequest(e.message)); }
+    } catch (e) { handleError(e, next); }
   }
 
   async closeNc(req, res, next) {
@@ -47,7 +56,7 @@ class NcCapaController {
       if (isNaN(id)) return next(ApiError.badRequest("Некорректный ID"));
       const nc = await NcCapaService.closeNC(req, id, req.body);
       return res.json(nc);
-    } catch (e) { next(ApiError.badRequest(e.message)); }
+    } catch (e) { handleError(e, next); }
   }
 
   // ── CAPA ──
@@ -55,7 +64,7 @@ class NcCapaController {
     try {
       const result = await NcCapaService.getCAPAList(req.query);
       return res.json(result);
-    } catch (e) { next(ApiError.badRequest(e.message)); }
+    } catch (e) { handleError(e, next); }
   }
 
   async getCapaOne(req, res, next) {
@@ -65,14 +74,14 @@ class NcCapaController {
       const capa = await NcCapaService.getCAPADetail(id);
       if (!capa) return next(ApiError.notFound("CAPA не найдена"));
       return res.json(capa);
-    } catch (e) { next(ApiError.badRequest(e.message)); }
+    } catch (e) { handleError(e, next); }
   }
 
   async createCapa(req, res, next) {
     try {
       const capa = await NcCapaService.createCAPA(req, req.body);
       return res.status(201).json(capa);
-    } catch (e) { next(ApiError.badRequest(e.message)); }
+    } catch (e) { handleError(e, next); }
   }
 
   async updateCapaStatus(req, res, next) {
@@ -81,7 +90,7 @@ class NcCapaController {
       if (isNaN(id)) return next(ApiError.badRequest("Некорректный ID"));
       const capa = await NcCapaService.updateCAPAStatus(req, id, req.body);
       return res.json(capa);
-    } catch (e) { next(ApiError.badRequest(e.message)); }
+    } catch (e) { handleError(e, next); }
   }
 
   async addCapaAction(req, res, next) {
@@ -90,7 +99,7 @@ class NcCapaController {
       if (isNaN(id)) return next(ApiError.badRequest("Некорректный ID"));
       const action = await NcCapaService.addCapaAction(req, id, req.body);
       return res.status(201).json(action);
-    } catch (e) { next(ApiError.badRequest(e.message)); }
+    } catch (e) { handleError(e, next); }
   }
 
   async updateCapaAction(req, res, next) {
@@ -99,7 +108,7 @@ class NcCapaController {
       if (isNaN(id)) return next(ApiError.badRequest("Некорректный ID"));
       const action = await NcCapaService.updateCapaAction(req, id, req.body);
       return res.json(action);
-    } catch (e) { next(ApiError.badRequest(e.message)); }
+    } catch (e) { handleError(e, next); }
   }
 
   async verifyEffectiveness(req, res, next) {
@@ -108,7 +117,7 @@ class NcCapaController {
       if (isNaN(id)) return next(ApiError.badRequest("Некорректный ID"));
       const v = await NcCapaService.verifyCapaEffectiveness(req, id, req.body);
       return res.json(v);
-    } catch (e) { next(ApiError.badRequest(e.message)); }
+    } catch (e) { handleError(e, next); }
   }
 
   // ── Stats ──
@@ -116,7 +125,7 @@ class NcCapaController {
     try {
       const stats = await NcCapaService.getStats();
       return res.json(stats);
-    } catch (e) { next(ApiError.badRequest(e.message)); }
+    } catch (e) { handleError(e, next); }
   }
 }
 

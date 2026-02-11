@@ -279,20 +279,21 @@ function computeChainHash(chainIndex, prevHash, dataHash) {
  * Возвращает { chainIndex, currentHash } или genesis-значения.
  */
 async function getLastChainEntry(transaction) {
-  const [results] = await sequelize.query(
-    `SELECT "chainIndex", "currentHash" 
-     FROM audit_logs 
-     WHERE "chainIndex" IS NOT NULL 
-     ORDER BY "chainIndex" DESC 
+  // QueryTypes.SELECT возвращает массив строк напрямую (не [rows, metadata])
+  const rows = await sequelize.query(
+    `SELECT "chainIndex", "currentHash"
+     FROM audit_logs
+     WHERE "chainIndex" IS NOT NULL
+     ORDER BY "chainIndex" DESC
      LIMIT 1
      FOR UPDATE`,
     { transaction, type: sequelize.QueryTypes.SELECT }
   );
 
-  if (results) {
+  if (rows && rows.length > 0) {
     return {
-      chainIndex: Number(results.chainIndex),
-      currentHash: results.currentHash,
+      chainIndex: Number(rows[0].chainIndex),
+      currentHash: rows[0].currentHash,
     };
   }
 
@@ -331,15 +332,18 @@ async function logAudit({
   description,
   metadata,
   severity,
+  transaction: externalTransaction,
 }) {
   if (!action) {
     console.warn("[HashChainLogger] Попытка логирования без указания action");
     return null;
   }
 
-  // Транзакция обязательна — нужна атомарность chain-записи
-  const transaction = await sequelize.transaction({
-    isolationLevel: "SERIALIZABLE", // Предотвращаем race condition на chainIndex
+  // Используем внешнюю транзакцию если передана (для атомарности с бизнес-операцией),
+  // иначе создаём собственную SERIALIZABLE транзакцию
+  const isExternalTransaction = !!externalTransaction;
+  const transaction = externalTransaction || await sequelize.transaction({
+    isolationLevel: "SERIALIZABLE",
   });
 
   try {
@@ -414,10 +418,15 @@ async function logAudit({
       { transaction }
     );
 
-    await transaction.commit();
+    // Коммитим только собственную транзакцию; внешняя управляется вызывающим кодом
+    if (!isExternalTransaction) {
+      await transaction.commit();
+    }
     return record;
   } catch (error) {
-    await transaction.rollback();
+    if (!isExternalTransaction) {
+      await transaction.rollback();
+    }
     console.error("[HashChainLogger] Ошибка записи в журнал аудита:", error);
 
     // Fallback: пишем без hash-chain чтобы не потерять событие
@@ -532,17 +541,20 @@ async function logExport(req, exportType, description, metadata = {}) {
 // ── Документы (DMS) ──
 
 async function logDocumentCreate(req, doc, metadata = {}) {
+  const { transaction, ...restMeta } = metadata;
   return logAudit({
     req,
     action: AUDIT_ACTIONS.DOCUMENT_CREATE,
     entity: AUDIT_ENTITIES.DOCUMENT,
     entityId: doc.id,
     description: `Создан документ: ${doc.code} "${doc.title}"`,
-    metadata: { code: doc.code, type: doc.type, ...metadata },
+    metadata: { code: doc.code, type: doc.type, ...restMeta },
+    transaction,
   });
 }
 
 async function logDocumentApproval(req, doc, version, decision, metadata = {}) {
+  const { transaction, ...restMeta } = metadata;
   const action =
     decision === "APPROVED"
       ? AUDIT_ACTIONS.DOCUMENT_APPROVE
@@ -559,12 +571,14 @@ async function logDocumentApproval(req, doc, version, decision, metadata = {}) {
       versionId: version.id,
       versionNumber: version.version,
       decision,
-      ...metadata,
+      ...restMeta,
     },
+    transaction,
   });
 }
 
 async function logDocumentEffective(req, doc, version, metadata = {}) {
+  const { transaction, ...restMeta } = metadata;
   return logAudit({
     req,
     action: AUDIT_ACTIONS.DOCUMENT_MAKE_EFFECTIVE,
@@ -574,8 +588,9 @@ async function logDocumentEffective(req, doc, version, metadata = {}) {
     metadata: {
       documentId: doc.id,
       versionId: version.id,
-      ...metadata,
+      ...restMeta,
     },
+    transaction,
   });
 }
 
