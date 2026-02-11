@@ -37,6 +37,7 @@ module.exports = {
       m.ProductionTask.belongsTo(m.User, { foreignKey: 'createdById', as: 'createdBy' });
       if (m.Project) {
         m.ProductionTask.belongsTo(m.Project, { foreignKey: 'projectId', as: 'project' });
+        m.Project.hasMany(m.ProductionTask, { foreignKey: 'projectId', as: 'tasks' });
       }
     }
   },
