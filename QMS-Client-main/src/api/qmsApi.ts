@@ -232,6 +232,208 @@ export const ncApi = {
 // CAPA API
 // ═══════════════════════════════════════════════════════════════
 
+// ═══════════════════════════════════════════════════════════════
+// RISKS API
+// ═══════════════════════════════════════════════════════════════
+
+export const risksApi = {
+  getAll: (params?: Record<string, any>) =>
+    $authHost.get("/api/risks", { params }).then(r => r.data),
+
+  getOne: (id: number) =>
+    $authHost.get(`/api/risks/${id}`).then(r => r.data),
+
+  create: (data: Record<string, any>) =>
+    $authHost.post("/api/risks", data).then(r => r.data),
+
+  update: (id: number, data: Record<string, any>) =>
+    $authHost.put(`/api/risks/${id}`, data).then(r => r.data),
+
+  getStats: () =>
+    $authHost.get("/api/risks/stats").then(r => r.data),
+
+  getMatrix: () =>
+    $authHost.get("/api/risks/matrix").then(r => r.data),
+
+  addAssessment: (riskId: number, data: Record<string, any>) =>
+    $authHost.post(`/api/risks/${riskId}/assess`, data).then(r => r.data),
+
+  addMitigation: (riskId: number, data: Record<string, any>) =>
+    $authHost.post(`/api/risks/${riskId}/mitigation`, data).then(r => r.data),
+
+  acceptRisk: (riskId: number, data: { decision: string }) =>
+    $authHost.post(`/api/risks/${riskId}/accept`, data).then(r => r.data),
+};
+
+// ═══════════════════════════════════════════════════════════════
+// SUPPLIERS API
+// ═══════════════════════════════════════════════════════════════
+
+export const suppliersApi = {
+  getAll: (params?: Record<string, any>) =>
+    $authHost.get("/api/suppliers", { params }).then(r => r.data),
+
+  getOne: (id: number) =>
+    $authHost.get(`/api/suppliers/${id}`).then(r => r.data),
+
+  create: (data: Record<string, any>) =>
+    $authHost.post("/api/suppliers", data).then(r => r.data),
+
+  update: (id: number, data: Record<string, any>) =>
+    $authHost.put(`/api/suppliers/${id}`, data).then(r => r.data),
+
+  remove: (id: number) =>
+    $authHost.delete(`/api/suppliers/${id}`).then(r => r.data),
+
+  getStats: () =>
+    $authHost.get("/api/suppliers/stats").then(r => r.data),
+
+  addEvaluation: (supplierId: number, data: Record<string, any>) =>
+    $authHost.post(`/api/suppliers/${supplierId}/evaluations`, data).then(r => r.data),
+
+  getEvaluations: (supplierId: number) =>
+    $authHost.get(`/api/suppliers/${supplierId}/evaluations`).then(r => r.data),
+
+  addAudit: (supplierId: number, data: Record<string, any>) =>
+    $authHost.post(`/api/suppliers/${supplierId}/audits`, data).then(r => r.data),
+};
+
+// ═══════════════════════════════════════════════════════════════
+// INTERNAL AUDITS API
+// ═══════════════════════════════════════════════════════════════
+
+export const internalAuditsApi = {
+  getPlans: (params?: Record<string, any>) =>
+    $authHost.get("/api/internal-audits/plans", { params }).then(r => r.data),
+
+  getPlanOne: (id: number) =>
+    $authHost.get(`/api/internal-audits/plans/${id}`).then(r => r.data),
+
+  createPlan: (data: Record<string, any>) =>
+    $authHost.post("/api/internal-audits/plans", data).then(r => r.data),
+
+  updatePlan: (id: number, data: Record<string, any>) =>
+    $authHost.put(`/api/internal-audits/plans/${id}`, data).then(r => r.data),
+
+  getSchedules: (params?: Record<string, any>) =>
+    $authHost.get("/api/internal-audits/schedules", { params }).then(r => r.data),
+
+  getScheduleOne: (id: number) =>
+    $authHost.get(`/api/internal-audits/schedules/${id}`).then(r => r.data),
+
+  createSchedule: (data: Record<string, any>) =>
+    $authHost.post("/api/internal-audits/schedules", data).then(r => r.data),
+
+  updateSchedule: (id: number, data: Record<string, any>) =>
+    $authHost.put(`/api/internal-audits/schedules/${id}`, data).then(r => r.data),
+
+  addFinding: (scheduleId: number, data: Record<string, any>) =>
+    $authHost.post(`/api/internal-audits/schedules/${scheduleId}/findings`, data).then(r => r.data),
+
+  updateFinding: (id: number, data: Record<string, any>) =>
+    $authHost.put(`/api/internal-audits/findings/${id}`, data).then(r => r.data),
+
+  getStats: () =>
+    $authHost.get("/api/internal-audits/stats").then(r => r.data),
+};
+
+// ═══════════════════════════════════════════════════════════════
+// TRAINING API
+// ═══════════════════════════════════════════════════════════════
+
+export const trainingApi = {
+  getPlans: (params?: Record<string, any>) =>
+    $authHost.get("/api/training/plans", { params }).then(r => r.data),
+
+  getPlanOne: (id: number) =>
+    $authHost.get(`/api/training/plans/${id}`).then(r => r.data),
+
+  createPlan: (data: Record<string, any>) =>
+    $authHost.post("/api/training/plans", data).then(r => r.data),
+
+  updatePlan: (id: number, data: Record<string, any>) =>
+    $authHost.put(`/api/training/plans/${id}`, data).then(r => r.data),
+
+  getRecords: (params?: Record<string, any>) =>
+    $authHost.get("/api/training/records", { params }).then(r => r.data),
+
+  createRecord: (data: Record<string, any>) =>
+    $authHost.post("/api/training/records", data).then(r => r.data),
+
+  updateRecord: (id: number, data: Record<string, any>) =>
+    $authHost.put(`/api/training/records/${id}`, data).then(r => r.data),
+
+  getCompetency: (params?: Record<string, any>) =>
+    $authHost.get("/api/training/competency", { params }).then(r => r.data),
+
+  createCompetency: (data: Record<string, any>) =>
+    $authHost.post("/api/training/competency", data).then(r => r.data),
+
+  updateCompetency: (id: number, data: Record<string, any>) =>
+    $authHost.put(`/api/training/competency/${id}`, data).then(r => r.data),
+
+  getStats: () =>
+    $authHost.get("/api/training/stats").then(r => r.data),
+};
+
+// ═══════════════════════════════════════════════════════════════
+// EQUIPMENT API
+// ═══════════════════════════════════════════════════════════════
+
+export const equipmentApi = {
+  getAll: (params?: Record<string, any>) =>
+    $authHost.get("/api/equipment", { params }).then(r => r.data),
+
+  getOne: (id: number) =>
+    $authHost.get(`/api/equipment/${id}`).then(r => r.data),
+
+  create: (data: Record<string, any>) =>
+    $authHost.post("/api/equipment", data).then(r => r.data),
+
+  update: (id: number, data: Record<string, any>) =>
+    $authHost.put(`/api/equipment/${id}`, data).then(r => r.data),
+
+  addCalibration: (equipmentId: number, data: Record<string, any>) =>
+    $authHost.post(`/api/equipment/${equipmentId}/calibrations`, data).then(r => r.data),
+
+  updateCalibration: (id: number, data: Record<string, any>) =>
+    $authHost.put(`/api/equipment/calibrations/${id}`, data).then(r => r.data),
+
+  getStats: () =>
+    $authHost.get("/api/equipment/stats").then(r => r.data),
+};
+
+// ═══════════════════════════════════════════════════════════════
+// MANAGEMENT REVIEW API
+// ═══════════════════════════════════════════════════════════════
+
+export const reviewsApi = {
+  getAll: (params?: Record<string, any>) =>
+    $authHost.get("/api/reviews", { params }).then(r => r.data),
+
+  getOne: (id: number) =>
+    $authHost.get(`/api/reviews/${id}`).then(r => r.data),
+
+  create: (data: Record<string, any>) =>
+    $authHost.post("/api/reviews", data).then(r => r.data),
+
+  update: (id: number, data: Record<string, any>) =>
+    $authHost.put(`/api/reviews/${id}`, data).then(r => r.data),
+
+  addAction: (reviewId: number, data: Record<string, any>) =>
+    $authHost.post(`/api/reviews/${reviewId}/actions`, data).then(r => r.data),
+
+  updateAction: (id: number, data: Record<string, any>) =>
+    $authHost.put(`/api/reviews/actions/${id}`, data).then(r => r.data),
+
+  getStats: () =>
+    $authHost.get("/api/reviews/stats").then(r => r.data),
+};
+
+// ═══════════════════════════════════════════════════════════════
+// CAPA API
+// ═══════════════════════════════════════════════════════════════
+
 export const capaApi = {
   getAll: (params: Record<string, any>) =>
     $authHost.get("/api/nc/capa", { params }).then(r => r.data),

@@ -15,6 +15,7 @@ import {
   Shield, ShieldCheck, Archive,
   ClipboardList, User, LogOut,
   ChevronDown, FileText, AlertTriangle, ClipboardCheck, BarChart3, LayoutDashboard,
+  Truck, GraduationCap, Wrench,
 } from "lucide-react";
 
 
@@ -23,6 +24,8 @@ import {
   WAREHOUSE_ROUTE, TASKS_ROUTE,
   PROFILE_ROUTE,
   QMS_DASHBOARD_ROUTE, DOCUMENTS_ROUTE, NC_ROUTE, CAPA_ROUTE,
+  RISKS_ROUTE, SUPPLIERS_ROUTE, INTERNAL_AUDITS_ROUTE,
+  TRAINING_ROUTE, EQUIPMENT_ROUTE, REVIEW_ROUTE,
 } from "src/utils/consts";
 
 type NavItem = {
@@ -110,6 +113,12 @@ export const Header: React.FC = observer(() => {
         modules.isEnabled('qms.dms')       ? { label: "Документы", to: DOCUMENTS_ROUTE, icon: FileText } : null,
         modules.isEnabled('qms.nc')        ? { label: "Несоответствия", to: NC_ROUTE, icon: AlertTriangle } : null,
         modules.isEnabled('qms.capa')      ? { label: "CAPA", to: CAPA_ROUTE, icon: ClipboardCheck } : null,
+        modules.isEnabled('qms.risk')      ? { label: "Риски", to: RISKS_ROUTE, icon: Shield } : null,
+        modules.isEnabled('qms.supplier')  ? { label: "Поставщики", to: SUPPLIERS_ROUTE, icon: Truck } : null,
+        modules.isEnabled('qms.audit')     ? { label: "Аудиты", to: INTERNAL_AUDITS_ROUTE, icon: ClipboardCheck } : null,
+        modules.isEnabled('qms.training')  ? { label: "Обучение", to: TRAINING_ROUTE, icon: GraduationCap } : null,
+        modules.isEnabled('qms.equipment') ? { label: "Оборудование", to: EQUIPMENT_ROUTE, icon: Wrench } : null,
+        modules.isEnabled('qms.review')    ? { label: "Анализ руководства", to: REVIEW_ROUTE, icon: BarChart3 } : null,
       ].filter(Boolean) as { label: string; to: string; icon?: React.ElementType }[],
     } as NavItem] : []),
     // WMS
