@@ -19,6 +19,7 @@ import TasksPage from "./pages/Tasks/TasksPage";
 
 import { AdminRightsPage } from "./pages/Admin/RBAC/AdminRightsPage";
 import { ModulesPage } from "./pages/Admin/Modules/ModulesPage";
+import { QmsConfigPage } from "./pages/Admin/QmsConfig/QmsConfigPage";
 
 // QMS страницы
 import { QmsDashboardPage } from "./pages/QMS/QmsDashboardPage";
@@ -61,6 +62,7 @@ import {
   TRAINING_ROUTE,
   EQUIPMENT_ROUTE,
   REVIEW_ROUTE,
+  ADMIN_QMS_CONFIG_ROUTE,
 } from "./utils/consts";
 
 // QMS routes (rendered inside QmsLayout)
@@ -95,6 +97,7 @@ export const adminRoutes = [
   { path: ADMIN_WAREHOUSE_ROUTE, Component: AdminWarehousePage },
   { path: ADMIN_RBAC_ROUTE, Component: AdminRightsPage },
   { path: ADMIN_MODULES_ROUTE, Component: ModulesPage },
+  { path: ADMIN_QMS_CONFIG_ROUTE, Component: QmsConfigPage },
 ];
 
 export const publicRoutes = [

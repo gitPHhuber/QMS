@@ -14,6 +14,7 @@ import {
   Plus,
   ArrowUpRight,
   Settings,
+  Settings2,
   Blocks,
 } from "lucide-react";
 
@@ -27,6 +28,7 @@ import {
   AUDIT_LOG_ROUTE,
   ADMIN_WAREHOUSE_ROUTE,
   ADMIN_MODULES_ROUTE,
+  ADMIN_QMS_CONFIG_ROUTE,
 } from "src/utils/consts";
 
 import {
@@ -209,6 +211,15 @@ export const AdminPanel: React.FC = observer(() => {
             iconColorClass="bg-purple-100 text-purple-600"
           />
         )}
+
+        <BentoItem
+          title="Настройки QMS"
+          subtitle="Стандарт, нумерация, уведомления"
+          icon={Settings2}
+          link={ADMIN_QMS_CONFIG_ROUTE}
+          colorClass="bg-gradient-to-br from-emerald-50 to-teal-50 border border-teal-100 hover:shadow-lg"
+          iconColorClass="bg-teal-100 text-teal-600"
+        />
       </div>
 
       <Modal isOpen={modalType === CREATE_COMPUTER} onClose={closeModal}>

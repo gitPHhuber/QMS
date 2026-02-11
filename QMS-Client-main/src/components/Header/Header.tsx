@@ -12,8 +12,9 @@ import {
   Shield, ShieldCheck, Archive,
   ClipboardList, User, LogOut,
   ChevronDown, FileText, AlertTriangle, ClipboardCheck, BarChart3,
-  Truck, GraduationCap, Wrench,
+  Truck, GraduationCap, Wrench, Bell,
 } from "lucide-react";
+import NotificationsPanel from "src/components/qms/NotificationsPanel";
 
 import {
   ADMIN_ROUTE,
@@ -44,6 +45,7 @@ export const Header: React.FC = observer(() => {
 
   const [isVisible, setIsVisible] = useState(true);
   const [isAtTop, setIsAtTop] = useState(true);
+  const [showNotifications, setShowNotifications] = useState(false);
   const lastScrollY = useRef(0);
   const scrollThreshold = 10;
 
@@ -237,6 +239,18 @@ export const Header: React.FC = observer(() => {
             <DateTimeDisplay />
           </div>
 
+          {auth.isAuthenticated && (
+            <button
+              onClick={() => setShowNotifications(!showNotifications)}
+              className="relative p-1.5 rounded-lg text-asvo-muted hover:bg-asvo-dark-2 hover:text-asvo-light transition-colors"
+            >
+              <Bell size={18} />
+              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 rounded-full text-[9px] font-bold text-white flex items-center justify-center">
+                3
+              </span>
+            </button>
+          )}
+
           {auth.isAuthenticated ? (
             <Menu as="div" className="relative ml-2">
               <Menu.Button className="flex items-center gap-2 pl-2 pr-1 py-1 rounded-full hover:bg-asvo-dark-2 transition border border-transparent hover:border-asvo-dark-3 group outline-none">
@@ -300,6 +314,10 @@ export const Header: React.FC = observer(() => {
           ) : null}
         </div>
       </div>
+
+      {showNotifications && (
+        <NotificationsPanel onClose={() => setShowNotifications(false)} />
+      )}
     </div>
   );
 });

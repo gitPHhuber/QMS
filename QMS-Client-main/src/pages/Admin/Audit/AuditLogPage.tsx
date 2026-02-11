@@ -4,7 +4,7 @@ import { Preloader } from "src/components/common/Preloader";
 import {
   History, Search, LogIn, Building2, Shield,
   Warehouse, MoreHorizontal,
-  Download, RefreshCw
+  Download, RefreshCw, ShieldCheck,
 } from "lucide-react";
 import { AuditLogModel } from "types/AuditLogModel";
 import { fetchUsers } from "src/api/userApi";
@@ -17,6 +17,7 @@ type AuditTab =
   | "STRUCTURE"
   | "ACCESS"
   | "WAREHOUSE"
+  | "QMS"
   | "OTHER";
 
 
@@ -26,6 +27,7 @@ const TABS: { id: AuditTab; label: string; icon: React.ElementType; description:
   { id: "WAREHOUSE", label: "Склад", icon: Warehouse, description: "Складские операции" },
   { id: "STRUCTURE", label: "Структура", icon: Building2, description: "Участки и бригады" },
   { id: "ACCESS", label: "Права", icon: Shield, description: "Роли и разрешения" },
+  { id: "QMS", label: "QMS", icon: ShieldCheck, description: "QMS события" },
   { id: "OTHER", label: "Прочее", icon: MoreHorizontal, description: "Остальные события" },
 ];
 
@@ -46,6 +48,16 @@ const ENTITY_TAB_MAP: Record<string, AuditTab> = {
   WarehouseDocument: "WAREHOUSE",
   Warehouse: "WAREHOUSE",
   Box: "WAREHOUSE",
+
+  NC: "QMS",
+  CAPA: "QMS",
+  Risk: "QMS",
+  Document: "QMS",
+  Equipment: "QMS",
+  Audit: "QMS",
+  Training: "QMS",
+  Supplier: "QMS",
+  ESignature: "QMS",
 };
 
 
@@ -67,6 +79,15 @@ const ACTION_COLORS: Record<string, string> = {
   DEFECT_CREATED: "bg-red-100 text-red-800",
   COMPONENT_SYNC: "bg-cyan-100 text-cyan-800",
   EXPORT: "bg-indigo-100 text-indigo-800",
+  ESIGN_APPROVE: "bg-emerald-100 text-emerald-800",
+  ESIGN_REJECT: "bg-red-100 text-red-800",
+  NC_CREATED: "bg-red-100 text-red-800",
+  NC_STATUS_CHANGE: "bg-amber-100 text-amber-800",
+  CAPA_CREATED: "bg-amber-100 text-amber-800",
+  CAPA_D_COMPLETE: "bg-emerald-100 text-emerald-800",
+  DOC_APPROVED: "bg-emerald-100 text-emerald-800",
+  DOC_REJECTED: "bg-red-100 text-red-800",
+  RISK_UPDATED: "bg-purple-100 text-purple-800",
 };
 
 
@@ -212,6 +233,7 @@ export const AuditLogPage: React.FC = () => {
       STRUCTURE: 0,
       ACCESS: 0,
       WAREHOUSE: 0,
+      QMS: 0,
       OTHER: 0,
     };
 

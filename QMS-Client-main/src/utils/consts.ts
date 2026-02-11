@@ -35,3 +35,4 @@ export const TRAINING_ROUTE = '/qms/training';
 export const EQUIPMENT_ROUTE = '/qms/equipment';
 export const REVIEW_ROUTE = '/qms/review';
 export const QMS_PROTOTYPE_ROUTE = '/qms/prototype';
+export const ADMIN_QMS_CONFIG_ROUTE = '/admin/qms-config';

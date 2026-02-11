@@ -4,13 +4,16 @@
  * ISO 13485 §8.3 — Управление несоответствующей продукцией
  */
 
-import React from "react";
+import React, { useState } from "react";
 import {
   AlertTriangle, Plus, Download, ClipboardList,
 } from "lucide-react";
 import Badge from "src/components/qms/Badge";
 import StatusDot from "src/components/qms/StatusDot";
 import ProgressBar from "src/components/qms/ProgressBar";
+import NcDetailPage from "./NcDetailPage";
+import CreateNcModal from "./CreateNcModal";
+import ESignatureModal from "src/components/qms/ESignatureModal";
 
 /* ─── Mock data ──────────────────────────────────────────────── */
 
@@ -61,6 +64,18 @@ const classificationBadge: Record<string, { color: string; bg: string }> = {
 /* ─── Component ──────────────────────────────────────────────── */
 
 export const NonconformityPage: React.FC = () => {
+  const [selectedNcId, setSelectedNcId] = useState<string | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showESign, setShowESign] = useState(false);
+  const [eSignDescription, setESignDescription] = useState("");
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
+
+  const handleESign = (description: string, action: () => void) => {
+    setESignDescription(description);
+    setPendingAction(() => action);
+    setShowESign(true);
+  };
+
   return (
     <div className="min-h-screen bg-asvo-bg p-6 space-y-6">
       {/* ── Header ──────────────────────────────────────────── */}
@@ -76,7 +91,10 @@ export const NonconformityPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 bg-asvo-accent text-asvo-bg rounded-lg text-sm font-semibold hover:brightness-110 transition">
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-asvo-accent text-asvo-bg rounded-lg text-sm font-semibold hover:brightness-110 transition"
+          >
             <Plus size={16} />
             Регистрировать NC
           </button>
@@ -120,6 +138,7 @@ export const NonconformityPage: React.FC = () => {
               return (
                 <tr
                   key={row.id}
+                  onClick={() => setSelectedNcId(row.id)}
                   className="border-b border-asvo-border/30 hover:bg-asvo-surface-3 transition-colors cursor-pointer"
                 >
                   <td className="px-4 py-3 text-sm font-mono font-bold text-asvo-accent">{row.id}</td>
@@ -201,6 +220,28 @@ export const NonconformityPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Modals */}
+      {selectedNcId && (
+        <NcDetailPage
+          onClose={() => setSelectedNcId(null)}
+          onESign={handleESign}
+        />
+      )}
+      {showCreateModal && (
+        <CreateNcModal onClose={() => setShowCreateModal(false)} />
+      )}
+      {showESign && (
+        <ESignatureModal
+          actionDescription={eSignDescription}
+          onSign={() => {
+            pendingAction?.();
+            setShowESign(false);
+            setSelectedNcId(null);
+          }}
+          onCancel={() => setShowESign(false)}
+        />
+      )}
     </div>
   );
 };

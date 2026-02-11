@@ -4,13 +4,16 @@
  * ISO 13485 §8.5.2/§8.5.3 — Корректирующие и предупреждающие действия
  */
 
-import React from "react";
+import React, { useState } from "react";
 import {
   CheckCircle2, Plus, Download, Grid3X3,
 } from "lucide-react";
 import Badge from "src/components/qms/Badge";
 import StatusDot from "src/components/qms/StatusDot";
 import ProgressBar from "src/components/qms/ProgressBar";
+import CapaDetailPage from "./CapaDetailPage";
+import CreateCapaModal from "./CreateCapaModal";
+import ESignatureModal from "src/components/qms/ESignatureModal";
 
 /* ─── Mock data ──────────────────────────────────────────────── */
 
@@ -55,6 +58,18 @@ const typeBadge: Record<string, { color: string; bg: string }> = {
 /* ─── Component ──────────────────────────────────────────────── */
 
 export const CapaPage: React.FC = () => {
+  const [selectedCapaId, setSelectedCapaId] = useState<string | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showESign, setShowESign] = useState(false);
+  const [eSignDescription, setESignDescription] = useState("");
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
+
+  const handleESign = (description: string, action: () => void) => {
+    setESignDescription(description);
+    setPendingAction(() => action);
+    setShowESign(true);
+  };
+
   return (
     <div className="min-h-screen bg-asvo-bg p-6 space-y-6">
       {/* ── Header ──────────────────────────────────────────── */}
@@ -70,7 +85,10 @@ export const CapaPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 bg-asvo-accent text-asvo-bg rounded-lg text-sm font-semibold hover:brightness-110 transition">
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-asvo-accent text-asvo-bg rounded-lg text-sm font-semibold hover:brightness-110 transition"
+          >
             <Plus size={16} />
             Создать CAPA
           </button>
@@ -114,6 +132,7 @@ export const CapaPage: React.FC = () => {
               return (
                 <tr
                   key={row.id}
+                  onClick={() => setSelectedCapaId(row.id)}
                   className="border-b border-asvo-border/30 hover:bg-asvo-surface-3 transition-colors cursor-pointer"
                 >
                   <td className="px-4 py-3 text-sm font-mono font-bold text-asvo-accent">{row.id}</td>
@@ -183,6 +202,28 @@ export const CapaPage: React.FC = () => {
           ))}
         </div>
       </div>
+
+      {/* Modals */}
+      {selectedCapaId && (
+        <CapaDetailPage
+          onClose={() => setSelectedCapaId(null)}
+          onESign={handleESign}
+        />
+      )}
+      {showCreateModal && (
+        <CreateCapaModal onClose={() => setShowCreateModal(false)} />
+      )}
+      {showESign && (
+        <ESignatureModal
+          actionDescription={eSignDescription}
+          onSign={() => {
+            pendingAction?.();
+            setShowESign(false);
+            setSelectedCapaId(null);
+          }}
+          onCancel={() => setShowESign(false)}
+        />
+      )}
     </div>
   );
 };
