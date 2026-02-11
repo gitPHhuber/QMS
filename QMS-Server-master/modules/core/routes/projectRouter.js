@@ -23,6 +23,21 @@ router.get(
 );
 
 
+router.get(
+    "/:id",
+    ...protect,
+    controller.getOne
+);
+
+
+router.put(
+    "/:id",
+    ...protect,
+    checkAbility("recipe.manage"),
+    controller.update
+);
+
+
 router.delete(
     "/:id",
     ...protect,

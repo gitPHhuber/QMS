@@ -136,7 +136,11 @@ const formatDate = (d: string) => {
 
 /* ─── Component ─────────────────────────────────────────────────────── */
 
-const TasksList: React.FC = () => {
+interface TasksListProps {
+  projectId?: number;
+}
+
+const TasksList: React.FC<TasksListProps> = ({ projectId }) => {
   const [tasks, setTasks] = useState<ExtendedTask[]>([]);
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState<userGetModel[]>([]);
@@ -169,14 +173,14 @@ const TasksList: React.FC = () => {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetchTasks({ page: 1, limit: 500 });
+      const res = await fetchTasks({ page: 1, limit: 500, ...(projectId ? { projectId } : {}) });
       setTasks(res.rows as unknown as ExtendedTask[]);
     } catch (e) {
       console.error(e);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [projectId]);
 
   useEffect(() => {
     loadData();
