@@ -11,52 +11,58 @@ const TasksPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<"TASKS" | "PROJECTS">("TASKS");
 
   return (
-    <div className="p-6 pb-20 space-y-5 animate-fade-in">
+    <div className="bg-asvo-bg min-h-screen animate-fade-in">
       {/* ── Header ── */}
-      <div className="flex items-center gap-4">
-        <div className="p-3 bg-gradient-to-br from-teal-500/20 to-cyan-600/10 rounded-xl border border-teal-500/20 shadow-lg shadow-teal-500/5">
-          <ClipboardList className="text-teal-400" size={28} />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-100 tracking-tight">
-            Планирование проектов и задач
-          </h1>
-          <p className="text-slate-500 text-sm mt-0.5">
-            Управление задачами и отслеживание прогресса по всем направлениям
-            качества
-          </p>
-        </div>
+      <div className="bg-asvo-bg border-b border-asvo-border px-7 pt-5 pb-3.5">
+        <div className="flex items-center gap-4">
+          {/* Icon */}
+          <div className="w-[38px] h-[38px] rounded-[10px] bg-gradient-to-br from-asvo-accent/15 to-asvo-accent/5 border border-asvo-accent/20 flex items-center justify-center shadow-lg shadow-asvo-accent/5">
+            <ClipboardList className="text-asvo-accent" size={20} />
+          </div>
 
-        {/* Tab switcher */}
-        <div className="flex bg-slate-800/60 p-1 rounded-xl border border-slate-700/50 ml-auto">
-          <button
-            onClick={() => setActiveTab("TASKS")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-              activeTab === "TASKS"
-                ? "bg-teal-500/15 text-teal-400 shadow-sm"
-                : "text-slate-500 hover:text-slate-300"
-            }`}
-          >
-            <Layout size={15} />
-            Канбан-доска
-          </button>
-          <button
-            onClick={() => setActiveTab("PROJECTS")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-              activeTab === "PROJECTS"
-                ? "bg-teal-500/15 text-teal-400 shadow-sm"
-                : "text-slate-500 hover:text-slate-300"
-            }`}
-          >
-            <Briefcase size={15} />
-            Проекты
-          </button>
+          {/* Title */}
+          <div>
+            <h1 className="text-lg font-bold text-asvo-text tracking-tight">
+              Планирование проектов и задач
+            </h1>
+            <p className="text-xs text-asvo-text-dim">
+              Управление задачами и отслеживание прогресса
+            </p>
+          </div>
+
+          {/* Tab switcher */}
+          <div className="flex bg-asvo-surface border border-asvo-border rounded-lg overflow-hidden ml-auto">
+            <button
+              onClick={() => setActiveTab("TASKS")}
+              className={`flex items-center gap-2 px-4 py-2 text-[13px] font-semibold transition-all ${
+                activeTab === "TASKS"
+                  ? "bg-asvo-accent text-asvo-bg"
+                  : "text-asvo-text-mid hover:text-asvo-text"
+              }`}
+            >
+              <Layout size={14} />
+              Канбан
+            </button>
+            <button
+              onClick={() => setActiveTab("PROJECTS")}
+              className={`flex items-center gap-2 px-4 py-2 text-[13px] font-semibold transition-all ${
+                activeTab === "PROJECTS"
+                  ? "bg-asvo-accent text-asvo-bg"
+                  : "text-asvo-text-mid hover:text-asvo-text"
+              }`}
+            >
+              <Briefcase size={14} />
+              Проекты
+            </button>
+          </div>
         </div>
       </div>
 
       {/* ── Content ── */}
-      {activeTab === "TASKS" && <TasksList />}
-      {activeTab === "PROJECTS" && <ProjectsList />}
+      <div className="px-7 py-4">
+        {activeTab === "TASKS" && <TasksList />}
+        {activeTab === "PROJECTS" && <ProjectsList />}
+      </div>
     </div>
   );
 };
