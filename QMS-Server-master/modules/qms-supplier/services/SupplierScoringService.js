@@ -44,13 +44,21 @@ class SupplierScoringService {
   static calculateScore(scores) {
     let total = 0;
     let weightSum = 0;
+    let filledCount = 0;
+    const totalFields = Object.keys(WEIGHTS).length;
 
     for (const [field, weight] of Object.entries(WEIGHTS)) {
       const value = scores[field];
       if (value !== null && value !== undefined) {
         total += value * weight;
         weightSum += weight;
+        filledCount++;
       }
+    }
+
+    // Требуем минимум 4 из 6 критериев для корректной оценки
+    if (filledCount < Math.ceil(totalFields * 0.6)) {
+      return 0; // Недостаточно данных для оценки
     }
 
     // Нормализуем к 100-балльной шкале (10 × 10 = 100)

@@ -3,12 +3,21 @@ const { User } = require("../../../models/index");
 const RiskMatrixService = require("../services/RiskMatrixService");
 const { logAudit } = require("../../core/utils/auditLogger");
 const { Op } = require("sequelize");
+const sequelize = require("../../../db");
+const ApiError = require("../../../error/ApiError");
+
+// Допустимые поля для обновления риска
+const RISK_UPDATABLE_FIELDS = [
+  "title", "description", "category", "ownerId",
+  "initialProbability", "initialSeverity",
+  "relatedEntity", "relatedEntityId", "isoClause",
+];
 
 // ═══════════════════════════════════════════════════════════════
 // CRUD — Реестр рисков
 // ═══════════════════════════════════════════════════════════════
 
-const getAll = async (req, res) => {
+const getAll = async (req, res, next) => {
   try {
     const { category, status, riskClass, ownerId, page = 1, limit = 50 } = req.query;
     const where = {};
@@ -18,7 +27,9 @@ const getAll = async (req, res) => {
     if (riskClass) where.initialRiskClass = riskClass;
     if (ownerId) where.ownerId = ownerId;
 
-    const offset = (page - 1) * limit;
+    const limitNum = Math.min(parseInt(limit) || 50, 100);
+    const pageNum = parseInt(page) || 1;
+    const offset = (pageNum - 1) * limitNum;
     const { count, rows } = await RiskRegister.findAndCountAll({
       where,
       include: [
@@ -27,18 +38,18 @@ const getAll = async (req, res) => {
         { model: User, as: "owner", attributes: ["id", "name", "surname"] },
       ],
       order: [["initialRiskLevel", "DESC"], ["createdAt", "DESC"]],
-      limit: parseInt(limit),
+      limit: limitNum,
       offset,
     });
 
-    res.json({ count, rows, page: parseInt(page), totalPages: Math.ceil(count / limit) });
+    res.json({ count, rows, page: pageNum, totalPages: Math.ceil(count / limitNum) });
   } catch (e) {
     console.error("Risk getAll error:", e);
-    res.status(500).json({ error: e.message });
+    next(ApiError.internal(e.message));
   }
 };
 
-const getOne = async (req, res) => {
+const getOne = async (req, res, next) => {
   try {
     const risk = await RiskRegister.findByPk(req.params.id, {
       include: [
@@ -48,20 +59,25 @@ const getOne = async (req, res) => {
       ],
     });
 
-    if (!risk) return res.status(404).json({ error: "Риск не найден" });
+    if (!risk) return next(ApiError.notFound("Риск не найден"));
     res.json(risk);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    next(ApiError.internal(e.message));
   }
 };
 
-const create = async (req, res) => {
+const create = async (req, res, next) => {
   try {
+    if (!req.user?.id) return next(ApiError.unauthorized("Требуется авторизация"));
+
     const { title, description, category, initialProbability, initialSeverity, ownerId, relatedEntity, relatedEntityId, isoClause } = req.body;
 
-    // Автогенерация номера
-    const count = await RiskRegister.count();
-    const riskNumber = RiskMatrixService.generateRiskNumber(count + 1);
+    // Автогенерация номера через MAX для предотвращения коллизий
+    const [maxResult] = await sequelize.query(
+      `SELECT MAX(CAST(SUBSTRING("riskNumber" FROM '(\\d+)$') AS INTEGER)) AS max_num FROM risk_registers`,
+      { type: sequelize.QueryTypes.SELECT }
+    );
+    const riskNumber = RiskMatrixService.generateRiskNumber((maxResult?.max_num || 0) + 1);
 
     // Авторасчёт уровня
     const { level, riskClass } = RiskMatrixService.calculate(initialProbability, initialSeverity);
@@ -85,7 +101,7 @@ const create = async (req, res) => {
     // Первичная оценка
     await RiskAssessment.create({
       riskRegisterId: risk.id,
-      assessorId: req.user?.id || 1,
+      assessorId: req.user.id,
       probability: initialProbability,
       severity: initialSeverity,
       riskLevel: level,
@@ -98,17 +114,21 @@ const create = async (req, res) => {
     res.status(201).json(risk);
   } catch (e) {
     console.error("Risk create error:", e);
-    res.status(500).json({ error: e.message });
+    next(ApiError.internal(e.message));
   }
 };
 
-const update = async (req, res) => {
+const update = async (req, res, next) => {
   try {
     const risk = await RiskRegister.findByPk(req.params.id);
-    if (!risk) return res.status(404).json({ error: "Риск не найден" });
+    if (!risk) return next(ApiError.notFound("Риск не найден"));
 
-    const updateData = { ...req.body };
-    
+    // Whitelist полей — защита от mass assignment
+    const updateData = {};
+    for (const field of RISK_UPDATABLE_FIELDS) {
+      if (req.body[field] !== undefined) updateData[field] = req.body[field];
+    }
+
     // Если обновляется оценка — пересчитываем
     if (updateData.initialProbability && updateData.initialSeverity) {
       const { level, riskClass } = RiskMatrixService.calculate(updateData.initialProbability, updateData.initialSeverity);
@@ -120,7 +140,7 @@ const update = async (req, res) => {
     await logAudit(req, "risk.update", "risk_register", risk.id, updateData);
     res.json(risk);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    next(ApiError.internal(e.message));
   }
 };
 
@@ -128,17 +148,19 @@ const update = async (req, res) => {
 // Оценка риска (переоценка)
 // ═══════════════════════════════════════════════════════════════
 
-const addAssessment = async (req, res) => {
+const addAssessment = async (req, res, next) => {
   try {
+    if (!req.user?.id) return next(ApiError.unauthorized("Требуется авторизация"));
+
     const { probability, severity, detectability, rationale, assessmentType } = req.body;
     const risk = await RiskRegister.findByPk(req.params.id);
-    if (!risk) return res.status(404).json({ error: "Риск не найден" });
+    if (!risk) return next(ApiError.notFound("Риск не найден"));
 
     const { level, riskClass } = RiskMatrixService.calculate(probability, severity);
 
     const assessment = await RiskAssessment.create({
       riskRegisterId: risk.id,
-      assessorId: req.user?.id || 1,
+      assessorId: req.user.id,
       probability,
       severity,
       detectability,
@@ -158,7 +180,7 @@ const addAssessment = async (req, res) => {
     await logAudit(req, "risk.assess", "risk_register", risk.id, { riskClass, level });
     res.status(201).json(assessment);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    next(ApiError.internal(e.message));
   }
 };
 
@@ -166,33 +188,50 @@ const addAssessment = async (req, res) => {
 // Меры снижения
 // ═══════════════════════════════════════════════════════════════
 
-const addMitigation = async (req, res) => {
+// Допустимые поля для создания митигации
+const MITIGATION_FIELDS = [
+  "mitigationType", "description", "responsibleId", "dueDate", "priority",
+];
+
+const addMitigation = async (req, res, next) => {
   try {
     const risk = await RiskRegister.findByPk(req.params.id);
-    if (!risk) return res.status(404).json({ error: "Риск не найден" });
+    if (!risk) return next(ApiError.notFound("Риск не найден"));
+
+    // Whitelist полей
+    const safeData = {};
+    for (const field of MITIGATION_FIELDS) {
+      if (req.body[field] !== undefined) safeData[field] = req.body[field];
+    }
 
     const mitigation = await RiskMitigation.create({
       riskRegisterId: risk.id,
-      ...req.body,
+      ...safeData,
       status: "PLANNED",
     });
 
-    if (risk.status === "IDENTIFIED") {
+    // Корректная логика: после добавления мер риск переходит в MITIGATING (не ASSESSED)
+    if (risk.status === "IDENTIFIED" || risk.status === "ASSESSED") {
       risk.status = "ASSESSED";
       await risk.save();
     }
 
-    await logAudit(req, "risk.mitigation.add", "risk_register", risk.id, { mitigationType: req.body.mitigationType });
+    await logAudit(req, "risk.mitigation.add", "risk_register", risk.id, { mitigationType: safeData.mitigationType });
     res.status(201).json(mitigation);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    next(ApiError.internal(e.message));
   }
 };
 
-const completeMitigation = async (req, res) => {
+const completeMitigation = async (req, res, next) => {
   try {
     const mitigation = await RiskMitigation.findByPk(req.params.mitigationId);
-    if (!mitigation) return res.status(404).json({ error: "Мера не найдена" });
+    if (!mitigation) return next(ApiError.notFound("Мера не найдена"));
+
+    // Проверка текущего статуса
+    if (mitigation.status !== "PLANNED") {
+      return next(ApiError.badRequest(`Завершить можно только запланированную меру. Текущий статус: ${mitigation.status}`));
+    }
 
     mitigation.status = "COMPLETED";
     mitigation.completedDate = new Date();
@@ -201,17 +240,24 @@ const completeMitigation = async (req, res) => {
     await logAudit(req, "risk.mitigation.complete", "risk_mitigation", mitigation.id);
     res.json(mitigation);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    next(ApiError.internal(e.message));
   }
 };
 
-const verifyMitigation = async (req, res) => {
+const verifyMitigation = async (req, res, next) => {
   try {
+    if (!req.user?.id) return next(ApiError.unauthorized("Требуется авторизация"));
+
     const mitigation = await RiskMitigation.findByPk(req.params.mitigationId);
-    if (!mitigation) return res.status(404).json({ error: "Мера не найдена" });
+    if (!mitigation) return next(ApiError.notFound("Мера не найдена"));
+
+    // Проверка текущего статуса: верифицировать можно только выполненную меру
+    if (mitigation.status !== "COMPLETED") {
+      return next(ApiError.badRequest(`Верифицировать можно только выполненную меру. Текущий статус: ${mitigation.status}`));
+    }
 
     mitigation.status = "VERIFIED";
-    mitigation.verifiedBy = req.user?.id || 1;
+    mitigation.verifiedBy = req.user.id;
     mitigation.verifiedAt = new Date();
     mitigation.verificationNotes = req.body.notes;
     await mitigation.save();
@@ -220,7 +266,7 @@ const verifyMitigation = async (req, res) => {
     const risk = await RiskRegister.findByPk(mitigation.riskRegisterId, {
       include: [{ model: RiskMitigation, as: "mitigations" }],
     });
-    
+
     const allVerified = risk.mitigations.every(m => m.status === "VERIFIED");
     if (allVerified) {
       risk.status = "MITIGATED";
@@ -230,7 +276,7 @@ const verifyMitigation = async (req, res) => {
     await logAudit(req, "risk.mitigation.verify", "risk_mitigation", mitigation.id);
     res.json(mitigation);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    next(ApiError.internal(e.message));
   }
 };
 
@@ -238,21 +284,35 @@ const verifyMitigation = async (req, res) => {
 // Принятие остаточного риска
 // ═══════════════════════════════════════════════════════════════
 
-const acceptRisk = async (req, res) => {
+const acceptRisk = async (req, res, next) => {
   try {
+    if (!req.user?.id) return next(ApiError.unauthorized("Требуется авторизация"));
+
     const risk = await RiskRegister.findByPk(req.params.id);
-    if (!risk) return res.status(404).json({ error: "Риск не найден" });
+    if (!risk) return next(ApiError.notFound("Риск не найден"));
+
+    // ISO 14971: принятие риска только после оценки/митигации
+    const allowedForAcceptance = ["ASSESSED", "MITIGATED", "MONITORING"];
+    if (!allowedForAcceptance.includes(risk.status)) {
+      return next(ApiError.badRequest(
+        `Принять риск можно только в статусе ${allowedForAcceptance.join("/")}. Текущий: ${risk.status}`
+      ));
+    }
+
+    if (!req.body.decision) {
+      return next(ApiError.badRequest("Обоснование принятия (decision) обязательно"));
+    }
 
     risk.status = "ACCEPTED";
     risk.acceptanceDecision = req.body.decision;
-    risk.acceptedBy = req.user?.id || 1;
+    risk.acceptedBy = req.user.id;
     risk.acceptedAt = new Date();
     await risk.save();
 
     await logAudit(req, "risk.accept", "risk_register", risk.id, { severity: "WARNING" });
     res.json(risk);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    next(ApiError.internal(e.message));
   }
 };
 
@@ -260,7 +320,7 @@ const acceptRisk = async (req, res) => {
 // Матрица и статистика
 // ═══════════════════════════════════════════════════════════════
 
-const getMatrix = async (req, res) => {
+const getMatrix = async (req, res, next) => {
   try {
     const matrix = RiskMatrixService.getMatrix();
     const labels = RiskMatrixService.getScaleLabels();
@@ -279,29 +339,42 @@ const getMatrix = async (req, res) => {
 
     res.json({ matrix, labels, cellCounts });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    next(ApiError.internal(e.message));
   }
 };
 
-const getStats = async (req, res) => {
+const getStats = async (req, res, next) => {
   try {
-    const total = await RiskRegister.count();
-    const byClass = {};
-    for (const cls of ["LOW", "MEDIUM", "HIGH", "CRITICAL"]) {
-      byClass[cls] = await RiskRegister.count({ where: { initialRiskClass: cls, status: { [Op.ne]: "CLOSED" } } });
-    }
-    const byStatus = {};
-    for (const s of ["IDENTIFIED", "ASSESSED", "MITIGATED", "ACCEPTED", "CLOSED", "MONITORING"]) {
-      byStatus[s] = await RiskRegister.count({ where: { status: s } });
-    }
+    // Оптимизация: один GROUP BY запрос вместо N+1 COUNT
+    const [total, byClassRaw, byStatusRaw, overdue] = await Promise.all([
+      RiskRegister.count(),
+      RiskRegister.findAll({
+        attributes: ["initialRiskClass", [sequelize.fn("COUNT", "*"), "count"]],
+        where: { status: { [Op.ne]: "CLOSED" } },
+        group: ["initialRiskClass"],
+        raw: true,
+      }),
+      RiskRegister.findAll({
+        attributes: ["status", [sequelize.fn("COUNT", "*"), "count"]],
+        group: ["status"],
+        raw: true,
+      }),
+      RiskRegister.count({
+        where: { reviewDate: { [Op.lt]: new Date() }, status: { [Op.notIn]: ["CLOSED", "ACCEPTED"] } },
+      }),
+    ]);
 
-    const overdue = await RiskRegister.count({
-      where: { reviewDate: { [Op.lt]: new Date() }, status: { [Op.notIn]: ["CLOSED", "ACCEPTED"] } },
-    });
+    const byClass = {};
+    for (const cls of ["LOW", "MEDIUM", "HIGH", "CRITICAL"]) byClass[cls] = 0;
+    byClassRaw.forEach(r => { byClass[r.initialRiskClass] = parseInt(r.count); });
+
+    const byStatus = {};
+    for (const s of ["IDENTIFIED", "ASSESSED", "MITIGATED", "ACCEPTED", "CLOSED", "MONITORING"]) byStatus[s] = 0;
+    byStatusRaw.forEach(r => { byStatus[r.status] = parseInt(r.count); });
 
     res.json({ total, byClass, byStatus, overdue });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    next(ApiError.internal(e.message));
   }
 };
 
