@@ -1,6 +1,10 @@
 module.exports = {
   code: 'qms.supplier',
-  register() {},
+
+  register(router) {
+    router.use('/suppliers', require('./routes/supplierRouter'));
+  },
+
   getModels() { return require('./models/Supplier'); },
   setupAssociations() {},
 };

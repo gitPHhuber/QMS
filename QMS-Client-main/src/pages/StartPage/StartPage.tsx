@@ -28,25 +28,25 @@ const HeroCard = ({ title, sub, icon: Icon, to }: any) => {
     return (
         <div
             onClick={() => navigate(to)}
-            className="group relative col-span-1 md:col-span-2 lg:col-span-2 row-span-2 cursor-pointer overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-indigo-600 to-violet-700 p-8 text-white shadow-2xl shadow-indigo-200 transition-all duration-500 hover:-translate-y-1 hover:shadow-indigo-300"
+            className="group relative col-span-1 md:col-span-2 lg:col-span-2 row-span-2 cursor-pointer overflow-hidden rounded-[2.5rem] bg-slate-800/60 border border-slate-700 p-8 text-white transition-all duration-500 hover:-translate-y-1 hover:border-teal-500/50 hover:shadow-lg hover:shadow-teal-500/10"
         >
-            <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white opacity-10 blur-3xl transition-transform duration-700 group-hover:scale-150"></div>
-            <div className="absolute bottom-0 left-0 h-40 w-full bg-gradient-to-t from-black/20 to-transparent"></div>
+            <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-teal-500 opacity-5 blur-3xl transition-transform duration-700 group-hover:scale-150"></div>
+            <div className="absolute bottom-0 left-0 h-40 w-full bg-gradient-to-t from-black/10 to-transparent"></div>
 
             <div className="relative z-10 flex h-full flex-col justify-between">
                 <div className="flex items-start justify-between">
-                    <div className="rounded-2xl bg-white/20 p-4 backdrop-blur-md transition-transform duration-300 group-hover:rotate-12">
-                        <Icon size={32} className="text-white" />
+                    <div className="rounded-2xl bg-teal-500/10 p-4 border border-teal-500/30 transition-transform duration-300 group-hover:rotate-12">
+                        <Icon size={32} className="text-teal-400" />
                     </div>
-                    <div className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-wider backdrop-blur-md">
+                    <div className="rounded-full border border-teal-500/30 bg-teal-500/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-teal-400">
                         QMS
                     </div>
                 </div>
 
                 <div>
-                    <h2 className="text-3xl font-black leading-tight tracking-tight md:text-4xl">{title}</h2>
-                    <p className="mt-2 max-w-sm text-sm font-medium text-indigo-100 opacity-90">{sub}</p>
-                    <div className="mt-6 flex items-center gap-2 font-bold text-white opacity-0 transition-all duration-300 group-hover:translate-x-2 group-hover:opacity-100">
+                    <h2 className="text-3xl font-black leading-tight tracking-tight md:text-4xl text-slate-100">{title}</h2>
+                    <p className="mt-2 max-w-sm text-sm font-medium text-slate-400">{sub}</p>
+                    <div className="mt-6 flex items-center gap-2 font-bold text-teal-400 opacity-0 transition-all duration-300 group-hover:translate-x-2 group-hover:opacity-100">
                         Перейти <ArrowRight size={18} />
                     </div>
                 </div>
@@ -56,22 +56,22 @@ const HeroCard = ({ title, sub, icon: Icon, to }: any) => {
 };
 
 
-const InfoTile = ({ title, sub, icon: Icon, to, colorClass, iconColor }: any) => {
+const InfoTile = ({ title, sub, icon: Icon, to }: any) => {
     const navigate = useNavigate();
     return (
         <div
             onClick={() => navigate(to)}
-            className="group relative flex cursor-pointer flex-col justify-between overflow-hidden rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl col-span-1"
+            className="group relative flex cursor-pointer flex-col justify-between overflow-hidden rounded-[2rem] border border-slate-700 bg-slate-800/60 p-6 transition-all duration-300 hover:-translate-y-1 hover:border-teal-500/50 hover:shadow-lg hover:shadow-teal-500/10 col-span-1"
         >
-            <div className={clsx("absolute -right-4 -top-4 h-24 w-24 rounded-full opacity-5 transition-transform duration-500 group-hover:scale-150", colorClass)}></div>
+            <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-teal-500 opacity-5 transition-transform duration-500 group-hover:scale-150"></div>
             <div className="flex items-start justify-between">
-                <div className={clsx("rounded-2xl p-3 shadow-sm transition-transform duration-300 group-hover:scale-110", colorClass)}>
-                    <Icon size={24} className={iconColor} strokeWidth={2} />
+                <div className="rounded-2xl p-3 bg-teal-500/10 border border-teal-500/30 transition-transform duration-300 group-hover:scale-110">
+                    <Icon size={24} className="text-teal-400" strokeWidth={2} />
                 </div>
             </div>
             <div className="mt-4">
-                <h3 className="text-lg font-bold text-slate-800 transition-colors group-hover:text-indigo-600">{title}</h3>
-                <p className="mt-1 text-xs font-medium text-slate-400">{sub}</p>
+                <h3 className="text-lg font-bold text-slate-100 transition-colors group-hover:text-teal-400">{title}</h3>
+                <p className="mt-1 text-xs font-medium text-slate-500">{sub}</p>
             </div>
         </div>
     );
@@ -80,9 +80,9 @@ const InfoTile = ({ title, sub, icon: Icon, to, colorClass, iconColor }: any) =>
 
 const SystemWidget = () => (
     <div className="col-span-1 md:col-span-1 lg:row-span-2 flex flex-col gap-4">
-        <div className="flex-1 rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm relative overflow-hidden">
+        <div className="flex-1 rounded-[2rem] border border-slate-700 bg-slate-800/60 p-6 relative overflow-hidden">
              <div className="mb-4 flex items-center justify-between">
-                <h3 className="font-bold text-slate-700 flex items-center gap-2">
+                <h3 className="font-bold text-slate-300 flex items-center gap-2">
                     <Activity size={18} className="text-emerald-500"/> Статус
                 </h3>
                 <span className="flex h-2.5 w-2.5">
@@ -91,25 +91,25 @@ const SystemWidget = () => (
                 </span>
              </div>
              <div className="space-y-4">
-                 <div className="flex items-center justify-between rounded-xl bg-slate-50 p-3">
+                 <div className="flex items-center justify-between rounded-xl bg-slate-900/50 p-3">
                      <div className="flex items-center gap-3">
-                         <div className="text-xs font-bold text-slate-600">Core API</div>
+                         <div className="text-xs font-bold text-slate-400">Core API</div>
                      </div>
-                     <span className="text-[10px] font-bold text-emerald-600">ONLINE</span>
+                     <span className="text-[10px] font-bold text-emerald-400">ONLINE</span>
                  </div>
              </div>
         </div>
 
-        <div className="flex-1 rounded-[2rem] border border-slate-100 bg-slate-900 p-6 text-slate-300 shadow-lg relative overflow-hidden group">
+        <div className="flex-1 rounded-[2rem] border border-slate-700 bg-slate-800/60 p-6 text-slate-300 relative overflow-hidden group">
             <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none"></div>
-            <h3 className="mb-4 flex items-center gap-2 text-sm font-bold text-white uppercase tracking-wider">
+            <h3 className="mb-4 flex items-center gap-2 text-sm font-bold text-slate-200 uppercase tracking-wider">
                 Updates
             </h3>
             <div className="space-y-3">
                 {UPDATES.map((u, i) => (
                     <div key={i} className="flex items-start gap-3 text-xs">
-                        <span className="font-mono text-indigo-400 min-w-[32px]">{u.ver}</span>
-                        <p className="leading-snug opacity-80">{u.desc}</p>
+                        <span className="font-mono text-teal-400 min-w-[32px]">{u.ver}</span>
+                        <p className="leading-snug text-slate-400">{u.desc}</p>
                     </div>
                 ))}
             </div>
@@ -187,19 +187,19 @@ const OnlineUsersWidget = () => {
     const canReboot = onlineUsers.length === 0;
 
     return (
-        <div className="col-span-1 md:col-span-2 row-span-2 rounded-[2rem] border border-slate-100 bg-white shadow-sm overflow-hidden flex flex-col">
-            <div className="p-5 border-b border-slate-100 flex-shrink-0">
+        <div className="col-span-1 md:col-span-2 row-span-2 rounded-[2rem] border border-slate-700 bg-slate-800/60 overflow-hidden flex flex-col">
+            <div className="p-5 border-b border-slate-700 flex-shrink-0">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className={clsx(
                             "p-2.5 rounded-xl",
-                            onlineUsers.length > 0 ? "bg-emerald-100" : "bg-slate-100"
+                            onlineUsers.length > 0 ? "bg-teal-500/10 border border-teal-500/30" : "bg-slate-700/50"
                         )}>
-                            <Users size={20} className={onlineUsers.length > 0 ? "text-emerald-600" : "text-slate-500"} />
+                            <Users size={20} className={onlineUsers.length > 0 ? "text-teal-400" : "text-slate-500"} />
                         </div>
                         <div>
-                            <h3 className="font-bold text-slate-800">Сейчас в системе</h3>
-                            <p className="text-xs text-slate-400">
+                            <h3 className="font-bold text-slate-100">Сейчас в системе</h3>
+                            <p className="text-xs text-slate-500">
                                 Обн: {lastUpdate.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
                             </p>
                         </div>
@@ -209,8 +209,8 @@ const OnlineUsersWidget = () => {
                         <div className={clsx(
                             "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold",
                             canReboot
-                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                                : "bg-amber-50 text-amber-700 border border-amber-200"
+                                ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
+                                : "bg-amber-500/10 text-amber-400 border border-amber-500/30"
                         )}>
                             {canReboot ? (
                                 <><CheckCircle2 size={12} /> OK</>
@@ -221,9 +221,9 @@ const OnlineUsersWidget = () => {
                         <button
                             onClick={loadOnlineUsers}
                             disabled={loading}
-                            className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+                            className="p-1.5 rounded-lg hover:bg-slate-700 transition-colors"
                         >
-                            <RefreshCw size={14} className={clsx("text-slate-500", loading && "animate-spin")} />
+                            <RefreshCw size={14} className={clsx("text-slate-400", loading && "animate-spin")} />
                         </button>
                     </div>
                 </div>
@@ -232,40 +232,40 @@ const OnlineUsersWidget = () => {
             <div className="flex-1 overflow-y-auto p-4">
                 {loading && onlineUsers.length === 0 ? (
                     <div className="flex items-center justify-center h-full">
-                        <RefreshCw size={20} className="text-slate-300 animate-spin" />
+                        <RefreshCw size={20} className="text-slate-600 animate-spin" />
                     </div>
                 ) : onlineUsers.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-center">
-                        <div className="w-14 h-14 mb-3 rounded-full bg-slate-100 flex items-center justify-center">
-                            <Users size={24} className="text-slate-400" />
+                        <div className="w-14 h-14 mb-3 rounded-full bg-slate-700/50 flex items-center justify-center">
+                            <Users size={24} className="text-slate-500" />
                         </div>
-                        <p className="font-medium text-slate-600 text-sm">Никого нет</p>
-                        <p className="text-xs text-slate-400 mt-1">Можно ребутать сервер</p>
+                        <p className="font-medium text-slate-300 text-sm">Никого нет</p>
+                        <p className="text-xs text-slate-500 mt-1">Можно ребутать сервер</p>
                     </div>
                 ) : (
                     <div className="space-y-2">
                         {onlineUsers.map((user) => (
                             <div
                                 key={user.id}
-                                className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors"
+                                className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/50 hover:bg-slate-700/50 transition-colors"
                             >
                                 <div className="flex items-center gap-2.5">
                                     <div className="relative">
-                                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
+                                        <div className="w-8 h-8 rounded-full bg-teal-500/20 border border-teal-500/30 flex items-center justify-center text-teal-400 text-xs font-bold">
                                             {user.name[0]}{user.surname?.[0] || ""}
                                         </div>
-                                        <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full"></span>
+                                        <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 border-2 border-slate-800 rounded-full"></span>
                                     </div>
                                     <div>
-                                        <div className="font-semibold text-slate-800 text-sm leading-tight">
+                                        <div className="font-semibold text-slate-200 text-sm leading-tight">
                                             {user.name} {user.surname?.[0] ? user.surname[0] + "." : ""}
                                         </div>
-                                        <span className="text-[10px] font-medium text-slate-400">
+                                        <span className="text-[10px] font-medium text-slate-500">
                                             {getRoleLabel(user.role)}
                                         </span>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-1 text-[10px] text-slate-400">
+                                <div className="flex items-center gap-1 text-[10px] text-slate-500">
                                     {user.isPersonalLaptop ? (
                                         <Laptop size={12} />
                                     ) : (
@@ -279,12 +279,12 @@ const OnlineUsersWidget = () => {
             </div>
 
             {onlineUsers.length > 0 && (
-                <div className="px-5 py-2.5 bg-slate-50 border-t border-slate-100 flex-shrink-0">
+                <div className="px-5 py-2.5 bg-slate-900/50 border-t border-slate-700 flex-shrink-0">
                     <div className="flex items-center justify-between text-xs">
-                        <span className="text-slate-500">
-                            Онлайн: <span className="font-bold text-emerald-600">{onlineUsers.length}</span>
+                        <span className="text-slate-400">
+                            Онлайн: <span className="font-bold text-emerald-400">{onlineUsers.length}</span>
                         </span>
-                        <div className="flex items-center gap-1 text-slate-400">
+                        <div className="flex items-center gap-1 text-slate-500">
                             <Circle size={6} className="fill-emerald-500 text-emerald-500" />
                             <span>Live</span>
                         </div>
@@ -319,31 +319,31 @@ export const StartPage: React.FC = observer(() => {
     const isAdmin = user.can('admin.access') || user.can('users.manage');
 
     return (
-        <div className="min-h-screen bg-[#F6F8FA] p-6 lg:p-10 font-sans text-slate-800 pb-20">
+        <div className="min-h-screen bg-slate-900 p-6 lg:p-10 font-sans text-slate-100 pb-20">
             <div className="max-w-[1400px] mx-auto animate-fade-in-up">
 
                 <div className="mb-10 flex flex-col justify-between gap-4 md:flex-row md:items-end">
                     <div>
-                        <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400">
-                            <Clock size={14} className="text-indigo-500"/>
+                        <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500">
+                            <Clock size={14} className="text-teal-400"/>
                             {today}
                         </div>
-                        <h1 className="text-4xl font-black tracking-tight text-slate-900 md:text-5xl">
-                            {greeting}, <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">{user.user?.name || "Коллега"}</span>.
+                        <h1 className="text-4xl font-black tracking-tight text-slate-100 md:text-5xl">
+                            {greeting}, <span className="text-teal-400">{user.user?.name || "Коллега"}</span>.
                         </h1>
-                        <p className="mt-2 text-lg font-medium text-slate-500">
+                        <p className="mt-2 text-lg font-medium text-slate-400">
                             Добро пожаловать в систему менеджмента качества.
                         </p>
                     </div>
 
                     <div className="hidden md:block">
-                        <div className="flex items-center gap-3 rounded-2xl bg-white px-5 py-3 shadow-sm border border-slate-100">
-                            <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold">
+                        <div className="flex items-center gap-3 rounded-2xl bg-slate-800 px-5 py-3 border border-teal-500/30">
+                            <div className="h-10 w-10 rounded-full bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-400 font-bold">
                                 {user.user?.name?.[0] || "U"}
                             </div>
                             <div>
-                                <div className="text-xs font-bold uppercase text-slate-400">Ваша роль</div>
-                                <div className="font-bold text-indigo-600">{user.user?.role || "Сотрудник"}</div>
+                                <div className="text-xs font-bold uppercase text-slate-500">Ваша роль</div>
+                                <div className="font-bold text-teal-400">{user.user?.role || "Сотрудник"}</div>
                             </div>
                         </div>
                     </div>
@@ -358,10 +358,10 @@ export const StartPage: React.FC = observer(() => {
                         to={TASKS_ROUTE}
                     />
 
-                    <InfoTile title="Склад" sub="Остатки и движение" icon={Box} to={WAREHOUSE_ROUTE} colorClass="bg-emerald-500" iconColor="text-emerald-600" />
+                    <InfoTile title="Склад" sub="Остатки и движение" icon={Box} to={WAREHOUSE_ROUTE} />
 
                     {isAdmin && (
-                        <InfoTile title="Админка" sub="Настройки системы" icon={Settings} to={ADMIN_ROUTE} colorClass="bg-slate-800" iconColor="text-slate-700" />
+                        <InfoTile title="Админка" sub="Настройки системы" icon={Settings} to={ADMIN_ROUTE} />
                     )}
 
                     <SystemWidget />
