@@ -3,7 +3,7 @@
 const XLSX = require("xlsx");
 const path = require("path");
 const fs = require("fs");
-const { sequelize } = require("../../models/index");
+const { sequelize } = require("../models/index");
 
 class ExcelImportService {
 
@@ -28,7 +28,7 @@ class ExcelImportService {
             BeryllServerComponent,
             ComponentInventory,
             ComponentCatalog
-        } = require("../../models/index");
+        } = require("../models/index");
 
 
         for (let i = 2; i < data.length; i++) {
@@ -214,7 +214,7 @@ class ExcelImportService {
             BeryllDefectRecord,
             UserAlias,
             User
-        } = require("../../models/index");
+        } = require("../models/index");
 
 
         const headers = data[0];
