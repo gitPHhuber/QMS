@@ -31,7 +31,6 @@ import AuditsPage from "./pages/Quality/AuditsPage";
 import TrainingPage from "./pages/Quality/TrainingPage";
 import EquipmentPage from "./pages/Quality/EquipmentPage";
 import ReviewPage from "./pages/Quality/ReviewPage";
-import { QmsPrototypePage } from "./pages/QMS/QmsPrototypePage";
 
 import {
   ADMIN_PCs_ROUTE,
@@ -62,16 +61,10 @@ import {
   TRAINING_ROUTE,
   EQUIPMENT_ROUTE,
   REVIEW_ROUTE,
-  QMS_PROTOTYPE_ROUTE,
 } from "./utils/consts";
 
-export const authRoutes = [
-  { path: SELECT_PC_ROUTE, Component: SelectPC },
-  { path: PROFILE_ROUTE, Component: Profile },
-  { path: WAREHOUSE_ROUTE, Component: UserWarehousePage },
-  { path: WAREHOUSE_ANALYTICS_ROUTE, Component: AnalyticsPage },
-  { path: WAREHOUSE_INVENTORY_ROUTE, Component: InventoryPage },
-  { path: TASKS_ROUTE, Component: TasksPage },
+// QMS routes (rendered inside QmsLayout)
+export const qmsRoutes = [
   { path: QMS_DASHBOARD_ROUTE, Component: QmsDashboardPage },
   { path: DOCUMENTS_ROUTE, Component: DocumentsPage },
   { path: NC_ROUTE, Component: NonconformityPage },
@@ -82,7 +75,15 @@ export const authRoutes = [
   { path: TRAINING_ROUTE, Component: TrainingPage },
   { path: EQUIPMENT_ROUTE, Component: EquipmentPage },
   { path: REVIEW_ROUTE, Component: ReviewPage },
-  { path: QMS_PROTOTYPE_ROUTE, Component: QmsPrototypePage },
+];
+
+export const authRoutes = [
+  { path: SELECT_PC_ROUTE, Component: SelectPC },
+  { path: PROFILE_ROUTE, Component: Profile },
+  { path: WAREHOUSE_ROUTE, Component: UserWarehousePage },
+  { path: WAREHOUSE_ANALYTICS_ROUTE, Component: AnalyticsPage },
+  { path: WAREHOUSE_INVENTORY_ROUTE, Component: InventoryPage },
+  { path: TASKS_ROUTE, Component: TasksPage },
 ];
 
 export const adminRoutes = [

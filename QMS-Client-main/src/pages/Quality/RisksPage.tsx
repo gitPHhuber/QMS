@@ -1,200 +1,233 @@
-import React, { useEffect, useState } from 'react';
-import { Shield, Plus, Search, AlertTriangle } from 'lucide-react';
-import { risksApi } from '../../api/qmsApi';
+import React, { useState } from 'react';
+import {
+  Shield, Plus, Grid3X3, Download, AlertTriangle,
+  Search, TrendingUp,
+} from 'lucide-react';
+import KpiRow from '../../components/qms/KpiRow';
+import ActionBtn from '../../components/qms/ActionBtn';
+import Badge from '../../components/qms/Badge';
+import DataTable from '../../components/qms/DataTable';
+import SectionTitle from '../../components/qms/SectionTitle';
 
-interface RiskItem {
-  id: number;
-  riskNumber: string;
+/* ───── types ───── */
+interface RiskRow {
+  id: string;
   title: string;
   category: string;
-  initialProbability: number;
-  initialSeverity: number;
-  initialRiskLevel: number;
-  initialRiskClass: string;
-  residualRiskClass: string | null;
+  p: number;
+  s: number;
+  level: number;
+  riskClass: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  owner: string;
   status: string;
-  owner?: { id: number; name: string; surname: string };
+  [key: string]: unknown;
 }
 
-const riskClassColor: Record<string, string> = {
-  LOW: 'bg-green-900/40 text-green-400 border-green-700/50',
-  MEDIUM: 'bg-yellow-900/40 text-yellow-400 border-yellow-700/50',
-  HIGH: 'bg-orange-900/40 text-orange-400 border-orange-700/50',
-  CRITICAL: 'bg-red-900/40 text-red-400 border-red-700/50',
+/* ───── mock data ───── */
+const RISKS: RiskRow[] = [
+  { id: 'R-019', title: 'Задержка поставки датчиков',  category: 'Поставщик',    p: 3, s: 4, level: 12, riskClass: 'HIGH',     owner: 'Холтобин А.',  status: 'Оценка' },
+  { id: 'R-018', title: 'Отказ паяльной станции',       category: 'Оборудование', p: 2, s: 5, level: 10, riskClass: 'HIGH',     owner: 'Чирков И.',    status: 'Мониторинг' },
+  { id: 'R-015', title: 'Изменение требований IEC',     category: 'Регуляторный', p: 4, s: 5, level: 20, riskClass: 'CRITICAL', owner: 'Костюков И.',  status: 'Обработка' },
+  { id: 'R-012', title: 'Текучесть кадров ОТК',         category: 'Персонал',     p: 3, s: 3, level: 9,  riskClass: 'MEDIUM',   owner: 'Яровой Е.',   status: 'Мониторинг' },
+  { id: 'R-010', title: 'Дефект пресс-формы',           category: 'Процесс',      p: 2, s: 4, level: 8,  riskClass: 'MEDIUM',   owner: 'Омельченко А.', status: 'Снижен' },
+  { id: 'R-008', title: 'Кибер-атака на ERP',           category: 'Кибер',        p: 1, s: 5, level: 5,  riskClass: 'MEDIUM',   owner: 'Холтобин А.',  status: 'Принят' },
+  { id: 'R-005', title: 'Задержка сертификации',         category: 'Регуляторный', p: 5, s: 4, level: 20, riskClass: 'CRITICAL', owner: 'Костюков И.',  status: 'Оценка' },
+];
+
+/* ───── matrix data (5×5) ───── */
+// matrixCounts[p][s] = count of risks
+const matrixCounts: Record<number, Record<number, number>> = {
+  5: { 1: 0, 2: 0, 3: 1, 4: 2, 5: 0 },
+  4: { 1: 0, 2: 0, 3: 1, 4: 0, 5: 0 },
+  3: { 1: 0, 2: 0, 3: 1, 4: 0, 5: 0 },
+  2: { 1: 0, 2: 0, 3: 0, 4: 1, 5: 1 },
+  1: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 1 },
 };
 
-const statusColor: Record<string, string> = {
-  IDENTIFIED: 'bg-blue-900/40 text-blue-400',
-  ASSESSED: 'bg-purple-900/40 text-purple-400',
-  MITIGATED: 'bg-teal-900/40 text-teal-400',
-  ACCEPTED: 'bg-green-900/40 text-green-400',
-  CLOSED: 'bg-slate-700/40 text-slate-400',
-  MONITORING: 'bg-yellow-900/40 text-yellow-400',
+const severityLabels = ['1-Незначит.', '2-Малая', '3-Средняя', '4-Значит.', '5-Катастроф.'];
+
+/** color of a cell based on P×S value */
+const cellColor = (val: number): string => {
+  if (val <= 4)  return 'bg-[#2DD4A8]/20 text-[#2DD4A8]';
+  if (val <= 9)  return 'bg-[#E8A830]/20 text-[#E8A830]';
+  if (val <= 16) return 'bg-[#E87040]/20 text-[#E87040]';
+  return 'bg-[#F06060]/20 text-[#F06060]';
 };
+
+/* ───── risk class badge colors ───── */
+const classColors: Record<string, { color: string; bg: string }> = {
+  LOW:      { color: '#2DD4A8', bg: 'rgba(45,212,168,0.14)' },
+  MEDIUM:   { color: '#E8A830', bg: 'rgba(232,168,48,0.14)' },
+  HIGH:     { color: '#E87040', bg: 'rgba(232,112,64,0.14)' },
+  CRITICAL: { color: '#F06060', bg: 'rgba(240,96,96,0.14)' },
+};
+
+const statusColors: Record<string, { color: string; bg: string }> = {
+  'Оценка':     { color: '#A06AE8', bg: 'rgba(160,106,232,0.14)' },
+  'Мониторинг': { color: '#E8A830', bg: 'rgba(232,168,48,0.14)' },
+  'Обработка':  { color: '#4A90E8', bg: 'rgba(74,144,232,0.14)' },
+  'Снижен':     { color: '#2DD4A8', bg: 'rgba(45,212,168,0.14)' },
+  'Принят':     { color: '#3A4E62', bg: 'rgba(58,78,98,0.15)' },
+};
+
+/* ───── table columns ───── */
+const columns = [
+  {
+    key: 'id',
+    label: 'ID',
+    width: '80px',
+    render: (r: RiskRow) => <span className="font-mono text-asvo-accent">{r.id}</span>,
+  },
+  {
+    key: 'title',
+    label: 'Название',
+    render: (r: RiskRow) => <span className="text-asvo-text">{r.title}</span>,
+  },
+  {
+    key: 'category',
+    label: 'Категория',
+    render: (r: RiskRow) => <span className="text-asvo-text-mid">{r.category}</span>,
+  },
+  {
+    key: 'level',
+    label: 'P\u00d7S=\u0423\u0440\u043e\u0432\u0435\u043d\u044c',
+    align: 'center' as const,
+    render: (r: RiskRow) => (
+      <span className="text-asvo-text font-mono text-xs">{r.p}&times;{r.s}={r.level}</span>
+    ),
+  },
+  {
+    key: 'riskClass',
+    label: 'Класс риска',
+    align: 'center' as const,
+    render: (r: RiskRow) => {
+      const c = classColors[r.riskClass];
+      return <Badge color={c?.color} bg={c?.bg}>{r.riskClass}</Badge>;
+    },
+  },
+  {
+    key: 'owner',
+    label: 'Владелец',
+    render: (r: RiskRow) => <span className="text-asvo-text-mid">{r.owner}</span>,
+  },
+  {
+    key: 'status',
+    label: 'Статус',
+    align: 'center' as const,
+    render: (r: RiskRow) => {
+      const c = statusColors[r.status];
+      return <Badge color={c?.color} bg={c?.bg}>{r.status}</Badge>;
+    },
+  },
+];
+
+/* ════════════════════════════════════════════════════ */
 
 const RisksPage: React.FC = () => {
-  const [items, setItems] = useState<RiskItem[]>([]);
-  const [stats, setStats] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [showMatrix, setShowMatrix] = useState(true);
   const [search, setSearch] = useState('');
-  const [showCreate, setShowCreate] = useState(false);
-  const [form, setForm] = useState({ title: '', description: '', category: 'PROCESS', initialProbability: 3, initialSeverity: 3 });
-  const [creating, setCreating] = useState(false);
 
-  useEffect(() => { loadData(); }, []);
-
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const [itemsData, statsData] = await Promise.all([
-        risksApi.getAll(),
-        risksApi.getStats(),
-      ]);
-      setItems(itemsData.rows || []);
-      setStats(statsData);
-    } catch (e) {
-      console.error('RisksPage loadData error:', e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCreate = async () => {
-    try {
-      setCreating(true);
-      await risksApi.create(form);
-      setShowCreate(false);
-      setForm({ title: '', description: '', category: 'PROCESS', initialProbability: 3, initialSeverity: 3 });
-      await loadData();
-    } catch (e) {
-      console.error('Create risk error:', e);
-    } finally {
-      setCreating(false);
-    }
-  };
-
-  const filtered = items.filter(i =>
-    i.title.toLowerCase().includes(search.toLowerCase()) ||
-    i.riskNumber?.toLowerCase().includes(search.toLowerCase())
+  const filtered = RISKS.filter(
+    (r) =>
+      r.title.toLowerCase().includes(search.toLowerCase()) ||
+      r.id.toLowerCase().includes(search.toLowerCase()),
   );
 
+  /* ───── KPI ───── */
+  const kpis = [
+    { label: 'Всего рисков',         value: 34, color: '#A06AE8', icon: <Shield size={18} /> },
+    { label: 'Критических',           value: 5,  color: '#F06060', icon: <AlertTriangle size={18} /> },
+    { label: 'Высоких',               value: 12, color: '#E87040', icon: <TrendingUp size={18} /> },
+    { label: 'Низких / Приемлемых',   value: 17, color: '#2DD4A8', icon: <Shield size={18} /> },
+  ];
+
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
+    <div className="min-h-screen bg-asvo-bg p-6 space-y-6">
+      {/* ── Header ── */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-red-500/10 rounded-lg">
-            <Shield className="text-red-400" size={24} />
+          <div className="p-2 rounded-lg" style={{ background: 'rgba(160,106,232,0.12)' }}>
+            <Shield className="text-[#A06AE8]" size={24} />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-100">Реестр рисков</h1>
-            <p className="text-slate-400 text-sm">ISO 13485 &sect;7.1 &mdash; Управление рисками</p>
+            <h1 className="text-2xl font-bold text-asvo-text">Реестр рисков</h1>
+            <p className="text-asvo-text-dim text-sm">ISO 14971 / ISO 13485 &sect;7.1 &mdash; Управление рисками</p>
           </div>
         </div>
-        <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-lg transition-colors text-sm font-medium">
-          <Plus size={16} />
-          Новый риск
-        </button>
+
+        <div className="flex items-center gap-2">
+          <ActionBtn icon={<Plus size={15} />}>Новый риск</ActionBtn>
+          <ActionBtn variant="secondary" color="#A06AE8" icon={<Grid3X3 size={15} />} onClick={() => setShowMatrix((v) => !v)}>
+            Матрица рисков
+          </ActionBtn>
+          <ActionBtn variant="secondary" icon={<Download size={15} />}>Экспорт</ActionBtn>
+        </div>
       </div>
 
-      {/* Stats */}
-      {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          <div className="bg-slate-800/60 border border-slate-700 rounded-xl p-4">
-            <div className="text-2xl font-bold text-slate-100">{stats.total}</div>
-            <div className="text-xs text-slate-400">Всего рисков</div>
-          </div>
-          {['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map(cls => (
-            <div key={cls} className="bg-slate-800/60 border border-slate-700 rounded-xl p-4">
-              <div className="text-2xl font-bold text-slate-100">{stats.byClass?.[cls] || 0}</div>
-              <div className="text-xs text-slate-400">{cls}</div>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* ── KPI Row ── */}
+      <KpiRow items={kpis} />
 
-      {/* Search */}
+      {/* ── Search ── */}
       <div className="flex gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
-          <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Поиск по номеру или названию..." className="w-full pl-10 pr-4 py-2 bg-slate-800/60 border border-slate-700 rounded-lg text-slate-200 placeholder:text-slate-500 focus:border-teal-500/50 focus:outline-none text-sm" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-asvo-text-dim" size={16} />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Поиск по ID или названию..."
+            className="w-full pl-10 pr-4 py-2 bg-asvo-surface-2 border border-asvo-border rounded-lg text-asvo-text placeholder:text-asvo-text-dim focus:border-asvo-accent/50 focus:outline-none text-sm"
+          />
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-slate-800/60 border border-slate-700 rounded-xl overflow-hidden">
-        <table className="w-full">
-          <thead>
-            <tr className="bg-slate-800/80 border-b border-slate-700">
-              <th className="text-left px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">&#8470;</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">Название</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">Категория</th>
-              <th className="text-center px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">P&times;S</th>
-              <th className="text-center px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">Класс</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">Владелец</th>
-              <th className="text-center px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">Статус</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr><td colSpan={7} className="text-center py-8 text-slate-500">Загрузка...</td></tr>
-            ) : filtered.length === 0 ? (
-              <tr><td colSpan={7} className="text-center py-8 text-slate-500">Нет данных</td></tr>
-            ) : filtered.map(item => (
-              <tr key={item.id} className="border-b border-slate-700/50 hover:bg-slate-700/20 transition-colors">
-                <td className="px-4 py-3 text-sm font-mono text-teal-400">{item.riskNumber}</td>
-                <td className="px-4 py-3 text-sm text-slate-200">{item.title}</td>
-                <td className="px-4 py-3 text-sm text-slate-300">{item.category}</td>
-                <td className="px-4 py-3 text-sm text-center text-slate-200">{item.initialProbability}&times;{item.initialSeverity}={item.initialRiskLevel}</td>
-                <td className="px-4 py-3 text-center">
-                  <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium border ${riskClassColor[item.initialRiskClass] || 'text-slate-400'}`}>
-                    {item.initialRiskClass}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-sm text-slate-300">{item.owner ? `${item.owner.surname} ${item.owner.name}` : '-'}</td>
-                <td className="px-4 py-3 text-center">
-                  <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${statusColor[item.status] || 'text-slate-400'}`}>
-                    {item.status}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {/* ── Table ── */}
+      <DataTable columns={columns} data={filtered} />
 
-      {/* Create Modal */}
-      {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-slate-800 border border-slate-700 rounded-xl p-6 w-full max-w-lg space-y-4">
-            <h2 className="text-lg font-bold text-slate-100">Новый риск</h2>
-            <div className="space-y-3">
-              <input type="text" placeholder="Название риска" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 text-sm focus:border-teal-500/50 focus:outline-none" />
-              <textarea placeholder="Описание" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 text-sm focus:border-teal-500/50 focus:outline-none h-20 resize-none" />
-              <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 text-sm focus:border-teal-500/50 focus:outline-none">
-                {['PRODUCT', 'PROCESS', 'SUPPLIER', 'REGULATORY', 'INFRASTRUCTURE', 'HUMAN', 'CYBER'].map(c => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs text-slate-400 mb-1">Вероятность (1-5)</label>
-                  <input type="number" min={1} max={5} value={form.initialProbability} onChange={e => setForm({ ...form, initialProbability: +e.target.value })} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 text-sm focus:border-teal-500/50 focus:outline-none" />
-                </div>
-                <div>
-                  <label className="block text-xs text-slate-400 mb-1">Серьезность (1-5)</label>
-                  <input type="number" min={1} max={5} value={form.initialSeverity} onChange={e => setForm({ ...form, initialSeverity: +e.target.value })} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 text-sm focus:border-teal-500/50 focus:outline-none" />
-                </div>
+      {/* ── 5×5 Risk Matrix ── */}
+      {showMatrix && (
+        <>
+          <SectionTitle>Матрица рисков 5 &times; 5</SectionTitle>
+
+          <div className="bg-asvo-surface border border-asvo-border rounded-xl p-4 overflow-x-auto">
+            <div className="grid grid-cols-6 gap-1.5 min-w-[480px]">
+              {/* header row */}
+              <div className="min-h-[40px] rounded flex items-center justify-center text-[10px] font-bold text-asvo-text-dim uppercase">
+                P \ S
               </div>
-            </div>
-            <div className="flex justify-end gap-3 pt-2">
-              <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-sm text-slate-400 hover:text-slate-200 transition-colors">Отмена</button>
-              <button onClick={handleCreate} disabled={creating || !form.title} className="px-4 py-2 bg-teal-600 hover:bg-teal-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors">
-                {creating ? 'Создание...' : 'Создать'}
-              </button>
+              {severityLabels.map((lbl) => (
+                <div
+                  key={lbl}
+                  className="min-h-[40px] rounded flex items-center justify-center text-[10px] font-bold text-asvo-text-mid"
+                >
+                  {lbl}
+                </div>
+              ))}
+
+              {/* rows 5→1 */}
+              {[5, 4, 3, 2, 1].map((p) => (
+                <React.Fragment key={p}>
+                  {/* probability label */}
+                  <div className="min-h-[40px] rounded flex items-center justify-center text-xs font-bold text-asvo-text-mid">
+                    {p}
+                  </div>
+                  {[1, 2, 3, 4, 5].map((s) => {
+                    const val = p * s;
+                    const cnt = matrixCounts[p]?.[s] ?? 0;
+                    return (
+                      <div
+                        key={`${p}-${s}`}
+                        className={`min-h-[40px] rounded flex items-center justify-center text-xs font-bold ${cellColor(val)}`}
+                      >
+                        {cnt > 0 ? cnt : val}
+                      </div>
+                    );
+                  })}
+                </React.Fragment>
+              ))}
             </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );

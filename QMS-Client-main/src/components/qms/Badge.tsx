@@ -1,13 +1,17 @@
 import React from "react";
 
-type BadgeVariant = "nc" | "capa" | "risk" | "audit" | "training" | "sop" | "closed" | "product" | "component";
+type BadgeVariant =
+  | "nc" | "capa" | "risk" | "audit" | "training" | "sop"
+  | "closed" | "product" | "component" | "custom";
 
 interface BadgeProps {
-  variant: BadgeVariant;
+  variant?: BadgeVariant;
   children: React.ReactNode;
+  color?: string;
+  bg?: string;
 }
 
-const VARIANT_STYLES: Record<BadgeVariant, string> = {
+const VARIANT_STYLES: Record<string, string> = {
   nc:        "bg-[rgba(240,96,96,0.12)] text-[#F06060] border-[#F06060]/30",
   capa:      "bg-[rgba(232,168,48,0.12)] text-[#E8A830] border-[#E8A830]/30",
   risk:      "bg-[rgba(160,106,232,0.12)] text-[#A06AE8] border-[#A06AE8]/30",
@@ -19,10 +23,12 @@ const VARIANT_STYLES: Record<BadgeVariant, string> = {
   component: "bg-[rgba(58,78,98,0.15)] text-[#8899AB] border-[#3A4E62]/30",
 };
 
-const Badge: React.FC<BadgeProps> = ({ variant, children }) => {
+const Badge: React.FC<BadgeProps> = ({ variant = "closed", children, color, bg }) => {
+  const cls = VARIANT_STYLES[variant] || VARIANT_STYLES.closed;
   return (
     <span
-      className={`inline-flex items-center border rounded text-[10px] font-bold uppercase px-2 py-0.5 leading-none ${VARIANT_STYLES[variant] || VARIANT_STYLES.closed}`}
+      className={`inline-flex items-center rounded-xl text-[11px] font-semibold px-2.5 py-0.5 leading-none ${!color ? cls : ""}`}
+      style={color ? { backgroundColor: bg || `${color}22`, color } : undefined}
     >
       {children}
     </span>
