@@ -8,16 +8,16 @@ const checkAbility = require("../../core/middleware/checkAbilityMiddleware");
 const protect = [authMiddleware, syncUserMiddleware];
 
 // Stats (static route FIRST)
-router.get("/stats", ...protect, checkAbility("equipment.view"), ctrl.getStats);
+router.get("/stats", ...protect, checkAbility("equipment.read"), ctrl.getStats);
 
 // CRUD
-router.get("/",      ...protect, checkAbility("equipment.view"),   ctrl.getAll);
-router.get("/:id",   ...protect, checkAbility("equipment.view"),   ctrl.getOne);
-router.post("/",     ...protect, checkAbility("equipment.create"), ctrl.create);
-router.put("/:id",   ...protect, checkAbility("equipment.manage"), ctrl.update);
+router.get("/",      ...protect, checkAbility("equipment.read"),      ctrl.getAll);
+router.get("/:id",   ...protect, checkAbility("equipment.read"),      ctrl.getOne);
+router.post("/",     ...protect, checkAbility("equipment.calibrate"), ctrl.create);
+router.put("/:id",   ...protect, checkAbility("equipment.calibrate"), ctrl.update);
 
 // Calibrations sub-resource
-router.post("/:id/calibrations",  ...protect, checkAbility("equipment.manage"), ctrl.addCalibration);
-router.put("/calibrations/:id",   ...protect, checkAbility("equipment.manage"), ctrl.updateCalibration);
+router.post("/:id/calibrations",  ...protect, checkAbility("equipment.calibrate"), ctrl.addCalibration);
+router.put("/calibrations/:id",   ...protect, checkAbility("equipment.calibrate"), ctrl.updateCalibration);
 
 module.exports = router;
