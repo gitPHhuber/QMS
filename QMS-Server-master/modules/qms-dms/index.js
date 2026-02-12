@@ -10,10 +10,6 @@ module.exports = {
   },
 
   setupAssociations(m) {
-    if (m.Document && m.User) {
-      m.Document.belongsTo(m.User, { as: 'author', foreignKey: 'authorId' });
-      m.Document.belongsTo(m.User, { as: 'approver', foreignKey: 'currentApproverId' });
-    }
     const { setupDocumentAssociations } = require('./models/Document');
     if (typeof setupDocumentAssociations === 'function') {
       setupDocumentAssociations(m);
