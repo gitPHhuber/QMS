@@ -152,9 +152,9 @@ export const InventoryPage: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="bg-indigo-900 p-6 rounded-2xl shadow-lg text-white">
-                        <div className="text-indigo-200 text-sm font-medium mb-1">Проверено позиций</div>
-                        <div className="text-5xl font-black">{items.length}</div>
+                    <div className="bg-asvo-surface p-6 rounded-2xl shadow-sm border border-asvo-border">
+                        <div className="text-asvo-text-mid text-sm font-medium mb-1">Проверено позиций</div>
+                        <div className="text-5xl font-black text-asvo-accent">{items.length}</div>
                     </div>
                 </div>
 
@@ -163,7 +163,7 @@ export const InventoryPage: React.FC = () => {
                     <div className="bg-asvo-surface rounded-2xl shadow-sm border border-asvo-border min-h-[500px] flex flex-col">
                         <div className="p-4 border-b flex justify-between items-center">
                             <h3 className="font-bold text-asvo-text">Лист инвентаризации</h3>
-                            {items.length > 0 && <button onClick={commitInventory} className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-green-700 transition"><Save size={18}/> Завершить акт</button>}
+                            {items.length > 0 && <button onClick={commitInventory} className="flex items-center gap-2 bg-asvo-accent text-asvo-bg px-4 py-2 rounded-lg font-bold hover:bg-asvo-accent/80 transition"><Save size={18}/> Завершить акт</button>}
                         </div>
 
                         <div className="flex-1 overflow-y-auto p-2 space-y-2">

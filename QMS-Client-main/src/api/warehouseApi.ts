@@ -4,7 +4,8 @@ import {
   InventoryBoxModel,
   WarehouseMovement,
   WarehouseDocument,
-  StockBalanceItem
+  StockBalanceItem,
+  DashboardStats
 } from "src/types/WarehouseModels";
 
 export type { WarehouseMovement };
@@ -205,9 +206,9 @@ export const fetchStockBalance = async () => {
 };
 
 
-export const fetchDashboardStats = async () => {
+export const fetchDashboardStats = async (): Promise<DashboardStats> => {
     const { data } = await $authHost.get("api/warehouse/analytics/dashboard");
-    return data;
+    return data as DashboardStats;
 };
 
 export const fetchAlerts = async () => {
@@ -265,7 +266,7 @@ export const printBoxesPdf = async (ids: number[]) => {
   document.body.appendChild(link); link.click(); link.remove();
 };
 
-export const printSpecialLabel = async (data: any) => {
+export const printSpecialLabel = async (data: Record<string, unknown>) => {
   const response = await $authHost.post("api/warehouse/boxes/print-special", data, {
     responseType: 'blob'
   });

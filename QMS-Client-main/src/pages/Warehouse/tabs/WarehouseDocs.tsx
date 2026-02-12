@@ -114,7 +114,7 @@ export const WarehouseDocs: React.FC = () => {
                     <label className="text-xs font-bold text-asvo-accent uppercase">Комментарий</label>
                     <input value={newDoc.comment} onChange={e => setNewDoc({...newDoc, comment: e.target.value})} className="w-full p-2 border rounded-lg" placeholder="Основание..." />
                 </div>
-                <button onClick={handleCreate} className="bg-green-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-green-700">Сохранить</button>
+                <button onClick={handleCreate} className="bg-asvo-accent text-asvo-bg px-6 py-2 rounded-lg font-bold hover:bg-asvo-accent/80">Сохранить</button>
             </div>
         )}
 
