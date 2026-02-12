@@ -697,3 +697,108 @@ export const capaApi = {
   verify: (capaId: number, data: { isEffective: boolean; evidence?: string; comment?: string }) =>
     $authHost.post(`/api/nc/capa/${capaId}/verify`, data).then(r => r.data),
 };
+
+// ═══════════════════════════════════════════════════════════════
+// DASHBOARD API (ISO 8.4)
+// ═══════════════════════════════════════════════════════════════
+
+export interface QualityObjectiveItem {
+  id: number;
+  number: string;
+  title: string;
+  description: string | null;
+  metric: string;
+  targetValue: number;
+  currentValue: number | null;
+  unit: string | null;
+  status: "ACTIVE" | "ACHIEVED" | "NOT_ACHIEVED" | "CANCELLED";
+  category: "PROCESS" | "PRODUCT" | "CUSTOMER" | "IMPROVEMENT" | "COMPLIANCE";
+  progress: number;
+  dueDate: string | null;
+  isoClause: string | null;
+  responsible?: { id: number; name: string; surname: string } | null;
+}
+
+export interface DashboardNcSummary {
+  openCount: number;
+  overdueCount: number;
+  byClassification: Record<string, number>;
+}
+
+export interface DashboardCapaSummary {
+  activeCount: number;
+  overdueCount: number;
+  effectivenessRate: number;
+  avgCloseDays: number;
+  overdueItems: Array<{ id: number; number: string; title: string; dueDate: string; overdueDays: number }>;
+}
+
+export interface DashboardRiskSummary {
+  cellCounts: Record<string, number>;
+  byClass: Record<string, number>;
+}
+
+export interface DashboardComplaintsSummary {
+  open: number;
+  investigating: number;
+  closedThisMonth: number;
+  avgResponseDays: number;
+}
+
+export interface DashboardTimelineEvent {
+  date: string;
+  code: string;
+  text: string;
+  category: "nc" | "capa" | "audit" | "risk" | "doc" | "equipment";
+}
+
+export interface DashboardSummary {
+  nc: DashboardNcSummary | null;
+  capa: DashboardCapaSummary | null;
+  risks: DashboardRiskSummary | null;
+  complaints: DashboardComplaintsSummary | null;
+  documents: { awaitingReview: number; overdue: number; pendingDocs: any[] } | null;
+  audits: { next: any | null; openFindings: number } | null;
+  equipment: { upcomingCalibrations: Array<{ id: number; inventoryNumber: string; name: string; nextCalibrationDate: string; daysUntil: number }> } | null;
+  training: { completed: number; planned: number; expired: number; totalRecords: number } | null;
+  suppliers: { byStatus: Record<string, number>; total: number; approvedPct: number } | null;
+  review: { next: any | null; daysUntil: number | null; readinessPercent: number } | null;
+  qualityObjectives: QualityObjectiveItem[] | null;
+  timeline: DashboardTimelineEvent[] | null;
+  generatedAt: string;
+}
+
+export interface TrendDataPoint {
+  month: string;
+  count: number;
+}
+
+export interface DashboardTrends {
+  nc: TrendDataPoint[];
+  capa: TrendDataPoint[];
+  complaints: TrendDataPoint[];
+}
+
+export const dashboardApi = {
+  getSummary: (): Promise<DashboardSummary> =>
+    $authHost.get("/api/dashboard/summary").then(r => r.data),
+
+  getTrends: (): Promise<DashboardTrends> =>
+    $authHost.get("/api/dashboard/trends").then(r => r.data),
+
+  // Quality Objectives CRUD
+  getObjectives: (params?: Record<string, any>) =>
+    $authHost.get("/api/dashboard/quality-objectives", { params }).then(r => r.data),
+
+  getObjective: (id: number): Promise<QualityObjectiveItem> =>
+    $authHost.get(`/api/dashboard/quality-objectives/${id}`).then(r => r.data),
+
+  createObjective: (data: Record<string, any>): Promise<QualityObjectiveItem> =>
+    $authHost.post("/api/dashboard/quality-objectives", data).then(r => r.data),
+
+  updateObjective: (id: number, data: Record<string, any>): Promise<QualityObjectiveItem> =>
+    $authHost.put(`/api/dashboard/quality-objectives/${id}`, data).then(r => r.data),
+
+  deleteObjective: (id: number) =>
+    $authHost.delete(`/api/dashboard/quality-objectives/${id}`).then(r => r.data),
+};
