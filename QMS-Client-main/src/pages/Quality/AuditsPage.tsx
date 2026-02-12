@@ -7,6 +7,8 @@ import {
   AlertTriangle,
   BarChart3,
   Calendar,
+  Clock,
+  ArrowUpCircle,
 } from "lucide-react";
 import KpiRow from "../../components/qms/KpiRow";
 import TabBar from "../../components/qms/TabBar";
@@ -98,12 +100,52 @@ const resultColor = (r: string) => {
   return undefined;
 };
 
+/* ---- Follow-up data ---- */
+
+type FollowUpStatus = "OPEN" | "IN_PROGRESS" | "CLOSED" | "OVERDUE" | "ESCALATED";
+
+interface FollowUpRow {
+  [key: string]: unknown;
+  auditId: string;
+  finding: string;
+  type: string;
+  responsible: string;
+  dueDate: string;
+  status: FollowUpStatus;
+  daysLeft: number;
+  correctiveAction: string;
+}
+
+const FOLLOW_UPS: FollowUpRow[] = [
+  { auditId: "AUD-012", finding: "Отсутствие входного контроля PCB", type: "Значительное", responsible: "Яровой Е.", dueDate: "10.03.2026", status: "OPEN", daysLeft: 28, correctiveAction: "Разработать чек-лист входного контроля" },
+  { auditId: "AUD-012", finding: "Нет записей о квалификации поставщика ЭКБ", type: "Незначительное", responsible: "Костюков И.", dueDate: "28.02.2026", status: "IN_PROGRESS", daysLeft: 16, correctiveAction: "Провести аудит поставщика" },
+  { auditId: "AUD-011", finding: "Просрочены калибровки 2 паяльных станций", type: "Значительное", responsible: "Чирков И.", dueDate: "15.02.2026", status: "IN_PROGRESS", daysLeft: 3, correctiveAction: "Калибровка JBC и HAKKO" },
+  { auditId: "AUD-009", finding: "NC-045 не закрыт в срок (> 30 дн)", type: "Критическое", responsible: "Костюков И.", dueDate: "05.02.2026", status: "OVERDUE", daysLeft: -7, correctiveAction: "Эскалация в CAPA-019" },
+  { auditId: "AUD-009", finding: "Неполные записи root cause analysis", type: "Незначительное", responsible: "Яровой Е.", dueDate: "01.02.2026", status: "CLOSED", daysLeft: 0, correctiveAction: "Обновлён шаблон RCA" },
+  { auditId: "AUD-008", finding: "SUP-012: отсутствует сертификат ISO 9001", type: "Критическое", responsible: "Холтобин А.", dueDate: "01.02.2026", status: "ESCALATED", daysLeft: -11, correctiveAction: "Замена поставщика (ECR-2026-005)" },
+];
+
+const FOLLOW_STATUS_CFG: Record<FollowUpStatus, { label: string; color: string; bg: string }> = {
+  OPEN:        { label: "Открыто",    color: "#4A90E8", bg: "rgba(74,144,232,0.12)" },
+  IN_PROGRESS: { label: "В работе",   color: "#E8A830", bg: "rgba(232,168,48,0.12)" },
+  CLOSED:      { label: "Закрыто",    color: "#2DD4A8", bg: "rgba(45,212,168,0.12)" },
+  OVERDUE:     { label: "Просрочено", color: "#F06060", bg: "rgba(240,96,96,0.12)" },
+  ESCALATED:   { label: "Эскалация",  color: "#F06060", bg: "rgba(240,96,96,0.12)" },
+};
+
+const FINDING_TYPE_COLOR: Record<string, { color: string; bg: string }> = {
+  "Критическое":    { color: "#F06060", bg: "rgba(240,96,96,0.12)" },
+  "Значительное":   { color: "#E8A830", bg: "rgba(232,168,48,0.12)" },
+  "Незначительное":  { color: "#4A90E8", bg: "rgba(74,144,232,0.12)" },
+};
+
 /* ---- Tabs ---- */
 
 const TABS = [
   { key: "registry",  label: "Реестр" },
   { key: "plan",      label: "Годовой план" },
   { key: "findings",  label: "Замечания" },
+  { key: "followup",  label: "Follow-up" },
   { key: "reports",   label: "Отчёты" },
 ];
 
@@ -276,6 +318,78 @@ const AuditsPage: React.FC = () => {
             ))}
           </div>
         </Card>
+      )}
+
+      {/* ---- TAB: Follow-up ---- */}
+      {tab === "followup" && (
+        <DataTable
+          columns={[
+            {
+              key: "auditId",
+              label: "Аудит",
+              width: "100px",
+              render: (r: FollowUpRow) => <span className="font-mono text-asvo-accent">{r.auditId}</span>,
+            },
+            {
+              key: "finding",
+              label: "Замечание",
+              render: (r: FollowUpRow) => <span className="text-asvo-text text-[12px]">{r.finding}</span>,
+            },
+            {
+              key: "type",
+              label: "Тип",
+              align: "center" as const,
+              render: (r: FollowUpRow) => {
+                const tc = FINDING_TYPE_COLOR[r.type];
+                return tc ? <Badge color={tc.color} bg={tc.bg}>{r.type}</Badge> : <span className="text-asvo-text-mid">{r.type}</span>;
+              },
+            },
+            {
+              key: "correctiveAction",
+              label: "Корр. действие",
+              render: (r: FollowUpRow) => <span className="text-asvo-text-mid text-[12px]">{r.correctiveAction}</span>,
+            },
+            {
+              key: "responsible",
+              label: "Ответственный",
+              render: (r: FollowUpRow) => <span className="text-asvo-text-mid">{r.responsible}</span>,
+            },
+            {
+              key: "dueDate",
+              label: "Срок",
+              render: (r: FollowUpRow) => (
+                <span className="flex items-center gap-1 text-asvo-text-mid">
+                  <Clock size={12} className="text-asvo-text-dim" />
+                  {r.dueDate}
+                </span>
+              ),
+            },
+            {
+              key: "status",
+              label: "Статус",
+              align: "center" as const,
+              render: (r: FollowUpRow) => {
+                const s = FOLLOW_STATUS_CFG[r.status];
+                return <Badge color={s.color} bg={s.bg}>{s.label}</Badge>;
+              },
+            },
+            {
+              key: "daysLeft",
+              label: "Дней",
+              align: "center" as const,
+              render: (r: FollowUpRow) => {
+                if (r.status === "CLOSED") return <span className="text-asvo-text-dim">\u2014</span>;
+                const isOverdue = r.daysLeft < 0;
+                return (
+                  <span className={`text-[12px] font-semibold ${isOverdue ? "text-[#F06060]" : r.daysLeft <= 5 ? "text-[#E8A830]" : "text-asvo-text-mid"}`}>
+                    {isOverdue ? `${Math.abs(r.daysLeft)} проср.` : `${r.daysLeft} ост.`}
+                  </span>
+                );
+              },
+            },
+          ]}
+          data={FOLLOW_UPS}
+        />
       )}
 
       {/* ---- TAB: Reports ---- */}

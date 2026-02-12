@@ -13,7 +13,10 @@ import {
   ClipboardList, User, LogOut,
   ChevronDown, FileText, AlertTriangle, ClipboardCheck, BarChart3,
   Truck, GraduationCap, Wrench,
+  MessageSquareWarning, GitBranch, FlaskConical, Package,
 } from "lucide-react";
+
+import NotificationBell from "../NotificationBell";
 
 import {
   ADMIN_ROUTE,
@@ -22,6 +25,7 @@ import {
   QMS_DASHBOARD_ROUTE, DOCUMENTS_ROUTE, NC_ROUTE, CAPA_ROUTE,
   RISKS_ROUTE, SUPPLIERS_ROUTE, INTERNAL_AUDITS_ROUTE,
   TRAINING_ROUTE, EQUIPMENT_ROUTE, REVIEW_ROUTE,
+  COMPLAINTS_ROUTE, CHANGE_CONTROL_ROUTE, VALIDATION_ROUTE, PRODUCT_REGISTRY_ROUTE,
 } from "src/utils/consts";
 
 type NavItem = {
@@ -106,7 +110,11 @@ export const Header: React.FC = observer(() => {
         modules.isEnabled('qms.audit')     ? { label: "Аудиты", to: INTERNAL_AUDITS_ROUTE, icon: ClipboardCheck } : null,
         modules.isEnabled('qms.training')  ? { label: "Обучение", to: TRAINING_ROUTE, icon: GraduationCap } : null,
         modules.isEnabled('qms.equipment') ? { label: "Оборудование", to: EQUIPMENT_ROUTE, icon: Wrench } : null,
-        modules.isEnabled('qms.review')    ? { label: "Анализ руководства", to: REVIEW_ROUTE, icon: BarChart3 } : null,
+        modules.isEnabled('qms.review')      ? { label: "Анализ руководства", to: REVIEW_ROUTE, icon: BarChart3 } : null,
+        modules.isEnabled('qms.complaints')  ? { label: "Рекламации", to: COMPLAINTS_ROUTE, icon: MessageSquareWarning } : null,
+        modules.isEnabled('qms.changes')     ? { label: "Управление изм.", to: CHANGE_CONTROL_ROUTE, icon: GitBranch } : null,
+        modules.isEnabled('qms.validation')  ? { label: "Валидация", to: VALIDATION_ROUTE, icon: FlaskConical } : null,
+        modules.isEnabled('qms.product')     ? { label: "Реестр изделий", to: PRODUCT_REGISTRY_ROUTE, icon: Package } : null,
       ].filter(Boolean) as { label: string; to: string; icon?: React.ElementType }[],
     } as NavItem] : []),
     // WMS
@@ -236,6 +244,8 @@ export const Header: React.FC = observer(() => {
           <div className="hidden xl:block text-right">
             <DateTimeDisplay />
           </div>
+
+          {auth.isAuthenticated && <NotificationBell />}
 
           {auth.isAuthenticated ? (
             <Menu as="div" className="relative ml-2">

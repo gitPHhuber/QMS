@@ -13,6 +13,7 @@ import {
   Clock,
   TrendingUp,
 } from "lucide-react";
+import ProcessMap from "../../components/qms/ProcessMap";
 
 /* ------------------------------------------------------------------ */
 /*  KPI data                                                          */
@@ -308,6 +309,11 @@ export const QmsDashboardPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* ---------------------------------------------------------- */}
+      {/*  Process Map                                                */}
+      {/* ---------------------------------------------------------- */}
+      <ProcessMap />
     </div>
   );
 };

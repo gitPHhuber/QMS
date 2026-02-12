@@ -31,6 +31,10 @@ import AuditsPage from "./pages/Quality/AuditsPage";
 import TrainingPage from "./pages/Quality/TrainingPage";
 import EquipmentPage from "./pages/Quality/EquipmentPage";
 import ReviewPage from "./pages/Quality/ReviewPage";
+import ComplaintsPage from "./pages/Quality/ComplaintsPage";
+import ChangeControlPage from "./pages/Quality/ChangeControlPage";
+import ValidationPage from "./pages/Quality/ValidationPage";
+import ProductRegistryPage from "./pages/Quality/ProductRegistryPage";
 
 import {
   ADMIN_PCs_ROUTE,
@@ -61,6 +65,10 @@ import {
   TRAINING_ROUTE,
   EQUIPMENT_ROUTE,
   REVIEW_ROUTE,
+  COMPLAINTS_ROUTE,
+  CHANGE_CONTROL_ROUTE,
+  VALIDATION_ROUTE,
+  PRODUCT_REGISTRY_ROUTE,
 } from "./utils/consts";
 
 // QMS routes (rendered inside QmsLayout)
@@ -75,6 +83,10 @@ export const qmsRoutes = [
   { path: TRAINING_ROUTE, Component: TrainingPage },
   { path: EQUIPMENT_ROUTE, Component: EquipmentPage },
   { path: REVIEW_ROUTE, Component: ReviewPage },
+  { path: COMPLAINTS_ROUTE, Component: ComplaintsPage },
+  { path: CHANGE_CONTROL_ROUTE, Component: ChangeControlPage },
+  { path: VALIDATION_ROUTE, Component: ValidationPage },
+  { path: PRODUCT_REGISTRY_ROUTE, Component: ProductRegistryPage },
 ];
 
 export const authRoutes = [

@@ -11,6 +11,10 @@ import {
   GraduationCap,
   Wrench,
   Users,
+  MessageSquareWarning,
+  GitBranch,
+  FlaskConical,
+  Package,
 } from "lucide-react";
 
 const SIDEBAR_ITEMS = [
@@ -23,7 +27,11 @@ const SIDEBAR_ITEMS = [
   { label: "Аудиты",          to: "/qms/audits",      icon: ClipboardList },
   { label: "Обучение",        to: "/qms/training",    icon: GraduationCap },
   { label: "Оборудование",    to: "/qms/equipment",   icon: Wrench },
-  { label: "Анализ руководства", to: "/qms/review",   icon: Users },
+  { label: "Анализ руководства", to: "/qms/review",          icon: Users },
+  { label: "Рекламации",         to: "/qms/complaints",      icon: MessageSquareWarning },
+  { label: "Управление изм.",    to: "/qms/change-control",  icon: GitBranch },
+  { label: "Валидация",          to: "/qms/validation",      icon: FlaskConical },
+  { label: "Реестр изделий",     to: "/qms/products",        icon: Package },
 ];
 
 const QmsLayout: React.FC = () => (

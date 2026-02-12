@@ -11,15 +11,19 @@ coreModule.register(router);
 
 // 2. Conditional module routes
 const MODULE_DIRS = {
-  'qms.dms':       'qms-dms',
-  'qms.nc':        'qms-nc',
-  'qms.risk':      'qms-risk',
-  'qms.supplier':  'qms-supplier',
-  'qms.audit':     'qms-audit',
-  'qms.training':  'qms-training',
-  'qms.equipment': 'qms-equipment',
-  'qms.review':    'qms-review',
-  'wms.warehouse': 'wms',
+  'qms.dms':        'qms-dms',
+  'qms.nc':         'qms-nc',
+  'qms.risk':       'qms-risk',
+  'qms.supplier':   'qms-supplier',
+  'qms.audit':      'qms-audit',
+  'qms.training':   'qms-training',
+  'qms.equipment':  'qms-equipment',
+  'qms.review':     'qms-review',
+  'qms.complaints': 'qms-complaints',
+  'qms.changes':    'qms-change',
+  'qms.validation': 'qms-validation',
+  'qms.product':    'qms-product',
+  'wms.warehouse':  'wms',
 };
 
 const loadedDirs = new Set();
