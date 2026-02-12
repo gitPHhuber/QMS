@@ -8,6 +8,7 @@ const fileUpload = require("express-fileupload");
 const router = require("./routes/index");
 const errorHandler = require("./middleware/ErrorHandlingMiddleware");
 const path = require("path");
+const { startAuditRetentionScheduler } = require("./modules/core/utils/auditRetentionService");
 
 const PORT = process.env.PORT || 5000;
 const app = express();
@@ -251,6 +252,7 @@ const start = async () => {
 
 
     await initInitialData();
+    startAuditRetentionScheduler();
 
     app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
   } catch (e) {

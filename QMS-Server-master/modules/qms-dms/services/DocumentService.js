@@ -57,6 +57,57 @@ const DOCUMENT_ATTRIBUTES = [
 ];
 
 class DocumentService {
+  normalizeIsoSection(isoSection) {
+    if (!isoSection) return null;
+    const normalized = String(isoSection).trim();
+    return normalized || null;
+  }
+
+  async generateDocumentCode(transaction, { type, isoSection }) {
+    const prefix = TYPE_CODE_PREFIX[type] || "ДОК";
+    const normalizedIsoSection = this.normalizeIsoSection(isoSection);
+
+    if (normalizedIsoSection) {
+      const baseCode = `${prefix}-${normalizedIsoSection}`;
+
+      const existing = await Document.findAll({
+        where: {
+          [Op.or]: [
+            { code: baseCode },
+            { code: { [Op.like]: `${baseCode}-%` } },
+          ],
+        },
+        attributes: ["code"],
+        raw: true,
+        transaction,
+      });
+
+      if (!existing.length) {
+        return baseCode;
+      }
+
+      let maxDup = 1;
+      for (const row of existing) {
+        if (row.code === baseCode) continue;
+        const suffix = String(row.code).slice(baseCode.length + 1);
+        if (/^\d+$/.test(suffix)) {
+          maxDup = Math.max(maxDup, Number(suffix));
+        }
+      }
+
+      return `${baseCode}-${maxDup + 1}`;
+    }
+
+    const [maxResult] = await sequelize.query(
+      `SELECT MAX(CAST(SUBSTRING(code FROM '(\\d+)$') AS INTEGER)) AS max_num
+       FROM documents WHERE type = :type`,
+      { replacements: { type }, transaction, type: sequelize.QueryTypes.SELECT }
+    );
+
+    const number = (maxResult?.max_num || 0) + 1;
+    return `${prefix}-СМК-${String(number).padStart(3, "0")}`;
+  }
+
   // ═══════════════════════════════════════════════════════════════
   // СОЗДАНИЕ ДОКУМЕНТА
   // ═══════════════════════════════════════════════════════════════
@@ -71,16 +122,7 @@ class DocumentService {
     });
 
     try {
-      // Генерируем код: используем MAX по числовой части кода для предотвращения коллизий
-      const prefix = TYPE_CODE_PREFIX[type] || "ДОК";
-      const [maxResult] = await sequelize.query(
-        `SELECT MAX(CAST(SUBSTRING(code FROM '(\\d+)$') AS INTEGER)) AS max_num
-         FROM documents WHERE type = :type`,
-        { replacements: { type }, transaction, type: sequelize.QueryTypes.SELECT }
-      );
-
-      const number = (maxResult?.max_num || 0) + 1;
-      const code = `${prefix}-СМК-${String(number).padStart(3, "0")}`;
+      const code = await this.generateDocumentCode(transaction, { type, isoSection });
 
       // Создаём документ
       const document = await Document.create(
@@ -319,18 +361,30 @@ class DocumentService {
         }
       }
 
+      const decisionTimestamp = new Date();
+      const version = approval.version;
+      const doc = version.document;
+
+      const signaturePayload = JSON.stringify({
+        approvalId: approval.id,
+        versionId: version.id,
+        documentId: doc.id,
+        decidedById: req.user.id,
+        decision,
+        decidedAt: decisionTimestamp.toISOString(),
+        fileHash: version.fileHash || null,
+      });
+      const signatureHash = crypto.createHash("sha256").update(signaturePayload).digest("hex");
+
       // Записываем решение
       await approval.update(
         {
           decision,
           comment: comment || null,
-          decidedAt: new Date(),
+          decidedAt: decisionTimestamp,
         },
         { transaction }
       );
-
-      const version = approval.version;
-      const doc = version.document;
 
       if (decision === APPROVAL_DECISIONS.REJECTED || decision === APPROVAL_DECISIONS.RETURNED) {
         // Отклонено — возвращаем в DRAFT
@@ -362,7 +416,13 @@ class DocumentService {
       }
 
       // Аудит внутри транзакции для атомарности
-      await logDocumentApproval(req, doc, version, decision, { comment, transaction });
+      await logDocumentApproval(req, doc, version, decision, {
+        comment,
+        signatureType: "SIMPLE_AUDIT_HASH",
+        signatureHash,
+        signedAt: decisionTimestamp.toISOString(),
+        transaction,
+      });
 
       await transaction.commit();
 
@@ -601,11 +661,16 @@ class DocumentService {
     if (category) where.category = category;
     if (ownerId) where.ownerId = ownerId;
     if (search) {
-      where[Op.or] = [
-        { title: { [Op.iLike]: `%${search}%` } },
-        { code: { [Op.iLike]: `%${search}%` } },
-        { description: { [Op.iLike]: `%${search}%` } },
-      ];
+      const searchText = String(search).trim();
+      if (searchText) {
+        where[Op.or] = [
+          { title: { [Op.iLike]: `%${searchText}%` } },
+          { code: { [Op.iLike]: `%${searchText}%` } },
+          { description: { [Op.iLike]: `%${searchText}%` } },
+          sequelize.where(sequelize.col("currentVersion.content"), { [Op.iLike]: `%${searchText}%` }),
+          sequelize.where(sequelize.col("currentVersion.fileName"), { [Op.iLike]: `%${searchText}%` }),
+        ];
+      }
     }
 
     return Document.findAndCountAll({
