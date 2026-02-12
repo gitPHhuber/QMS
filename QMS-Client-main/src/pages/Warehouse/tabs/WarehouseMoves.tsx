@@ -57,7 +57,7 @@ export const WarehouseMoves: React.FC<Props> = ({ sections }) => {
       if (!currentBox) return;
 
       let delta = 0;
-      let op = opType;
+      const op = opType;
 
       if (opType === "CONSUME") {
           const amount = Number(consumeAmount);

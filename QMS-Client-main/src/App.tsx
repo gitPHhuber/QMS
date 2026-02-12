@@ -133,7 +133,7 @@ const App = observer(() => {
       />
       <Header />
       <main className="flex-1 overflow-auto pb-4 pt-14">
-        <ErrorBoundary>
+        <ErrorBoundary key={location.pathname}>
           <AppRouter />
         </ErrorBoundary>
       </main>
