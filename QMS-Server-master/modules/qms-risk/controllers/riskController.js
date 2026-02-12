@@ -1,5 +1,7 @@
 const { RiskRegister, RiskAssessment, RiskMitigation } = require("../models/Risk");
-const { User, Capa } = require("../../../models/index");
+const models = require("../../../models/index");
+const { User } = models;
+const Capa = models.Capa || null;
 const RiskMatrixService = require("../services/RiskMatrixService");
 const RiskMonitoringService = require("../services/RiskMonitoringService");
 const { logAudit } = require("../../core/utils/auditLogger");
@@ -31,11 +33,16 @@ const getAll = async (req, res, next) => {
     const limitNum = Math.min(parseInt(limit) || 50, 100);
     const pageNum = parseInt(page) || 1;
     const offset = (pageNum - 1) * limitNum;
+    const mitigationInclude = { model: RiskMitigation, as: "mitigations" };
+    if (Capa) {
+      mitigationInclude.include = [{ model: Capa, as: "capa", attributes: ["id", "number", "status", "title"] }];
+    }
+
     const { count, rows } = await RiskRegister.findAndCountAll({
       where,
       include: [
         { model: RiskAssessment, as: "assessments", limit: 1, order: [["assessmentDate", "DESC"]] },
-        { model: RiskMitigation, as: "mitigations", include: [{ model: Capa, as: "capa", attributes: ["id", "number", "status", "title"] }] },
+        mitigationInclude,
         { model: User, as: "owner", attributes: ["id", "name", "surname"] },
       ],
       order: [["initialRiskLevel", "DESC"], ["createdAt", "DESC"]],
@@ -52,18 +59,14 @@ const getAll = async (req, res, next) => {
 
 const getOne = async (req, res, next) => {
   try {
-
-    const risk = await RiskRegister.findByPk(req.params.id, {
-      include: [
-        { model: RiskAssessment, as: "assessments", order: [["assessmentDate", "DESC"]] },
-        { model: RiskMitigation, as: "mitigations", order: [["createdAt", "ASC"]], include: [{ model: Capa, as: "capa", attributes: ["id", "number", "status", "title"] }] },
-        { model: User, as: "owner", attributes: ["id", "name", "surname"] },
-      ],
-    });
+    const mitigationInc = { model: RiskMitigation, as: "mitigations", order: [["createdAt", "ASC"]] };
+    if (Capa) {
+      mitigationInc.include = [{ model: Capa, as: "capa", attributes: ["id", "number", "status", "title"] }];
+    }
 
     const includes = [
       { model: RiskAssessment, as: "assessments", order: [["assessmentDate", "DESC"]] },
-      { model: RiskMitigation, as: "mitigations", order: [["createdAt", "ASC"]] },
+      mitigationInc,
       { model: User, as: "owner", attributes: ["id", "name", "surname"] },
     ];
 
@@ -77,7 +80,6 @@ const getOne = async (req, res, next) => {
     } catch { /* NC модуль не доступен */ }
 
     const risk = await RiskRegister.findByPk(req.params.id, { include: includes });
-
 
     if (!risk) return next(ApiError.notFound("Риск не найден"));
     res.json(risk);
@@ -181,7 +183,16 @@ const addAssessment = async (req, res, next) => {
     if (!risk) return next(ApiError.notFound("Риск не найден"));
 
     const { level, riskClass } = RiskMatrixService.calculate(probability, severity);
-    const previousClass = assessmentType === "POST_MITIGATION" ? risk.residualRiskClass : risk.initialRiskClass;
+
+    // Derive previousClass from the latest assessment record, not stale initial/residual fields
+    const latestAssessment = await RiskAssessment.findOne({
+      where: { riskRegisterId: risk.id },
+      order: [["assessmentDate", "DESC"]],
+      attributes: ["riskClass"],
+    });
+    const previousClass = latestAssessment
+      ? latestAssessment.riskClass
+      : (assessmentType === "POST_MITIGATION" ? risk.residualRiskClass : risk.initialRiskClass);
 
     const assessment = await RiskAssessment.create({
       riskRegisterId: risk.id,

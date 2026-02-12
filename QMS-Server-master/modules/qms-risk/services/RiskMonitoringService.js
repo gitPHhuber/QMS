@@ -35,12 +35,11 @@ function shouldSendDeduped(key, dedupPeriodMs) {
   const now = Date.now();
   const lastSentAt = dedupCache.get(key);
 
-  if (!lastSentAt || now - lastSentAt >= dedupPeriodMs) {
-    dedupCache.set(key, now);
-    return true;
-  }
+  return !lastSentAt || now - lastSentAt >= dedupPeriodMs;
+}
 
-  return false;
+function markDeduped(key) {
+  dedupCache.set(key, Date.now());
 }
 
 class RiskMonitoringService {
@@ -92,6 +91,9 @@ class RiskMonitoringService {
         description: title,
         metadata,
       });
+
+      // Mark dedup AFTER successful notification + audit to avoid silent loss on failure
+      markDeduped(dedupKey);
     }
   }
 

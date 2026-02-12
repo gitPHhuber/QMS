@@ -146,6 +146,12 @@ module.exports = {
     const transaction = await queryInterface.sequelize.transaction();
 
     try {
+      // Drop indexes BEFORE removing columns to avoid implicit cascade errors
+      await queryInterface.removeIndex("complaints", "idx_complaint_vigilance_status", { transaction });
+      await queryInterface.removeIndex("complaints", "idx_complaint_vigilance_deadline", { transaction });
+      await queryInterface.removeIndex("complaints", "idx_complaint_type", { transaction });
+      await queryInterface.removeIndex("complaints", "idx_complaint_reportable", { transaction });
+
       const columns = [
         "complaintType", "reporterOrganization", "reporterAddress",
         "eventDate", "countryOfOccurrence",
@@ -162,11 +168,6 @@ module.exports = {
       for (const col of columns) {
         await queryInterface.removeColumn("complaints", col, { transaction });
       }
-
-      await queryInterface.removeIndex("complaints", "idx_complaint_vigilance_status", { transaction });
-      await queryInterface.removeIndex("complaints", "idx_complaint_vigilance_deadline", { transaction });
-      await queryInterface.removeIndex("complaints", "idx_complaint_type", { transaction });
-      await queryInterface.removeIndex("complaints", "idx_complaint_reportable", { transaction });
 
       await queryInterface.sequelize.query(
         `DROP TYPE IF EXISTS "enum_complaints_complaintType"`,
