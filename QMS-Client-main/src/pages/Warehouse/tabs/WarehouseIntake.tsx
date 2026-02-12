@@ -136,25 +136,25 @@ export const WarehouseIntake: React.FC<Props> = ({ sections, productsList, compo
         <div className="xl:col-span-8 space-y-6">
 
             <div className="flex gap-2 overflow-x-auto pb-2">
-                <button onClick={() => applyTemplate("THERMAL")} className="whitespace-nowrap px-4 py-2 bg-white border rounded text-xs font-bold text-gray-600 hover:bg-blue-50 transition flex gap-2"><Copy size={14}/> Пример: Тепловизоры</button>
-                <button onClick={() => applyTemplate("SUB")} className="whitespace-nowrap px-4 py-2 bg-white border rounded text-xs font-bold text-gray-600 hover:bg-purple-50 transition flex gap-2"><Copy size={14}/> Пример: Субподряд</button>
-                <button onClick={() => applyTemplate("CABLE")} className="whitespace-nowrap px-4 py-2 bg-white border rounded text-xs font-bold text-gray-600 hover:bg-orange-50 transition flex gap-2"><Copy size={14}/> Пример: Кабель</button>
+                <button onClick={() => applyTemplate("THERMAL")} className="whitespace-nowrap px-4 py-2 bg-asvo-surface border border-asvo-border rounded text-xs font-bold text-asvo-text-mid hover:bg-asvo-blue-dim transition flex gap-2"><Copy size={14}/> Пример: Тепловизоры</button>
+                <button onClick={() => applyTemplate("SUB")} className="whitespace-nowrap px-4 py-2 bg-asvo-surface border border-asvo-border rounded text-xs font-bold text-asvo-text-mid hover:bg-asvo-purple-dim transition flex gap-2"><Copy size={14}/> Пример: Субподряд</button>
+                <button onClick={() => applyTemplate("CABLE")} className="whitespace-nowrap px-4 py-2 bg-asvo-surface border border-asvo-border rounded text-xs font-bold text-asvo-text-mid hover:bg-asvo-amber-dim transition flex gap-2"><Copy size={14}/> Пример: Кабель</button>
             </div>
 
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-                <h2 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
-                    <ClipboardList className="text-indigo-600"/> Новая поставка
+            <div className="bg-asvo-surface p-6 rounded-2xl shadow-sm border border-asvo-border">
+                <h2 className="text-lg font-bold text-asvo-text mb-6 flex items-center gap-2">
+                    <ClipboardList className="text-asvo-accent"/> Новая поставка
                 </h2>
 
 
                 <div className="mb-4">
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Что принимаем?</label>
+                    <label className="block text-sm font-semibold text-asvo-text-mid mb-2">Что принимаем?</label>
                     <div className="flex gap-2">
                         {(['PRODUCT', 'COMPONENT', 'OTHER'] as const).map(m => (
                             <button
                                 key={m}
                                 onClick={() => { setIntakeMode(m); setSelectedSkuId(""); setLabel(""); }}
-                                className={`flex-1 py-2 rounded-lg border text-sm font-bold transition ${intakeMode === m ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-gray-50 text-gray-600'}`}
+                                className={`flex-1 py-2 rounded-lg border text-sm font-bold transition ${intakeMode === m ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-asvo-surface-2 text-asvo-text-mid border-asvo-border'}`}
                             >
                                 {m === 'PRODUCT' ? 'Изделие' : m === 'COMPONENT' ? 'Комплектующее' : 'Прочее'}
                             </button>
@@ -165,9 +165,9 @@ export const WarehouseIntake: React.FC<Props> = ({ sections, productsList, compo
 
                 {(intakeMode === 'PRODUCT' || intakeMode === 'COMPONENT') && (
                     <div className="mb-4">
-                        <label className="block text-sm font-semibold text-gray-700 mb-1">Выберите из справочника</label>
+                        <label className="block text-sm font-semibold text-asvo-text-mid mb-1">Выберите из справочника</label>
                         <select
-                            className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-emerald-500"
+                            className="w-full p-3 border border-asvo-border rounded-xl bg-asvo-surface-2 text-asvo-text focus:ring-2 focus:ring-asvo-accent"
                             value={selectedSkuId} onChange={e => setSelectedSkuId(e.target.value ? Number(e.target.value) : "")}
                         >
                             <option value="">-- Не выбрано --</option>
@@ -181,70 +181,70 @@ export const WarehouseIntake: React.FC<Props> = ({ sections, productsList, compo
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                      <div className="md:col-span-2">
-                         <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Название</label>
-                         <input value={label} onChange={e => setLabel(e.target.value)} className="w-full p-3 border rounded-xl" placeholder="Например: Контроллер FC v2.4"/>
+                         <label className="block text-xs font-bold text-asvo-text-dim uppercase mb-1">Название</label>
+                         <input value={label} onChange={e => setLabel(e.target.value)} className="w-full p-3 border border-asvo-border rounded-xl bg-asvo-surface-2 text-asvo-text" placeholder="Например: Контроллер FC v2.4"/>
                      </div>
                      <div>
-                         <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Партия</label>
-                         <input value={batchName} onChange={e => setBatchName(e.target.value)} className="w-full p-2 border rounded-lg text-sm" placeholder="№ партии" />
+                         <label className="block text-xs font-bold text-asvo-text-dim uppercase mb-1">Партия</label>
+                         <input value={batchName} onChange={e => setBatchName(e.target.value)} className="w-full p-2 border border-asvo-border rounded-lg bg-asvo-surface-2 text-asvo-text text-sm" placeholder="№ партии" />
                      </div>
                      <div>
-                         <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Проект</label>
-                         <input value={projectName} onChange={e => setProjectName(e.target.value)} className="w-full p-2 border rounded-lg text-sm" placeholder="Опционально" />
+                         <label className="block text-xs font-bold text-asvo-text-dim uppercase mb-1">Проект</label>
+                         <input value={projectName} onChange={e => setProjectName(e.target.value)} className="w-full p-2 border border-asvo-border rounded-lg bg-asvo-surface-2 text-asvo-text text-sm" placeholder="Опционально" />
                      </div>
                      <div>
-                         <label className="block text-xs font-medium text-gray-500 mb-1 uppercase">Куда (Участок)</label>
-                         <select value={intakeSectionId} onChange={e => setIntakeSectionId(Number(e.target.value))} className="w-full p-2 border rounded-lg text-sm bg-gray-50">
+                         <label className="block text-xs font-medium text-asvo-text-dim mb-1 uppercase">Куда (Участок)</label>
+                         <select value={intakeSectionId} onChange={e => setIntakeSectionId(Number(e.target.value))} className="w-full p-2 border border-asvo-border rounded-lg text-sm bg-asvo-surface-2 text-asvo-text">
                             <option value="">-- Склад Приёмки --</option>
                             {sections.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}
                          </select>
                      </div>
                      <div>
-                         <label className="block text-xs font-medium text-gray-500 mb-1 uppercase">Статус</label>
-                         <select value={intakeStatus} onChange={e => setIntakeStatus(e.target.value)} className="w-full p-2 border rounded-lg text-sm">
+                         <label className="block text-xs font-medium text-asvo-text-dim mb-1 uppercase">Статус</label>
+                         <select value={intakeStatus} onChange={e => setIntakeStatus(e.target.value)} className="w-full p-2 border border-asvo-border rounded-lg text-sm bg-asvo-surface-2 text-asvo-text">
                              <option value="ON_STOCK">На складе (Обычный)</option>
                              <option value="IN_WORK">Сразу в работу</option>
                          </select>
                      </div>
                      <div className="md:col-span-2">
-                         <label className="block text-xs font-medium text-gray-500 mb-1 uppercase">Примечание</label>
-                         <input value={intakeNotes} onChange={e => setIntakeNotes(e.target.value)} className="w-full p-2 border rounded-lg text-sm" placeholder="..." />
+                         <label className="block text-xs font-medium text-asvo-text-dim mb-1 uppercase">Примечание</label>
+                         <input value={intakeNotes} onChange={e => setIntakeNotes(e.target.value)} className="w-full p-2 border border-asvo-border rounded-lg text-sm bg-asvo-surface-2 text-asvo-text" placeholder="..." />
                      </div>
                 </div>
 
 
-                <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-100 mb-6">
+                <div className="bg-asvo-accent-dim p-4 rounded-xl border border-asvo-accent/20 mb-6">
                     <div className="flex justify-between mb-2">
-                        <h4 className="text-sm font-bold text-indigo-900 flex items-center gap-2"><Layers size={14}/> Расчет мест</h4>
-                        <div className="flex text-[10px] font-bold bg-white rounded border overflow-hidden">
-                            <button onClick={() => setMeasureType("PCS")} className={`px-2 py-1 ${measureType === 'PCS' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500'}`}>ШТ</button>
-                            <button onClick={() => setMeasureType("METERS")} className={`px-2 py-1 ${measureType === 'METERS' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500'}`}>МЕТРЫ</button>
+                        <h4 className="text-sm font-bold text-asvo-accent flex items-center gap-2"><Layers size={14}/> Расчет мест</h4>
+                        <div className="flex text-[10px] font-bold bg-asvo-surface rounded border border-asvo-border overflow-hidden">
+                            <button onClick={() => setMeasureType("PCS")} className={`px-2 py-1 ${measureType === 'PCS' ? 'bg-asvo-accent-dim text-asvo-accent' : 'text-asvo-text-dim'}`}>ШТ</button>
+                            <button onClick={() => setMeasureType("METERS")} className={`px-2 py-1 ${measureType === 'METERS' ? 'bg-asvo-accent-dim text-asvo-accent' : 'text-asvo-text-dim'}`}>МЕТРЫ</button>
                         </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4 mb-2">
                          <div>
-                             <label className="text-xs text-gray-600">Всего пришло ({unit})</label>
-                             <input type="number" min={1} value={shipmentTotal} onChange={e => setShipmentTotal(Number(e.target.value))} className="w-full p-2 border rounded-lg font-bold" placeholder="0"/>
+                             <label className="text-xs text-asvo-text-mid">Всего пришло ({unit})</label>
+                             <input type="number" min={1} value={shipmentTotal} onChange={e => setShipmentTotal(Number(e.target.value))} className="w-full p-2 border border-asvo-border rounded-lg font-bold bg-asvo-surface-2 text-asvo-text" placeholder="0"/>
                          </div>
                          <div>
-                             <label className="text-xs text-gray-600">В одной таре ({unit})</label>
-                             <input type="number" min={1} value={capacityPerUnit} onChange={e => setCapacityPerUnit(Number(e.target.value))} className="w-full p-2 border rounded-lg" placeholder="1"/>
+                             <label className="text-xs text-asvo-text-mid">В одной таре ({unit})</label>
+                             <input type="number" min={1} value={capacityPerUnit} onChange={e => setCapacityPerUnit(Number(e.target.value))} className="w-full p-2 border border-asvo-border rounded-lg bg-asvo-surface-2 text-asvo-text" placeholder="1"/>
                          </div>
                     </div>
 
-                    <div className="text-sm text-indigo-800 font-medium flex justify-between items-center pt-2 border-t border-indigo-200">
+                    <div className="text-sm text-asvo-accent font-medium flex justify-between items-center pt-2 border-t border-asvo-accent/20">
                         <span>Будет создано этикеток:</span>
                         <span className="text-xl font-black">{batchCalc.totalUnits}</span>
                     </div>
                     {batchCalc.remainder > 0 && (
-                        <div className="mt-2 text-xs text-orange-600 font-bold flex items-center gap-1">
+                        <div className="mt-2 text-xs text-asvo-amber font-bold flex items-center gap-1">
                             <AlertCircle size={12}/> {batchCalc.fullUnits} полных + 1 с остатком ({batchCalc.remainder} {unit})
                         </div>
                     )}
                 </div>
 
-                {intakeError && <div className="text-sm text-red-600 mb-4 p-3 bg-red-50 rounded-lg">{intakeError}</div>}
+                {intakeError && <div className="text-sm text-asvo-red mb-4 p-3 bg-asvo-red-dim rounded-lg">{intakeError}</div>}
 
                 <div className="flex justify-end">
                      <button
@@ -259,13 +259,13 @@ export const WarehouseIntake: React.FC<Props> = ({ sections, productsList, compo
 
             <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                    <h3 className="text-lg font-bold text-gray-700">Результат ({createdBoxes.length})</h3>
+                    <h3 className="text-lg font-bold text-asvo-text">Результат ({createdBoxes.length})</h3>
                     <div className="flex gap-2">
 
                         {createdBoxes.length > 0 && (
                             <button
                                 onClick={() => printBoxesPdf(createdBoxes.map(b => b.id))}
-                                className="flex items-center gap-2 text-sm font-bold text-white bg-indigo-600 px-3 py-2 rounded-lg hover:bg-indigo-700 transition shadow-md"
+                                className="flex items-center gap-2 text-sm font-bold text-white bg-asvo-accent px-3 py-2 rounded-lg hover:bg-asvo-accent/80 transition shadow-md"
                             >
                                 <Printer size={18}/> PDF
                             </button>
@@ -274,7 +274,7 @@ export const WarehouseIntake: React.FC<Props> = ({ sections, productsList, compo
                         {createdBoxes.length > 0 && (
                             <button
                                 onClick={() => downloadBoxesExcel(createdBoxes.map(b => b.id))}
-                                className="flex items-center gap-2 text-sm font-bold text-green-700 bg-green-100 px-3 py-2 rounded-lg hover:bg-green-200 transition"
+                                className="flex items-center gap-2 text-sm font-bold text-asvo-green bg-asvo-green-dim px-3 py-2 rounded-lg hover:bg-asvo-green/20 transition"
                             >
                                 <FileSpreadsheet size={18}/> Excel
                             </button>
@@ -282,16 +282,16 @@ export const WarehouseIntake: React.FC<Props> = ({ sections, productsList, compo
                     </div>
                 </div>
 
-                {createdBoxes.length === 0 && <div className="text-center py-10 bg-white rounded-2xl border-2 border-dashed border-gray-200 text-gray-400">Здесь появятся этикетки</div>}
+                {createdBoxes.length === 0 && <div className="text-center py-10 bg-asvo-surface rounded-2xl border-2 border-dashed border-asvo-border text-asvo-text-dim">Здесь появятся этикетки</div>}
 
                 <div className="grid grid-cols-2 gap-4 max-h-[600px] overflow-y-auto pr-2">
                     {createdBoxes.map(box => (
-                        <div key={box.id} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col items-center text-center relative group hover:border-indigo-300 transition">
-                            <div className="absolute top-2 left-2 text-[10px] font-mono bg-gray-100 px-1.5 rounded text-gray-500 font-bold">{box.shortCode}</div>
-                            <div className="mb-2 bg-white p-1"><QRCode value={box.qrCode} size={80} /></div>
-                            <div className="text-xs font-bold text-gray-900 w-full truncate">{box.label}</div>
-                            <div className="text-[10px] text-gray-500 mt-1">ID: {box.id}</div>
-                            <div className="mt-2 bg-gray-900 text-white text-xs font-bold px-2 py-0.5 rounded">{box.quantity} {box.unit}</div>
+                        <div key={box.id} className="bg-asvo-surface p-4 rounded-xl border border-asvo-border shadow-sm flex flex-col items-center text-center relative group hover:border-asvo-accent transition">
+                            <div className="absolute top-2 left-2 text-[10px] font-mono bg-asvo-surface-2 px-1.5 rounded text-asvo-text-dim font-bold">{box.shortCode}</div>
+                            <div className="mb-2 bg-white p-1 rounded"><QRCode value={box.qrCode} size={80} /></div>
+                            <div className="text-xs font-bold text-asvo-text w-full truncate">{box.label}</div>
+                            <div className="text-[10px] text-asvo-text-dim mt-1">ID: {box.id}</div>
+                            <div className="mt-2 bg-asvo-surface-3 text-asvo-text text-xs font-bold px-2 py-0.5 rounded">{box.quantity} {box.unit}</div>
                         </div>
                     ))}
                 </div>

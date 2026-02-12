@@ -20,8 +20,10 @@
 @tailwind components;
 @tailwind utilities;
 
+
 html, body, #root {
-  background-color: #0b1120;
+  background-color: #080E14;
+
   margin: 0;
   padding: 0;
 }
