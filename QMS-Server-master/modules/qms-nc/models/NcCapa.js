@@ -73,6 +73,8 @@ const Nonconformity = sequelize.define("nonconformity", {
   dueDate: { type: DataTypes.DATEONLY, allowNull: true },
   closedAt: { type: DataTypes.DATE, allowNull: true },
   capaRequired: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+  // Связь с реестром рисков (NC↔Risk интеграция, ISO 14971)
+  riskRegisterId: { type: DataTypes.INTEGER, allowNull: true },
 });
 
 const NcAttachment = sequelize.define("nc_attachment", {
@@ -132,11 +134,17 @@ const CapaVerification = sequelize.define("capa_verification", {
 
 // ═══ Associations ═══
 
-function setupNcCapaAssociations({ User, Document }) {
+function setupNcCapaAssociations({ User, Document, RiskRegister }) {
   // NC → Users
   Nonconformity.belongsTo(User, { foreignKey: "reportedById", as: "reportedBy" });
   Nonconformity.belongsTo(User, { foreignKey: "assignedToId", as: "assignedTo" });
   Nonconformity.belongsTo(User, { foreignKey: "closedById", as: "closedBy" });
+
+  // NC ↔ Risk (двусторонняя связь ISO 14971 ↔ ISO 8.3)
+  if (RiskRegister) {
+    Nonconformity.belongsTo(RiskRegister, { foreignKey: "riskRegisterId", as: "risk" });
+    RiskRegister.hasMany(Nonconformity, { foreignKey: "riskRegisterId", as: "nonconformities" });
+  }
 
   // NC → Attachments
   Nonconformity.hasMany(NcAttachment, { foreignKey: "nonconformityId", as: "attachments", onDelete: "CASCADE" });

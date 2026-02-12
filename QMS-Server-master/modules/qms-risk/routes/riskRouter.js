@@ -17,6 +17,9 @@ router.get("/:id",       ...protect, checkAbility("risk.read"),    riskControlle
 router.post("/",         ...protect, checkAbility("risk.create"),  riskController.create);
 router.put("/:id",       ...protect, checkAbility("risk.update"),  riskController.update);
 
+// Связанные NC (NC↔Risk интеграция)
+router.get("/:id/nonconformities", ...protect, checkAbility("risk.read"), riskController.getLinkedNCs);
+
 // Оценка
 router.post("/:id/assess",    ...protect, checkAbility("risk.assess"),  riskController.addAssessment);
 router.post("/:id/accept",    ...protect, checkAbility("risk.accept"),  riskController.acceptRisk);
