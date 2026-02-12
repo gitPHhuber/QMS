@@ -87,7 +87,12 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         modules: new ModuleStore(),
       }}
     >
-      <BrowserRouter>
+      <BrowserRouter
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
+      >
         <AuthWrapper>
           <App />
         </AuthWrapper>

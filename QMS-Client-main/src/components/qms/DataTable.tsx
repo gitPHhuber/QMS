@@ -14,7 +14,7 @@ interface DataTableProps<T> {
   onRowClick?: (row: T) => void;
 }
 
-function DataTable<T extends Record<string, unknown>>({
+function DataTable<T extends object>({
   columns,
   data,
   onRowClick,
@@ -62,7 +62,7 @@ function DataTable<T extends Record<string, unknown>>({
                   >
                     {col.render
                       ? col.render(row, i)
-                      : (row[col.key] as React.ReactNode) ?? "—"}
+                      : ((row as Record<string, unknown>)[col.key] as React.ReactNode) ?? "—"}
                   </td>
                 ))}
               </tr>
