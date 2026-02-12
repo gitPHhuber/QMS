@@ -1,6 +1,7 @@
 const { AuditPlan, AuditSchedule, AuditFinding } = require("../models/InternalAudit");
 const { User } = require("../../../models/index");
 const { logAudit } = require("../../core/utils/auditLogger");
+const NcCapaService = require("../../qms-nc/services/NcCapaService");
 
 // ═══════════════════════════════════════════════════════════════
 // AuditPlan CRUD
@@ -223,8 +224,113 @@ const getStats = async (req, res) => {
   }
 };
 
+// ═══════════════════════════════════════════════════════════════
+// Автосоздание CAPA из audit finding (ISO 8.5.2)
+// ═══════════════════════════════════════════════════════════════
+
+const createCapaFromFinding = async (req, res) => {
+  try {
+    const findingId = parseInt(req.params.id);
+    if (isNaN(findingId)) return res.status(400).json({ error: "Invalid finding ID" });
+
+    const finding = await AuditFinding.findByPk(findingId);
+    if (!finding) return res.status(404).json({ error: "Finding not found" });
+
+    // Загружаем связанный audit schedule для формирования описания
+    const schedule = await AuditSchedule.findByPk(finding.auditScheduleId, {
+      attributes: ["id", "auditNumber", "title"],
+    });
+
+    // Проверяем что finding ещё не привязан к NC/CAPA
+    if (finding.nonconformityId || finding.capaId) {
+      return res.status(400).json({
+        error: "Finding уже связан с NC/CAPA",
+        nonconformityId: finding.nonconformityId,
+        capaId: finding.capaId,
+      });
+    }
+
+    // Только findings типа NC (MAJOR_NC, MINOR_NC) генерируют CAPA
+    const isNcFinding = ["MAJOR_NC", "MINOR_NC"].includes(finding.type);
+    if (!isNcFinding) {
+      return res.status(400).json({
+        error: `Автосоздание CAPA доступно только для типов MAJOR_NC/MINOR_NC. Текущий тип: ${finding.type}`,
+      });
+    }
+
+    // Маппинг типа finding → classification NC
+    const classificationMap = { MAJOR_NC: "CRITICAL", MINOR_NC: "MAJOR" };
+    const classification = classificationMap[finding.type];
+
+    // Маппинг типа finding → приоритет CAPA
+    const priorityMap = { MAJOR_NC: "URGENT", MINOR_NC: "HIGH" };
+    const priority = priorityMap[finding.type];
+
+    const auditRef = schedule
+      ? `${schedule.auditNumber} "${schedule.title}"`
+      : `audit schedule #${finding.auditScheduleId}`;
+
+    // 1. Создаём NC
+    const nc = await NcCapaService.createNC(req, {
+      title: `[Аудит] ${finding.findingNumber}: ${finding.description?.substring(0, 200)}`,
+      description: `Несоответствие выявлено при внутреннем аудите ${auditRef}.\n\nОписание: ${finding.description}\n\nОбъективные свидетельства: ${finding.evidence || "—"}\n\nПункт ISO: ${finding.isoClause || "—"}`,
+      source: "INTERNAL_AUDIT",
+      classification,
+      capaRequired: true,
+      assignedToId: finding.responsibleId || req.body.assignedToId,
+      dueDate: finding.dueDate || req.body.dueDate,
+    });
+
+    // 2. Создаём CAPA привязанную к NC
+    const capa = await NcCapaService.createCAPA(req, {
+      type: "CORRECTIVE",
+      title: `[Аудит → CAPA] ${finding.findingNumber}: ${finding.description?.substring(0, 200)}`,
+      description: `Корректирующее действие по результатам аудита ${auditRef}.\n\nFinding: ${finding.findingNumber}\nТип: ${finding.type}\nПункт ISO: ${finding.isoClause || "—"}\n\nОписание: ${finding.description}`,
+      priority,
+      nonconformityId: nc.id,
+      assignedToId: finding.responsibleId || req.body.assignedToId,
+      dueDate: finding.dueDate || req.body.dueDate,
+      effectivenessCheckDays: req.body.effectivenessCheckDays || 90,
+    });
+
+    // 3. Обновляем finding — связываем с NC/CAPA и меняем статус
+    await finding.update({
+      nonconformityId: nc.id,
+      capaId: capa.id,
+      status: "ACTION_REQUIRED",
+      followUpStatus: "IN_PROGRESS",
+    });
+
+    await logAudit({
+      req,
+      action: "AUDIT_FINDING_CREATE",
+      entity: "AuditFinding",
+      entityId: finding.id,
+      description: `Автосоздание NC ${nc.number} и CAPA ${capa.number} из finding ${finding.findingNumber}`,
+      metadata: {
+        findingId: finding.id,
+        findingNumber: finding.findingNumber,
+        ncId: nc.id,
+        ncNumber: nc.number,
+        capaId: capa.id,
+        capaNumber: capa.number,
+      },
+    });
+
+    res.status(201).json({
+      finding: finding.toJSON(),
+      nonconformity: { id: nc.id, number: nc.number, classification: nc.classification },
+      capa: { id: capa.id, number: capa.number, type: capa.type, priority: capa.priority },
+    });
+  } catch (e) {
+    console.error("createCapaFromFinding error:", e);
+    res.status(e.message?.includes("не найден") ? 400 : 500).json({ error: e.message });
+  }
+};
+
 module.exports = {
   getPlans, getPlanOne, createPlan, updatePlan,
   getSchedules, getScheduleOne, createSchedule, updateSchedule,
   addFinding, updateFinding, getStats,
+  createCapaFromFinding,
 };

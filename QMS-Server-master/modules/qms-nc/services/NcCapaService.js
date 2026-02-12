@@ -10,7 +10,22 @@ const {
   NC_STATUSES, CAPA_STATUSES,
 } = require("../models/NcCapa");
 const { User } = require("../../../models/index");
-const { logNonconformity, logCapa } = require("../../core/utils/auditLogger");
+const { logNonconformity, logCapa, logAudit, AUDIT_ACTIONS } = require("../../core/utils/auditLogger");
+
+// Ленивая загрузка Risk модуля (может быть отключён)
+let _RiskRegister = null;
+function getRiskRegister() {
+  if (_RiskRegister === undefined) return null;
+  if (_RiskRegister) return _RiskRegister;
+  try {
+    const { RiskRegister } = require("../../qms-risk/models/Risk");
+    _RiskRegister = RiskRegister;
+    return _RiskRegister;
+  } catch {
+    _RiskRegister = undefined;
+    return null;
+  }
+}
 
 // Допустимые переходы состояний NC (state machine)
 const NC_TRANSITIONS = {
@@ -175,19 +190,28 @@ class NcCapaService {
   }
 
   async getNCDetail(id) {
-    return Nonconformity.findByPk(id, {
-      include: [
-        { model: User, as: "reportedBy", attributes: ["id", "name", "surname"] },
-        { model: User, as: "assignedTo", attributes: ["id", "name", "surname"] },
-        { model: User, as: "closedBy", attributes: ["id", "name", "surname"] },
-        { model: NcAttachment, as: "attachments", include: [{ model: User, as: "uploadedBy", attributes: ["id", "name", "surname"] }] },
-        {
-          model: Capa, as: "capas",
-          attributes: ["id", "number", "type", "status", "title", "dueDate"],
-          include: [{ model: User, as: "assignedTo", attributes: ["id", "name", "surname"] }],
-        },
-      ],
-    });
+    const includes = [
+      { model: User, as: "reportedBy", attributes: ["id", "name", "surname"] },
+      { model: User, as: "assignedTo", attributes: ["id", "name", "surname"] },
+      { model: User, as: "closedBy", attributes: ["id", "name", "surname"] },
+      { model: NcAttachment, as: "attachments", include: [{ model: User, as: "uploadedBy", attributes: ["id", "name", "surname"] }] },
+      {
+        model: Capa, as: "capas",
+        attributes: ["id", "number", "type", "status", "title", "dueDate"],
+        include: [{ model: User, as: "assignedTo", attributes: ["id", "name", "surname"] }],
+      },
+    ];
+
+    // Включаем связанный Risk если модуль доступен
+    const RiskRegister = getRiskRegister();
+    if (RiskRegister) {
+      includes.push({
+        model: RiskRegister, as: "risk",
+        attributes: ["id", "riskNumber", "title", "category", "initialRiskClass", "residualRiskClass", "status"],
+      });
+    }
+
+    return Nonconformity.findByPk(id, { include: includes });
   }
 
   // ═══ CAPA ═══
@@ -385,6 +409,48 @@ class NcCapaService {
         },
       ],
     });
+  }
+
+  // ═══ NC ↔ RISK LINKAGE ═══
+
+  async linkNCToRisk(req, ncId, riskRegisterId) {
+    const nc = await Nonconformity.findByPk(ncId);
+    if (!nc) throw new Error("NC не найдена");
+
+    if (!riskRegisterId) throw new Error("riskRegisterId обязателен");
+
+    const RiskRegister = getRiskRegister();
+    if (!RiskRegister) throw new Error("Модуль управления рисками не доступен");
+
+    const risk = await RiskRegister.findByPk(riskRegisterId);
+    if (!risk) throw new Error(`Риск с id=${riskRegisterId} не найден`);
+
+    await nc.update({ riskRegisterId });
+
+    await logNonconformity(req, nc, "update", {
+      action: "link_risk",
+      riskRegisterId,
+      riskNumber: risk.riskNumber,
+    });
+
+    return nc;
+  }
+
+  async unlinkNCFromRisk(req, ncId) {
+    const nc = await Nonconformity.findByPk(ncId);
+    if (!nc) throw new Error("NC не найдена");
+
+    const oldRiskId = nc.riskRegisterId;
+    if (!oldRiskId) throw new Error("NC не связана с риском");
+
+    await nc.update({ riskRegisterId: null });
+
+    await logNonconformity(req, nc, "update", {
+      action: "unlink_risk",
+      previousRiskRegisterId: oldRiskId,
+    });
+
+    return nc;
   }
 
   // ═══ STATISTICS ═══

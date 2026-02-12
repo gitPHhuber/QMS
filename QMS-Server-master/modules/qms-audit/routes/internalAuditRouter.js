@@ -26,4 +26,7 @@ router.put("/schedules/:id",   ...protect, checkAbility("internal-audit.manage")
 router.post("/schedules/:scheduleId/findings", ...protect, checkAbility("internal-audit.manage"), ctrl.addFinding);
 router.put("/findings/:id",                     ...protect, checkAbility("internal-audit.manage"), ctrl.updateFinding);
 
+// Автосоздание CAPA из finding (ISO 8.5.2 — Audit → CAPA интеграция)
+router.post("/findings/:id/create-capa", ...protect, checkAbility("internal-audit.manage"), ctrl.createCapaFromFinding);
+
 module.exports = router;
