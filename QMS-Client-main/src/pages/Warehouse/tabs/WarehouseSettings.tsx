@@ -4,8 +4,16 @@ import { InventoryLimitModel, StockBalanceItem } from "src/types/WarehouseModels
 import { Search, AlertTriangle, Settings } from "lucide-react";
 import toast from "react-hot-toast";
 
+interface SettingsItem {
+    label: string;
+    originType: string | null;
+    originId: number | null;
+    current: number;
+    min: number;
+}
+
 export const WarehouseSettings: React.FC = () => {
-    const [items, setItems] = useState<any[]>([]);
+    const [items, setItems] = useState<SettingsItem[]>([]);
     const [search, setSearch] = useState("");
     const [loading, setLoading] = useState(false);
 
@@ -57,7 +65,7 @@ export const WarehouseSettings: React.FC = () => {
 
     useEffect(() => { loadData(); }, []);
 
-    const handleSave = async (item: any, newMin: string) => {
+    const handleSave = async (item: SettingsItem, newMin: string) => {
         const val = parseInt(newMin);
         if (isNaN(val)) return;
         if (val === item.min) return;
