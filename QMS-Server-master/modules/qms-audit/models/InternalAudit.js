@@ -81,11 +81,157 @@ const AuditFinding = sequelize.define("audit_finding", {
   },
 });
 
+// ═══════════════════════════════════════════════════════════════
+// Чек-листы внутренних аудитов — ISO 13485 §8.2.4
+// ═══════════════════════════════════════════════════════════════
+
+const CHECKLIST_ITEM_STATUSES = {
+  CONFORMING: "CONFORMING",
+  MINOR_NC: "MINOR_NC",
+  MAJOR_NC: "MAJOR_NC",
+  NOT_APPLICABLE: "NOT_APPLICABLE",
+  NOT_CHECKED: "NOT_CHECKED",
+};
+
+/**
+ * Шаблон чек-листа для раздела ISO 13485.
+ * Один шаблон = один раздел (например, 4.2.4 Управление документацией).
+ */
+const AuditChecklist = sequelize.define("audit_checklist", {
+  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  isoClause: {
+    type: DataTypes.STRING(20),
+    allowNull: false,
+    comment: "Раздел ISO 13485, например 4.2.4",
+  },
+  title: {
+    type: DataTypes.STRING(500),
+    allowNull: false,
+    comment: "Название раздела: Управление документацией",
+  },
+  description: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    comment: "Краткое описание требований раздела",
+  },
+  version: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 1,
+    comment: "Версия шаблона чек-листа",
+  },
+  isActive: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: true,
+    comment: "Активен ли шаблон для использования",
+  },
+});
+
+/**
+ * Пункт чек-листа — конкретное требование для проверки.
+ */
+const AuditChecklistItem = sequelize.define("audit_checklist_item", {
+  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  checklistId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    comment: "FK → audit_checklist",
+  },
+  order: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 1,
+    comment: "Порядок пункта в чек-листе",
+  },
+  requirement: {
+    type: DataTypes.TEXT,
+    allowNull: false,
+    comment: "Формулировка требования для проверки",
+  },
+  guidance: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    comment: "Рекомендации аудитору: что проверять, какие доказательства искать",
+  },
+  isoReference: {
+    type: DataTypes.STRING(50),
+    allowNull: true,
+    comment: "Точная ссылка на пункт ISO, например 4.2.4 (a)",
+  },
+});
+
+/**
+ * Ответ аудитора на пункт чек-листа в рамках конкретного аудита.
+ */
+const AuditChecklistResponse = sequelize.define("audit_checklist_response", {
+  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  auditScheduleId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    comment: "FK → audit_schedule (конкретный аудит)",
+  },
+  checklistItemId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    comment: "FK → audit_checklist_item (пункт чек-листа)",
+  },
+  status: {
+    type: DataTypes.ENUM(...Object.values(CHECKLIST_ITEM_STATUSES)),
+    allowNull: false,
+    defaultValue: CHECKLIST_ITEM_STATUSES.NOT_CHECKED,
+    comment: "Результат проверки пункта",
+  },
+  evidence: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    comment: "Объективные свидетельства соответствия/несоответствия",
+  },
+  notes: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    comment: "Комментарии аудитора",
+  },
+  auditorId: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    comment: "FK → User (аудитор, заполнивший пункт)",
+  },
+  findingId: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    comment: "FK → audit_finding (если по пункту создан finding)",
+  },
+});
+
+// ═══════════════════════════════════════════════════════════════
 // Ассоциации
+// ═══════════════════════════════════════════════════════════════
+
 AuditPlan.hasMany(AuditSchedule, { as: "audits", foreignKey: "auditPlanId" });
 AuditSchedule.belongsTo(AuditPlan, { as: "auditPlan", foreignKey: "auditPlanId" });
 
 AuditSchedule.hasMany(AuditFinding, { as: "findings", foreignKey: "auditScheduleId" });
 AuditFinding.belongsTo(AuditSchedule, { foreignKey: "auditScheduleId" });
 
-module.exports = { AuditPlan, AuditSchedule, AuditFinding };
+// Checklist associations
+AuditChecklist.hasMany(AuditChecklistItem, { as: "items", foreignKey: "checklistId", onDelete: "CASCADE" });
+AuditChecklistItem.belongsTo(AuditChecklist, { as: "checklist", foreignKey: "checklistId" });
+
+AuditSchedule.hasMany(AuditChecklistResponse, { as: "checklistResponses", foreignKey: "auditScheduleId", onDelete: "CASCADE" });
+AuditChecklistResponse.belongsTo(AuditSchedule, { foreignKey: "auditScheduleId" });
+
+AuditChecklistItem.hasMany(AuditChecklistResponse, { as: "responses", foreignKey: "checklistItemId" });
+AuditChecklistResponse.belongsTo(AuditChecklistItem, { as: "checklistItem", foreignKey: "checklistItemId" });
+
+AuditChecklistResponse.belongsTo(AuditFinding, { as: "finding", foreignKey: "findingId" });
+
+module.exports = {
+  AuditPlan,
+  AuditSchedule,
+  AuditFinding,
+  AuditChecklist,
+  AuditChecklistItem,
+  AuditChecklistResponse,
+  CHECKLIST_ITEM_STATUSES,
+};
