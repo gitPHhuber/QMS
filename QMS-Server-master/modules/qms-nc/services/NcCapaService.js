@@ -12,14 +12,49 @@ const {
 const { User } = require("../../../models/index");
 const { logNonconformity, logCapa } = require("../../core/utils/auditLogger");
 
+// Допустимые переходы состояний NC (state machine)
+const NC_TRANSITIONS = {
+  OPEN: ["INVESTIGATING"],
+  INVESTIGATING: ["DISPOSITION", "OPEN"],
+  DISPOSITION: ["IMPLEMENTING", "INVESTIGATING"],
+  IMPLEMENTING: ["VERIFICATION"],
+  VERIFICATION: ["CLOSED", "REOPENED"],
+  CLOSED: ["REOPENED"],
+  REOPENED: ["INVESTIGATING"],
+};
+
+// Допустимые переходы состояний CAPA (state machine)
+const CAPA_TRANSITIONS = {
+  INITIATED: ["INVESTIGATING", "PLANNING"],
+  INVESTIGATING: ["PLANNING", "INITIATED"],
+  PLANNING: ["PLAN_APPROVED", "INVESTIGATING", "INITIATED"],
+  PLAN_APPROVED: ["IMPLEMENTING"],
+  IMPLEMENTING: ["VERIFYING"],
+  VERIFYING: ["EFFECTIVE", "INEFFECTIVE"],
+  INEFFECTIVE: ["PLANNING"],
+  EFFECTIVE: ["CLOSED"],
+  CLOSED: [],
+};
+
+// Поля NC, которые можно обновлять через updateNC
+const NC_UPDATABLE_FIELDS = [
+  "title", "description", "source", "classification", "assignedToId",
+  "rootCause", "rootCauseMethod", "disposition", "dispositionJustification",
+  "containmentAction", "dueDate", "priority",
+];
+
 class NcCapaService {
   // ═══ NONCONFORMITY ═══
 
   async createNC(req, data) {
-    const t = await sequelize.transaction();
+    const t = await sequelize.transaction({ isolationLevel: "SERIALIZABLE" });
     try {
-      const lastNc = await Nonconformity.findOne({ order: [["id", "DESC"]], attributes: ["id"], transaction: t });
-      const num = (lastNc?.id || 0) + 1;
+      // Используем MAX по числовой части номера для предотвращения коллизий
+      const [maxResult] = await sequelize.query(
+        `SELECT MAX(CAST(SUBSTRING(number FROM '(\\d+)$') AS INTEGER)) AS max_num FROM nonconformities`,
+        { transaction: t, type: sequelize.QueryTypes.SELECT }
+      );
+      const num = (maxResult?.max_num || 0) + 1;
       const number = `NC-${String(num).padStart(4, "0")}`;
 
       // CRITICAL автоматически требует CAPA
@@ -46,7 +81,25 @@ class NcCapaService {
     if (nc.status === NC_STATUSES.CLOSED) throw new Error("Нельзя редактировать закрытую NC");
 
     const oldStatus = nc.status;
-    await nc.update(data);
+
+    // Валидация перехода состояний (state machine)
+    if (data.status && data.status !== oldStatus) {
+      const allowed = NC_TRANSITIONS[oldStatus] || [];
+      if (!allowed.includes(data.status)) {
+        throw new Error(
+          `Недопустимый переход статуса NC: ${oldStatus} → ${data.status}. Допустимые: ${allowed.join(", ") || "нет"}`
+        );
+      }
+    }
+
+    // Whitelist полей — защита от mass assignment
+    const safeData = {};
+    for (const field of NC_UPDATABLE_FIELDS) {
+      if (data[field] !== undefined) safeData[field] = data[field];
+    }
+    if (data.status) safeData.status = data.status;
+
+    await nc.update(safeData);
 
     if (data.status && data.status !== oldStatus) {
       const actionMap = {
@@ -140,10 +193,14 @@ class NcCapaService {
   // ═══ CAPA ═══
 
   async createCAPA(req, data) {
-    const t = await sequelize.transaction();
+    const t = await sequelize.transaction({ isolationLevel: "SERIALIZABLE" });
     try {
-      const lastCapa = await Capa.findOne({ order: [["id", "DESC"]], attributes: ["id"], transaction: t });
-      const num = (lastCapa?.id || 0) + 1;
+      // Используем MAX по числовой части номера для предотвращения коллизий
+      const [maxResult] = await sequelize.query(
+        `SELECT MAX(CAST(SUBSTRING(number FROM '(\\d+)$') AS INTEGER)) AS max_num FROM capas`,
+        { transaction: t, type: sequelize.QueryTypes.SELECT }
+      );
+      const num = (maxResult?.max_num || 0) + 1;
       const number = `CAPA-${String(num).padStart(4, "0")}`;
 
       // Рассчитываем дату проверки эффективности
@@ -153,6 +210,12 @@ class NcCapaService {
         const d = new Date(data.dueDate);
         d.setDate(d.getDate() + checkDays);
         effectivenessCheckDate = d;
+      }
+
+      // Проверяем существование связанной NC если указана
+      if (data.nonconformityId) {
+        const nc = await Nonconformity.findByPk(data.nonconformityId, { transaction: t });
+        if (!nc) throw new Error(`NC с id=${data.nonconformityId} не найдена`);
       }
 
       const capa = await Capa.create({
@@ -185,6 +248,14 @@ class NcCapaService {
     const capa = await Capa.findByPk(id);
     if (!capa) throw new Error("CAPA не найдена");
 
+    // Валидация перехода состояний (state machine)
+    const allowed = CAPA_TRANSITIONS[capa.status] || [];
+    if (!allowed.includes(status)) {
+      throw new Error(
+        `Недопустимый переход статуса CAPA: ${capa.status} → ${status}. Допустимые: ${allowed.join(", ") || "нет"}`
+      );
+    }
+
     const updates = { status };
     const actionMap = {
       PLAN_APPROVED: "planApprove",
@@ -199,6 +270,13 @@ class NcCapaService {
     } else if (status === "IMPLEMENTING") {
       updates.implementedAt = new Date();
     } else if (status === "CLOSED") {
+      // Проверяем что все действия выполнены перед закрытием
+      const incompleteActions = await CapaAction.count({
+        where: { capaId: id, status: { [Op.notIn]: ["COMPLETED", "CANCELLED"] } },
+      });
+      if (incompleteActions > 0) {
+        throw new Error(`Невозможно закрыть CAPA: ${incompleteActions} действий ещё не завершены`);
+      }
       updates.closedAt = new Date();
     }
 
@@ -212,14 +290,29 @@ class NcCapaService {
     if (!capa) throw new Error("CAPA не найдена");
 
     const maxOrder = await CapaAction.max("order", { where: { capaId } }) || 0;
-    return CapaAction.create({ capaId, order: maxOrder + 1, ...data });
+    const action = await CapaAction.create({ capaId, order: maxOrder + 1, ...data });
+
+    await logCapa(req, capa, "update", { actionAdded: action.id });
+    return action;
   }
 
   async updateCapaAction(req, actionId, data) {
     const action = await CapaAction.findByPk(actionId);
     if (!action) throw new Error("Действие не найдено");
-    if (data.status === "COMPLETED") data.completedAt = new Date();
-    return action.update(data);
+
+    // Whitelist допустимых полей
+    const safeData = {};
+    const allowed = ["title", "description", "status", "assignedToId", "dueDate", "evidence"];
+    for (const field of allowed) {
+      if (data[field] !== undefined) safeData[field] = data[field];
+    }
+    if (safeData.status === "COMPLETED") safeData.completedAt = new Date();
+
+    await action.update(safeData);
+
+    const capa = await Capa.findByPk(action.capaId);
+    if (capa) await logCapa(req, capa, "update", { actionUpdated: action.id, newStatus: safeData.status });
+    return action;
   }
 
   async verifyCapaEffectiveness(req, capaId, { isEffective, evidence, comment }) {
@@ -227,6 +320,9 @@ class NcCapaService {
     try {
       const capa = await Capa.findByPk(capaId, { transaction: t });
       if (!capa) throw new Error("CAPA не найдена");
+      if (!["VERIFYING", "IMPLEMENTING"].includes(capa.status)) {
+        throw new Error(`Проверка эффективности доступна только для CAPA в статусе VERIFYING/IMPLEMENTING, текущий: ${capa.status}`);
+      }
 
       const verification = await CapaVerification.create({
         capaId,

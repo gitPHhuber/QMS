@@ -45,24 +45,20 @@ class DocumentService {
    * Автоматически генерирует код: СТО-СМК-001
    */
   async createDocument(req, { title, type, category, description, isoSection, tags, reviewCycleMonths }) {
-    const transaction = await sequelize.transaction();
+    const transaction = await sequelize.transaction({
+      isolationLevel: "SERIALIZABLE",
+    });
 
     try {
-      // Генерируем код
+      // Генерируем код: используем MAX по числовой части кода для предотвращения коллизий
       const prefix = TYPE_CODE_PREFIX[type] || "ДОК";
-      const lastDoc = await Document.findOne({
-        where: { type },
-        order: [["id", "DESC"]],
-        attributes: ["code"],
-        transaction,
-      });
+      const [maxResult] = await sequelize.query(
+        `SELECT MAX(CAST(SUBSTRING(code FROM '(\\d+)$') AS INTEGER)) AS max_num
+         FROM documents WHERE type = :type`,
+        { replacements: { type }, transaction, type: sequelize.QueryTypes.SELECT }
+      );
 
-      let number = 1;
-      if (lastDoc && lastDoc.code) {
-        const match = lastDoc.code.match(/(\d+)$/);
-        if (match) number = parseInt(match[1]) + 1;
-      }
-
+      const number = (maxResult?.max_num || 0) + 1;
       const code = `${prefix}-СМК-${String(number).padStart(3, "0")}`;
 
       // Создаём документ
@@ -98,10 +94,10 @@ class DocumentService {
       // Привязываем текущую версию
       await document.update({ currentVersionId: version.id }, { transaction });
 
-      await transaction.commit();
+      // Аудит внутри транзакции для атомарности (ISO 13485 §4.2.5)
+      await logDocumentCreate(req, document, { transaction });
 
-      // Аудит
-      await logDocumentCreate(req, document);
+      await transaction.commit();
 
       return { document, version };
     } catch (error) {
@@ -194,6 +190,19 @@ class DocumentService {
         throw new Error("Цепочка согласования не может быть пустой");
       }
 
+      // Проверяем существование всех пользователей в цепочке
+      const userIds = approvalChain.map((a) => a.userId);
+      const existingUsers = await User.findAll({
+        where: { id: userIds },
+        attributes: ["id"],
+        transaction,
+      });
+      const existingIds = new Set(existingUsers.map((u) => u.id));
+      const missingIds = userIds.filter((id) => !existingIds.has(id));
+      if (missingIds.length > 0) {
+        throw new Error(`Пользователи не найдены: ${missingIds.join(", ")}`);
+      }
+
       // Создаём шаги согласования
       for (let i = 0; i < approvalChain.length; i++) {
         const { userId, role, dueDate } = approvalChain[i];
@@ -215,9 +224,7 @@ class DocumentService {
       await version.update({ status: VERSION_STATUSES.REVIEW }, { transaction });
       await version.document.update({ status: DOCUMENT_STATUSES.REVIEW }, { transaction });
 
-      await transaction.commit();
-
-      // Аудит
+      // Аудит внутри транзакции для атомарности
       await logAudit({
         req,
         action: AUDIT_ACTIONS.DOCUMENT_SUBMIT_REVIEW,
@@ -228,7 +235,10 @@ class DocumentService {
           approvers: approvalChain.map((a) => a.userId),
           steps: approvalChain.length,
         },
+        transaction,
       });
+
+      await transaction.commit();
 
       return version;
     } catch (error) {
@@ -330,10 +340,10 @@ class DocumentService {
         }
       }
 
-      await transaction.commit();
+      // Аудит внутри транзакции для атомарности
+      await logDocumentApproval(req, doc, version, decision, { comment, transaction });
 
-      // Аудит
-      await logDocumentApproval(req, doc, version, decision, { comment });
+      await transaction.commit();
 
       return approval;
     } catch (error) {
@@ -401,10 +411,10 @@ class DocumentService {
         { transaction }
       );
 
-      await transaction.commit();
+      // Аудит внутри транзакции (CRITICAL severity)
+      await logDocumentEffective(req, doc, version, { transaction });
 
-      // Аудит (CRITICAL severity)
-      await logDocumentEffective(req, doc, version);
+      await transaction.commit();
 
       return version;
     } catch (error) {
@@ -460,9 +470,7 @@ class DocumentService {
         await doc.update({ status: DOCUMENT_STATUSES.REVISION }, { transaction });
       }
 
-      await transaction.commit();
-
-      // Аудит
+      // Аудит внутри транзакции для атомарности
       await logAudit({
         req,
         action: AUDIT_ACTIONS.DOCUMENT_VERSION_CREATE,
@@ -470,7 +478,10 @@ class DocumentService {
         entityId: version.id,
         description: `Создана новая версия ${doc.code} v${version.version}`,
         metadata: { documentId: doc.id, changeDescription },
+        transaction,
       });
+
+      await transaction.commit();
 
       return version;
     } catch (error) {
@@ -487,35 +498,45 @@ class DocumentService {
    * Рассылает документ списку сотрудников для ознакомления.
    */
   async distribute(req, versionId, userIds) {
-    const version = await DocumentVersion.findByPk(versionId, {
-      include: [{ model: Document, as: "document" }],
-    });
-
-    if (!version) throw new Error("Версия не найдена");
-    if (version.status !== VERSION_STATUSES.EFFECTIVE) {
-      throw new Error("Рассылка возможна только для действующей версии");
-    }
-
-    const distributions = [];
-    for (const userId of userIds) {
-      const [dist, created] = await DocumentDistribution.findOrCreate({
-        where: { versionId, userId },
-        defaults: { distributedAt: new Date() },
+    const transaction = await sequelize.transaction();
+    try {
+      const version = await DocumentVersion.findByPk(versionId, {
+        include: [{ model: Document, as: "document" }],
+        transaction,
       });
-      distributions.push(dist);
+
+      if (!version) throw new Error("Версия не найдена");
+      if (version.status !== VERSION_STATUSES.EFFECTIVE) {
+        throw new Error("Рассылка возможна только для действующей версии");
+      }
+
+      const distributions = [];
+      for (const userId of userIds) {
+        const [dist] = await DocumentDistribution.findOrCreate({
+          where: { versionId, userId },
+          defaults: { distributedAt: new Date() },
+          transaction,
+        });
+        distributions.push(dist);
+      }
+
+      // Аудит внутри транзакции для атомарности
+      await logAudit({
+        req,
+        action: AUDIT_ACTIONS.DOCUMENT_DISTRIBUTE,
+        entity: "Document",
+        entityId: version.document.id,
+        description: `Документ ${version.document.code} разослан ${userIds.length} сотрудникам`,
+        metadata: { userIds, versionId },
+        transaction,
+      });
+
+      await transaction.commit();
+      return distributions;
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
     }
-
-    // Аудит
-    await logAudit({
-      req,
-      action: AUDIT_ACTIONS.DOCUMENT_DISTRIBUTE,
-      entity: "Document",
-      entityId: version.document.id,
-      description: `Документ ${version.document.code} разослан ${userIds.length} сотрудникам`,
-      metadata: { userIds, versionId },
-    });
-
-    return distributions;
   }
 
   /**

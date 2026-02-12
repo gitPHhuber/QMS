@@ -1,3 +1,4 @@
+const crypto = require("crypto");
 const { Op } = require("sequelize");
 const ApiError = require("../../../error/ApiError");
 const {
@@ -14,8 +15,11 @@ const { logAudit } = require("../../core/utils/auditLogger");
 const sequelize = require("../../../db");
 const PdfService = require("../../../services/PdfService");
 
-const generateShortCode = () =>
-  Math.floor(100000 + Math.random() * 900000).toString();
+const generateShortCode = () => {
+  const bytes = crypto.randomBytes(3); // 3 байта = до 16777215
+  const num = (bytes.readUIntBE(0, 3) % 900000) + 100000;
+  return num.toString();
+};
 
 class BoxController {
 
@@ -107,9 +111,9 @@ class BoxController {
 
       for (let i = 0; i < qty; i++) {
         const suffix = String(i + 1).padStart(3, "0");
-        const qrCode = `BOX-${Date.now()}-${suffix}-${Math.random()
-          .toString(36)
-          .substr(2, 3)
+        const qrCode = `BOX-${Date.now()}-${suffix}-${crypto
+          .randomBytes(2)
+          .toString("hex")
           .toUpperCase()}`;
         const shortCode = generateShortCode();
 
@@ -158,16 +162,24 @@ class BoxController {
         page = 1,
         limit = 50,
         search,
-        ...filters
+        status,
+        currentSectionId,
+        currentTeamId,
+        originType,
+        supplyId,
+        batchName,
+        projectName,
       } = req.query;
 
-      const where = { ...filters };
-
-      Object.keys(where).forEach((key) => {
-        if (where[key] === undefined || where[key] === "") {
-          delete where[key];
-        }
-      });
+      // Whitelist допустимых фильтров вместо произвольных query-параметров
+      const where = {};
+      if (status) where.status = status;
+      if (currentSectionId) where.currentSectionId = currentSectionId;
+      if (currentTeamId) where.currentTeamId = currentTeamId;
+      if (originType) where.originType = originType;
+      if (supplyId) where.supplyId = supplyId;
+      if (batchName) where.batchName = batchName;
+      if (projectName) where.projectName = projectName;
 
       if (search) {
         const s = String(search).trim();
@@ -180,7 +192,7 @@ class BoxController {
       }
 
       const pageNum = Number(page) || 1;
-      const limitNum = Number(limit) || 50;
+      const limitNum = Math.min(Number(limit) || 50, 200);
       const offset = (pageNum - 1) * limitNum;
 
       const { rows, count } = await WarehouseBox.findAndCountAll({

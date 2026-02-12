@@ -20,6 +20,37 @@
 @tailwind components;
 @tailwind utilities;
 
+/* --- Custom dark scrollbar --- */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #1A2D42;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #1E3A54;
+}
+
+/* Column scrollbar */
+.kanban-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+.kanban-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.kanban-scroll::-webkit-scrollbar-thumb {
+  background: #1A2D42;
+  border-radius: 2px;
+}
+.kanban-scroll::-webkit-scrollbar-thumb:hover {
+  background: #1E3A54;
+}
+
 /* --- Стили для печати --- */
 @media print {
   .print-area {

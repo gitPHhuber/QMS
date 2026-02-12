@@ -63,7 +63,7 @@ class TaskController {
 
   async getTasks(req, res, next) {
     try {
-      let { page = 1, limit = 50, status, search, originType } = req.query;
+      let { page = 1, limit = 50, status, search, originType, projectId } = req.query;
       page = Number(page) || 1;
       limit = Number(limit) || 50;
       const offset = (page - 1) * limit;
@@ -71,6 +71,7 @@ class TaskController {
       const where = {};
       if (status) where.status = status;
       if (originType) where.originType = originType;
+      if (projectId) where.projectId = Number(projectId);
       if (search) {
         const s = String(search).trim();
         where[Op.or] = [

@@ -15,7 +15,9 @@ const app = express();
 app.use(express.json());
 
 const corsOptions = {
-  origin: "*",
+  origin: process.env.CORS_ORIGINS
+    ? process.env.CORS_ORIGINS.split(",").map((s) => s.trim())
+    : "http://localhost:3000",
   credentials: true,
   optionSuccessStatus: 200,
 };

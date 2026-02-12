@@ -63,13 +63,8 @@ import {
   REVIEW_ROUTE,
 } from "./utils/consts";
 
-export const authRoutes = [
-  { path: SELECT_PC_ROUTE, Component: SelectPC },
-  { path: PROFILE_ROUTE, Component: Profile },
-  { path: WAREHOUSE_ROUTE, Component: UserWarehousePage },
-  { path: WAREHOUSE_ANALYTICS_ROUTE, Component: AnalyticsPage },
-  { path: WAREHOUSE_INVENTORY_ROUTE, Component: InventoryPage },
-  { path: TASKS_ROUTE, Component: TasksPage },
+// QMS routes (rendered inside QmsLayout)
+export const qmsRoutes = [
   { path: QMS_DASHBOARD_ROUTE, Component: QmsDashboardPage },
   { path: DOCUMENTS_ROUTE, Component: DocumentsPage },
   { path: NC_ROUTE, Component: NonconformityPage },
@@ -80,6 +75,15 @@ export const authRoutes = [
   { path: TRAINING_ROUTE, Component: TrainingPage },
   { path: EQUIPMENT_ROUTE, Component: EquipmentPage },
   { path: REVIEW_ROUTE, Component: ReviewPage },
+];
+
+export const authRoutes = [
+  { path: SELECT_PC_ROUTE, Component: SelectPC },
+  { path: PROFILE_ROUTE, Component: Profile },
+  { path: WAREHOUSE_ROUTE, Component: UserWarehousePage },
+  { path: WAREHOUSE_ANALYTICS_ROUTE, Component: AnalyticsPage },
+  { path: WAREHOUSE_INVENTORY_ROUTE, Component: InventoryPage },
+  { path: TASKS_ROUTE, Component: TasksPage },
 ];
 
 export const adminRoutes = [

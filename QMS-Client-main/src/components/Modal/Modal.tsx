@@ -46,22 +46,22 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children, title, 
 
   return (
     <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50"
       onClick={onClose}
     >
       <div
-        className={`bg-white rounded-lg p-6 w-full ${size ? SIZE_CLASSES[size] || "max-w-lg" : "max-w-lg"} relative max-h-[90vh] overflow-y-auto`}
+        className={`bg-asvo-surface border border-asvo-border rounded-2xl p-6 w-full ${size ? SIZE_CLASSES[size] || "max-w-lg" : "max-w-lg"} relative max-h-[90vh] overflow-y-auto animate-scale-in`}
         onClick={(e) => e.stopPropagation()}
       >
         <button
-          className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-2xl"
+          className="absolute top-3 right-3 text-asvo-text-dim hover:text-asvo-text text-2xl transition-colors"
           onClick={onClose}
         >
           &times;
         </button>
 
         {title && (
-          <h2 className="text-xl font-semibold mb-4 pr-8">{title}</h2>
+          <h2 className="text-xl font-semibold text-asvo-text mb-4 pr-8">{title}</h2>
         )}
 
         {children}

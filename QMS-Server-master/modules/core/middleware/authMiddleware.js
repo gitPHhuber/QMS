@@ -2,6 +2,11 @@ const { auth } = require('express-oauth2-jwt-bearer');
 const AUTH_MODE = process.env.AUTH_MODE || 'keycloak';
 
 if (AUTH_MODE === 'dev-bypass') {
+  // Защита от случайного включения в продакшне
+  if (process.env.NODE_ENV === 'production') {
+    console.error("FATAL: AUTH_MODE=dev-bypass запрещён в production. Остановка.");
+    process.exit(1);
+  }
   // Для локальной разработки без Keycloak
   module.exports = (req, res, next) => {
     req.auth = {

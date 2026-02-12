@@ -1,205 +1,291 @@
-import React, { useEffect, useState } from 'react';
-import { ClipboardCheck, Plus, Search, Calendar } from 'lucide-react';
-import { internalAuditsApi } from '../../api/qmsApi';
+import React, { useState } from "react";
+import {
+  ClipboardCheck,
+  Plus,
+  Download,
+  CheckCircle2,
+  AlertTriangle,
+  BarChart3,
+  Calendar,
+} from "lucide-react";
+import KpiRow from "../../components/qms/KpiRow";
+import TabBar from "../../components/qms/TabBar";
+import ActionBtn from "../../components/qms/ActionBtn";
+import Badge from "../../components/qms/Badge";
+import DataTable from "../../components/qms/DataTable";
+import ProgressBar from "../../components/qms/ProgressBar";
+import SectionTitle from "../../components/qms/SectionTitle";
+import Card from "../../components/qms/Card";
 
-interface AuditScheduleItem {
-  id: number;
-  auditNumber: string;
-  title: string;
-  scope: string;
-  isoClause: string;
-  plannedDate: string;
-  actualDate: string | null;
-  status: string;
-  findings?: Array<any>;
-  auditPlan?: { id: number; title: string; year: number };
+/* ------------------------------------------------------------------ */
+/*  Mock data                                                          */
+/* ------------------------------------------------------------------ */
+
+interface AuditRow {
+  [key: string]: unknown;
+  id: string;
+  type: string;
+  process: string;
+  auditor: string;
+  date: string;
+  status: "completed" | "in_progress" | "planned" | "cancelled";
+  findings: number;
+  result: string;
 }
 
-const statusColor: Record<string, string> = {
-  PLANNED: 'bg-blue-900/40 text-blue-400',
-  IN_PROGRESS: 'bg-yellow-900/40 text-yellow-400',
-  COMPLETED: 'bg-green-900/40 text-green-400',
-  CANCELLED: 'bg-slate-700/40 text-slate-400',
-  OVERDUE: 'bg-red-900/40 text-red-400',
+const AUDITS: AuditRow[] = [
+  { id: "AUD-012", type: "Внутренний", process: "Закупки (п.7.4)",       auditor: "Костюков И.",   date: "10.02.2026", status: "in_progress", findings: 4, result: "\u2014" },
+  { id: "AUD-011", type: "Внутренний", process: "Производство (п.7.5)",  auditor: "Холтобин А.",   date: "25.01.2026", status: "completed",   findings: 6, result: "Соответствует" },
+  { id: "AUD-010", type: "Внешний",    process: "СМК (полный)",          auditor: "Bureau Veritas", date: "15.01.2026", status: "completed",   findings: 2, result: "Соответствует" },
+  { id: "AUD-009", type: "Внутренний", process: "NC/CAPA (п.8.3\u20138.5)", auditor: "Яровой Е.",  date: "10.12.2025", status: "completed",   findings: 5, result: "Условно" },
+  { id: "AUD-008", type: "Поставщика", process: "SUP-012",              auditor: "Костюков И.",   date: "01.12.2025", status: "completed",   findings: 8, result: "Не соответствует" },
+  { id: "AUD-007", type: "Внутренний", process: "Документы (п.4.2)",    auditor: "Омельченко А.", date: "15.11.2025", status: "completed",   findings: 3, result: "Соответствует" },
+];
+
+/* ---- Annual plan grid ---- */
+
+const MONTHS = ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"];
+
+const ISO_PROCESSES = [
+  "4.2 Документы",
+  "7.1 Планирование",
+  "7.4 Закупки",
+  "7.5 Производство",
+  "8.2 Мониторинг",
+  "8.3 NC",
+  "8.5 CAPA",
+  "6.2 Персонал",
+];
+
+type CellState = "empty" | "planned" | "done";
+
+// Seeded annual plan matrix  (row = process, col = month)
+const PLAN_GRID: CellState[][] = [
+  /* 4.2 */ ["done","empty","planned","empty","empty","empty","done","empty","empty","planned","empty","empty"],
+  /* 7.1 */ ["empty","done","empty","empty","planned","empty","empty","done","empty","empty","planned","empty"],
+  /* 7.4 */ ["empty","empty","done","empty","empty","planned","empty","empty","done","empty","empty","planned"],
+  /* 7.5 */ ["done","empty","empty","done","empty","empty","planned","empty","empty","done","empty","empty"],
+  /* 8.2 */ ["empty","planned","empty","empty","done","empty","empty","planned","empty","empty","done","empty"],
+  /* 8.3 */ ["empty","empty","empty","done","empty","empty","done","empty","planned","empty","empty","done"],
+  /* 8.5 */ ["empty","empty","planned","empty","empty","done","empty","empty","empty","planned","empty","done"],
+  /* 6.2 */ ["planned","empty","empty","empty","done","empty","empty","empty","done","empty","empty","planned"],
+];
+
+/* ---- Findings classification ---- */
+
+const FINDINGS = [
+  { label: "Критические",    count: 3,  pct: 15, color: "red"   as const },
+  { label: "Значительные",   count: 8,  pct: 40, color: "amber" as const },
+  { label: "Незначительные", count: 18, pct: 70, color: "blue"  as const },
+  { label: "Наблюдения",     count: 5,  pct: 30, color: "accent" as const },
+];
+
+/* ---- Status badge mapping ---- */
+
+const STATUS_CFG: Record<AuditRow["status"], { label: string; color: string; bg: string }> = {
+  completed:   { label: "Завершён",     color: "#2DD4A8", bg: "rgba(45,212,168,0.12)" },
+  in_progress: { label: "В процессе",   color: "#4A90E8", bg: "rgba(74,144,232,0.12)" },
+  planned:     { label: "Запланирован", color: "#E8A830", bg: "rgba(232,168,48,0.12)" },
+  cancelled:   { label: "Отменён",      color: "#F06060", bg: "rgba(240,96,96,0.12)" },
 };
 
-interface AuditPlanItem {
-  id: number;
-  title: string;
-  year: number;
-  status: string;
-}
+/* ---- Result badge color ---- */
+
+const resultColor = (r: string) => {
+  if (r === "Соответствует")      return { color: "#2DD4A8", bg: "rgba(45,212,168,0.12)" };
+  if (r === "Условно")            return { color: "#E8A830", bg: "rgba(232,168,48,0.12)" };
+  if (r === "Не соответствует")   return { color: "#F06060", bg: "rgba(240,96,96,0.12)" };
+  return undefined;
+};
+
+/* ---- Tabs ---- */
+
+const TABS = [
+  { key: "registry",  label: "Реестр" },
+  { key: "plan",      label: "Годовой план" },
+  { key: "findings",  label: "Замечания" },
+  { key: "reports",   label: "Отчёты" },
+];
+
+/* ---- Cell color for annual plan ---- */
+
+const cellCls: Record<CellState, string> = {
+  planned: "bg-asvo-blue-dim border border-asvo-blue/30",
+  done:    "bg-asvo-accent-dim border border-asvo-accent/30",
+  empty:   "bg-asvo-surface border border-asvo-border",
+};
+
+/* ================================================================== */
+/*  Component                                                          */
+/* ================================================================== */
 
 const AuditsPage: React.FC = () => {
-  const [schedules, setSchedules] = useState<AuditScheduleItem[]>([]);
-  const [plans, setPlans] = useState<AuditPlanItem[]>([]);
-  const [stats, setStats] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [showCreate, setShowCreate] = useState(false);
-  const [form, setForm] = useState({ title: '', scope: '', isoClause: '', plannedDate: '', auditPlanId: '' });
-  const [creating, setCreating] = useState(false);
+  const [tab, setTab] = useState("registry");
 
-  useEffect(() => { loadData(); }, []);
+  /* ---- columns for DataTable ---- */
 
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const [schedulesData, statsData, plansData] = await Promise.all([
-        internalAuditsApi.getSchedules(),
-        internalAuditsApi.getStats(),
-        internalAuditsApi.getPlans(),
-      ]);
-      setSchedules(schedulesData.rows || []);
-      setStats(statsData);
-      setPlans(plansData.rows || []);
-    } catch (e) {
-      console.error('AuditsPage loadData error:', e);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const columns = [
+    {
+      key: "id",
+      label: "ID",
+      width: "100px",
+      render: (r: AuditRow) => (
+        <span className="font-mono text-asvo-accent">{r.id}</span>
+      ),
+    },
+    { key: "type", label: "Тип аудита", render: (r: AuditRow) => <span className="text-asvo-text">{r.type}</span> },
+    { key: "process", label: "Процесс", render: (r: AuditRow) => <span className="text-asvo-text-mid">{r.process}</span> },
+    { key: "auditor", label: "Аудитор", render: (r: AuditRow) => <span className="text-asvo-text-mid">{r.auditor}</span> },
+    {
+      key: "date",
+      label: "Дата",
+      render: (r: AuditRow) => (
+        <span className="flex items-center gap-1 text-asvo-text-mid">
+          <Calendar size={12} className="text-asvo-text-dim" />
+          {r.date}
+        </span>
+      ),
+    },
+    {
+      key: "status",
+      label: "Статус",
+      align: "center" as const,
+      render: (r: AuditRow) => {
+        const s = STATUS_CFG[r.status];
+        return <Badge color={s.color} bg={s.bg}>{s.label}</Badge>;
+      },
+    },
+    {
+      key: "findings",
+      label: "Замечаний",
+      align: "center" as const,
+      render: (r: AuditRow) => <span className="text-asvo-text-mid">{r.findings}</span>,
+    },
+    {
+      key: "result",
+      label: "Результат",
+      align: "center" as const,
+      render: (r: AuditRow) => {
+        const rc = resultColor(r.result);
+        return rc ? <Badge color={rc.color} bg={rc.bg}>{r.result}</Badge> : <span className="text-asvo-text-dim">{r.result}</span>;
+      },
+    },
+  ];
 
-  const handleCreate = async () => {
-    if (!form.auditPlanId) return;
-    try {
-      setCreating(true);
-      const data: any = {
-        title: form.title,
-        scope: form.scope,
-        isoClause: form.isoClause,
-        plannedDate: form.plannedDate,
-        auditPlanId: parseInt(form.auditPlanId),
-      };
-      await internalAuditsApi.createSchedule(data);
-      setShowCreate(false);
-      setForm({ title: '', scope: '', isoClause: '', plannedDate: '', auditPlanId: '' });
-      await loadData();
-    } catch (e) {
-      console.error('Create audit error:', e);
-    } finally {
-      setCreating(false);
-    }
-  };
-
-  const filtered = schedules.filter(i =>
-    i.title?.toLowerCase().includes(search.toLowerCase()) ||
-    i.auditNumber?.toLowerCase().includes(search.toLowerCase()) ||
-    i.scope?.toLowerCase().includes(search.toLowerCase())
-  );
+  /* ---- render ---- */
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-5 bg-asvo-bg min-h-screen">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-violet-500/10 rounded-lg">
-            <ClipboardCheck className="text-violet-400" size={24} />
+          <div className="p-2.5 bg-asvo-blue-dim rounded-xl">
+            <ClipboardCheck size={22} className="text-asvo-blue" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-100">Внутренние аудиты</h1>
-            <p className="text-slate-400 text-sm">ISO 13485 &sect;8.2.4 &mdash; Программа аудитов</p>
+            <h1 className="text-xl font-bold text-asvo-text">Аудиты</h1>
+            <p className="text-xs text-asvo-text-dim">ISO 13485 &sect;8.2.4 &mdash; Программа внутренних аудитов</p>
           </div>
         </div>
-        <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-lg transition-colors text-sm font-medium">
-          <Plus size={16} />
-          Новый аудит
-        </button>
+
+        <div className="flex items-center gap-2">
+          <ActionBtn variant="primary" icon={<Plus size={15} />}>+ Новый аудит</ActionBtn>
+          <ActionBtn variant="secondary" icon={<Download size={15} />}>Экспорт</ActionBtn>
+        </div>
       </div>
 
-      {/* Stats */}
-      {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { label: 'Всего аудитов', value: stats.totalAudits, color: 'text-slate-100' },
-            { label: 'Завершено', value: stats.completedAudits, color: 'text-green-400' },
-            { label: 'Просрочено', value: stats.overdueAudits, color: 'text-red-400' },
-            { label: 'Открытых замечаний', value: stats.openFindings, color: 'text-yellow-400' },
-          ].map(s => (
-            <div key={s.label} className="bg-slate-800/60 border border-slate-700 rounded-xl p-4">
-              <div className={`text-2xl font-bold ${s.color}`}>{s.value}</div>
-              <div className="text-xs text-slate-400">{s.label}</div>
-            </div>
-          ))}
-        </div>
+      {/* KPI Row */}
+      <KpiRow
+        items={[
+          { label: "Всего аудитов", value: 18, icon: <ClipboardCheck size={18} />, color: "#4A90E8" },
+          { label: "Выполнено",     value: 12, icon: <CheckCircle2 size={18} />,   color: "#2DD4A8" },
+          { label: "Замечаний",     value: 34, icon: <AlertTriangle size={18} />,   color: "#E8A830" },
+          { label: "Соответствие",  value: "92%", icon: <BarChart3 size={18} />,    color: "#2DD4A8" },
+        ]}
+      />
+
+      {/* Tab Bar */}
+      <TabBar tabs={TABS} active={tab} onChange={setTab} />
+
+      {/* ---- TAB: Registry ---- */}
+      {tab === "registry" && <DataTable columns={columns} data={AUDITS} />}
+
+      {/* ---- TAB: Annual Plan ---- */}
+      {tab === "plan" && (
+        <Card>
+          <SectionTitle>Годовой план аудитов 2026</SectionTitle>
+
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr>
+                  <th className="text-left text-[10px] font-semibold text-asvo-text-dim uppercase tracking-wider px-2 py-2 w-40">
+                    Процесс
+                  </th>
+                  {MONTHS.map((m) => (
+                    <th key={m} className="text-center text-[10px] font-semibold text-asvo-text-dim uppercase tracking-wider px-1 py-2">
+                      {m}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {ISO_PROCESSES.map((proc, ri) => (
+                  <tr key={proc} className="border-t border-asvo-border/40">
+                    <td className="px-2 py-2 text-[12px] text-asvo-text-mid whitespace-nowrap">{proc}</td>
+                    {PLAN_GRID[ri].map((cell, ci) => (
+                      <td key={ci} className="px-1 py-2 text-center">
+                        <div className={`w-4 h-4 rounded-[3px] mx-auto ${cellCls[cell]}`} />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Legend */}
+          <div className="flex items-center gap-5 mt-4 text-[11px] text-asvo-text-dim">
+            <span className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded-sm bg-asvo-blue-dim border border-asvo-blue/30" /> Запланирован
+            </span>
+            <span className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded-sm bg-asvo-accent-dim border border-asvo-accent/30" /> Выполнен
+            </span>
+            <span className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded-sm bg-asvo-surface border border-asvo-border" /> Пусто
+            </span>
+          </div>
+        </Card>
       )}
 
-      {/* Search */}
-      <div className="flex gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
-          <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Поиск по номеру, теме или области..." className="w-full pl-10 pr-4 py-2 bg-slate-800/60 border border-slate-700 rounded-lg text-slate-200 placeholder:text-slate-500 focus:border-teal-500/50 focus:outline-none text-sm" />
-        </div>
-      </div>
+      {/* ---- TAB: Findings ---- */}
+      {tab === "findings" && (
+        <Card>
+          <SectionTitle>Классификация замечаний</SectionTitle>
 
-      {/* Table */}
-      <div className="bg-slate-800/60 border border-slate-700 rounded-xl overflow-hidden">
-        <table className="w-full">
-          <thead>
-            <tr className="bg-slate-800/80 border-b border-slate-700">
-              <th className="text-left px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">&#8470; аудита</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">Тема</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">Область</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">ISO</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">Дата</th>
-              <th className="text-center px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">Статус</th>
-              <th className="text-center px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">Замечаний</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr><td colSpan={7} className="text-center py-8 text-slate-500">Загрузка...</td></tr>
-            ) : filtered.length === 0 ? (
-              <tr><td colSpan={7} className="text-center py-8 text-slate-500">Нет данных</td></tr>
-            ) : filtered.map(item => (
-              <tr key={item.id} className="border-b border-slate-700/50 hover:bg-slate-700/20 transition-colors">
-                <td className="px-4 py-3 text-sm font-mono text-teal-400">{item.auditNumber}</td>
-                <td className="px-4 py-3 text-sm text-slate-200">{item.title}</td>
-                <td className="px-4 py-3 text-sm text-slate-300">{item.scope}</td>
-                <td className="px-4 py-3 text-sm text-slate-400">{item.isoClause}</td>
-                <td className="px-4 py-3 text-sm text-slate-300">
-                  <div className="flex items-center gap-1">
-                    <Calendar size={12} className="text-slate-500" />
-                    {item.plannedDate ? new Date(item.plannedDate).toLocaleDateString('ru') : '-'}
-                  </div>
-                </td>
-                <td className="px-4 py-3 text-center">
-                  <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${statusColor[item.status] || 'text-slate-400'}`}>
-                    {item.status}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-sm text-center text-slate-300">{item.findings?.length || 0}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Create Modal */}
-      {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-slate-800 border border-slate-700 rounded-xl p-6 w-full max-w-lg space-y-4">
-            <h2 className="text-lg font-bold text-slate-100">Новый аудит</h2>
-            <div className="space-y-3">
-              <select value={form.auditPlanId} onChange={e => setForm({ ...form, auditPlanId: e.target.value })} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 text-sm focus:border-teal-500/50 focus:outline-none">
-                <option value="">Выберите план аудита</option>
-                {plans.map(p => <option key={p.id} value={p.id}>{p.title} ({p.year})</option>)}
-              </select>
-              <input type="text" placeholder="Тема аудита" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 text-sm focus:border-teal-500/50 focus:outline-none" />
-              <input type="text" placeholder="Область аудита" value={form.scope} onChange={e => setForm({ ...form, scope: e.target.value })} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 text-sm focus:border-teal-500/50 focus:outline-none" />
-              <div className="grid grid-cols-2 gap-3">
-                <input type="text" placeholder="ISO пункт (напр. 7.4)" value={form.isoClause} onChange={e => setForm({ ...form, isoClause: e.target.value })} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 text-sm focus:border-teal-500/50 focus:outline-none" />
-                <input type="date" value={form.plannedDate} onChange={e => setForm({ ...form, plannedDate: e.target.value })} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 text-sm focus:border-teal-500/50 focus:outline-none" />
+          <div className="space-y-4">
+            {FINDINGS.map((f) => (
+              <div key={f.label} className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[13px] text-asvo-text">{f.label}</span>
+                  <span className="text-[13px] font-semibold text-asvo-text-mid">{f.count} ({f.pct}%)</span>
+                </div>
+                <ProgressBar value={f.pct} color={f.color} />
               </div>
-            </div>
-            <div className="flex justify-end gap-3 pt-2">
-              <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-sm text-slate-400 hover:text-slate-200 transition-colors">Отмена</button>
-              <button onClick={handleCreate} disabled={creating || !form.title || !form.auditPlanId} className="px-4 py-2 bg-teal-600 hover:bg-teal-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors">
-                {creating ? 'Создание...' : 'Создать'}
-              </button>
-            </div>
+            ))}
           </div>
-        </div>
+        </Card>
+      )}
+
+      {/* ---- TAB: Reports ---- */}
+      {tab === "reports" && (
+        <Card>
+          <div className="flex flex-col items-center justify-center py-12 text-asvo-text-dim">
+            <BarChart3 size={40} className="mb-3 opacity-30" />
+            <p className="text-[13px]">Раздел отчётов находится в разработке</p>
+          </div>
+        </Card>
       )}
     </div>
   );

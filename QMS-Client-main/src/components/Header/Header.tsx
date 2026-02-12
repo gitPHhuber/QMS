@@ -1,6 +1,4 @@
-
 import React, { useContext, Fragment, useState, useEffect, useRef } from "react";
-import Logo from "assets/images/logo.svg";
 import { NavLink, useLocation } from "react-router-dom";
 import { observer } from "mobx-react-lite";
 import { Context } from "src/main";
@@ -10,14 +8,12 @@ import { setSessionOnline } from "src/api/userApi";
 import { DateTimeDisplay } from "./DateTimeDisplay";
 import clsx from "clsx";
 
-
 import {
   Shield, ShieldCheck, Archive,
   ClipboardList, User, LogOut,
-  ChevronDown, FileText, AlertTriangle, ClipboardCheck, BarChart3, LayoutDashboard,
+  ChevronDown, FileText, AlertTriangle, ClipboardCheck, BarChart3,
   Truck, GraduationCap, Wrench,
 } from "lucide-react";
-
 
 import {
   ADMIN_ROUTE,
@@ -36,7 +32,6 @@ type NavItem = {
   children?: { label: string; to: string; icon?: React.ElementType }[];
 };
 
-
 export const HEADER_HEIGHT = 56;
 
 export const Header: React.FC = observer(() => {
@@ -47,7 +42,6 @@ export const Header: React.FC = observer(() => {
   if (!context) throw new Error("Context required");
   const { user, modules } = context;
 
-
   const [isVisible, setIsVisible] = useState(true);
   const [isAtTop, setIsAtTop] = useState(true);
   const lastScrollY = useRef(0);
@@ -56,11 +50,7 @@ export const Header: React.FC = observer(() => {
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-
-
       setIsAtTop(currentScrollY < 5);
-
-
       const scrollDiff = currentScrollY - lastScrollY.current;
 
       if (Math.abs(scrollDiff) < scrollThreshold) {
@@ -68,10 +58,8 @@ export const Header: React.FC = observer(() => {
       }
 
       if (scrollDiff > 0 && currentScrollY > HEADER_HEIGHT) {
-
         setIsVisible(false);
       } else {
-
         setIsVisible(true);
       }
 
@@ -82,21 +70,21 @@ export const Header: React.FC = observer(() => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-
   const logOut = async () => {
     try {
       const userId = Number(localStorage.getItem("userID"));
       const pcId = localStorage.getItem("pcID");
       const pcIdNum = pcId === "PERSONAL" ? null : Number(pcId);
       if (userId) await setSessionOnline(false, userId, pcIdNum);
-    } catch (error) { console.error(error); }
+    } catch (error) {
+      console.error(error);
+    }
 
     user.resetUser();
     localStorage.clear();
     sessionStorage.clear();
     await auth.signoutRedirect({ post_logout_redirect_uri: window.location.origin });
   };
-
 
   const navigation: NavItem[] = [
     {
@@ -137,10 +125,9 @@ export const Header: React.FC = observer(() => {
     },
   ];
 
-
   const visibleNav = navigation.filter(item => {
-      if (!item.permissions) return true;
-      return item.permissions.some(p => user.can(p));
+    if (!item.permissions) return true;
+    return item.permissions.some(p => user.can(p));
   });
 
   return (
@@ -154,17 +141,17 @@ export const Header: React.FC = observer(() => {
       )}
     >
       <div className="max-w-[1920px] mx-auto px-4 h-full flex justify-between items-center">
-
+        {/* ── Logo ── */}
         <div className="flex items-center gap-6 min-w-max">
           <NavLink to="/" className="flex items-center gap-2 group">
-            <img src={Logo} alt="Logo" className="h-7 w-auto group-hover:opacity-80 transition-opacity" />
-            <span className="text-lg font-bold text-asvo-accent tracking-tight leading-none">
+            <span className="text-lg font-bold text-asvo-accent tracking-tight leading-none group-hover:opacity-80 transition-opacity">
               ASVO-QMS
             </span>
           </NavLink>
           <div className="h-6 w-px bg-asvo-dark-3 hidden lg:block"></div>
         </div>
 
+        {/* ── Navigation ── */}
         {auth.isAuthenticated && (
           <nav className="hidden lg:flex items-center gap-1">
             {visibleNav.map((item, idx) => (
@@ -172,8 +159,8 @@ export const Header: React.FC = observer(() => {
                 {item.children ? (
                   <Menu as="div" className="relative">
                     <Menu.Button className={({ open }) => clsx(
-                        "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all outline-none",
-                        open ? "bg-asvo-dark-2 text-asvo-accent" : "text-asvo-muted hover:bg-asvo-dark-2 hover:text-asvo-light"
+                      "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all outline-none",
+                      open ? "bg-asvo-dark-2 text-asvo-accent" : "text-asvo-muted hover:bg-asvo-dark-2 hover:text-asvo-light"
                     )}>
                       <item.icon size={16} />
                       <span>{item.label}</span>
@@ -188,19 +175,29 @@ export const Header: React.FC = observer(() => {
                       leaveFrom="transform opacity-100 scale-100 translate-y-0"
                       leaveTo="transform opacity-0 scale-95 -translate-y-2"
                     >
-                      <Menu.Items className="absolute left-0 mt-2 w-56 origin-top-left divide-y divide-asvo-dark-3/30 rounded-lg bg-asvo-dark-2 shadow-lg ring-1 ring-asvo-dark-3/50 focus:outline-none z-50">
-                        <div className="p-1">
+                      <Menu.Items className="absolute left-0 mt-2 w-56 origin-top-left rounded-lg bg-[#1e293b] border border-teal-500/30 shadow-2xl shadow-black/60 focus:outline-none z-50">
+                        <div className="p-1.5">
                           {item.children.map((sub, sIdx) => (
                             <Menu.Item key={sIdx}>
                               {({ active }) => (
                                 <NavLink
                                   to={sub.to}
                                   className={clsx(
-                                    "flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm",
-                                    active ? "bg-asvo-dark-3/50 text-asvo-accent font-medium" : "text-asvo-muted hover:bg-asvo-dark-3/30"
+                                    "flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors",
+                                    active
+                                      ? "bg-teal-500/10 text-teal-400 font-medium"
+                                      : "text-slate-200 hover:bg-slate-700/50 hover:text-white"
                                   )}
                                 >
-                                  {sub.icon && <sub.icon size={14} className={active ? "text-asvo-accent" : "text-asvo-muted"} />}
+                                  {sub.icon && (
+                                    <sub.icon
+                                      size={15}
+                                      className={clsx(
+                                        "shrink-0",
+                                        active ? "text-teal-400" : "text-slate-400"
+                                      )}
+                                    />
+                                  )}
                                   {sub.label}
                                 </NavLink>
                               )}
@@ -214,10 +211,10 @@ export const Header: React.FC = observer(() => {
                   <NavLink
                     to={item.to!}
                     className={({ isActive }) => clsx(
-                        "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all",
-                        isActive
-                          ? "bg-asvo-dark-2 text-asvo-accent font-bold"
-                          : "text-asvo-muted hover:bg-asvo-dark-2 hover:text-asvo-light"
+                      "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all",
+                      isActive
+                        ? "bg-asvo-dark-2 text-asvo-accent font-bold"
+                        : "text-asvo-muted hover:bg-asvo-dark-2 hover:text-asvo-light"
                     )}
                   >
                     <item.icon size={16} />
@@ -229,6 +226,7 @@ export const Header: React.FC = observer(() => {
           </nav>
         )}
 
+        {/* ── Right side ── */}
         <div className="flex items-center gap-4 min-w-max">
           {modules.config?.tier === 'dev-all' && (
             <span className="text-[10px] px-2 py-0.5 rounded-full bg-yellow-900/30 border border-yellow-700/50 text-yellow-400">
@@ -236,68 +234,68 @@ export const Header: React.FC = observer(() => {
             </span>
           )}
           <div className="hidden xl:block text-right">
-             <DateTimeDisplay />
+            <DateTimeDisplay />
           </div>
 
           {auth.isAuthenticated ? (
             <Menu as="div" className="relative ml-2">
-                <Menu.Button className="flex items-center gap-2 pl-2 pr-1 py-1 rounded-full hover:bg-asvo-dark-2 transition border border-transparent hover:border-asvo-dark-3 group outline-none">
-                    <div className="flex flex-col items-end leading-none mr-1">
-                        <span className="text-xs font-bold text-asvo-light">{user.user?.surname} {user.user?.name?.[0]}.</span>
-                        <span className="text-[10px] text-asvo-muted">{user.user?.role}</span>
-                    </div>
-                    <div className="h-8 w-8 rounded-full bg-asvo-dark-3 overflow-hidden ring-2 ring-asvo-dark-2 shadow-sm">
-                         {user.user?.img
-                            ? <img src={`${import.meta.env.VITE_API_URL}/${user.user.img}`} alt="" className="h-full w-full object-cover"/>
-                            : <div className="h-full w-full flex items-center justify-center text-asvo-accent font-bold text-xs">{user.user?.name?.[0]}</div>
-                         }
-                    </div>
-                </Menu.Button>
+              <Menu.Button className="flex items-center gap-2 pl-2 pr-1 py-1 rounded-full hover:bg-asvo-dark-2 transition border border-transparent hover:border-asvo-dark-3 group outline-none">
+                <div className="flex flex-col items-end leading-none mr-1">
+                  <span className="text-xs font-bold text-asvo-light">{user.user?.surname} {user.user?.name?.[0]}.</span>
+                  <span className="text-[10px] text-asvo-muted">{user.user?.role}</span>
+                </div>
+                <div className="h-8 w-8 rounded-full bg-asvo-dark-3 overflow-hidden ring-2 ring-asvo-dark-2 shadow-sm">
+                  {user.user?.img
+                    ? <img src={`${import.meta.env.VITE_API_URL}/${user.user.img}`} alt="" className="h-full w-full object-cover" />
+                    : <div className="h-full w-full flex items-center justify-center text-asvo-accent font-bold text-xs">{user.user?.name?.[0]}</div>
+                  }
+                </div>
+              </Menu.Button>
 
-                <Transition
-                  as={Fragment}
-                  enter="transition ease-out duration-100"
-                  enterFrom="transform opacity-0 scale-95"
-                  enterTo="transform opacity-100 scale-100"
-                  leave="transition ease-in duration-75"
-                  leaveFrom="transform opacity-100 scale-100"
-                  leaveTo="transform opacity-0 scale-95"
-                >
-                  <Menu.Items className="absolute right-0 mt-2 w-48 origin-top-right divide-y divide-asvo-dark-3/30 rounded-lg bg-asvo-dark-2 shadow-lg ring-1 ring-asvo-dark-3/50 focus:outline-none z-50">
-                    <div className="p-1">
-                      <Menu.Item>
-                        {({ active }) => (
-                          <NavLink
-                            to={PROFILE_ROUTE}
-                            className={clsx(
-                              "flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm",
-                              active ? "bg-asvo-dark-3/50 text-asvo-accent" : "text-asvo-muted"
-                            )}
-                          >
-                            <User size={14} />
-                            Профиль
-                          </NavLink>
-                        )}
-                      </Menu.Item>
-                    </div>
-                    <div className="p-1">
-                      <Menu.Item>
-                        {({ active }) => (
-                          <button
-                            onClick={logOut}
-                            className={clsx(
-                              "flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm",
-                              active ? "bg-red-900/30 text-red-400" : "text-asvo-muted"
-                            )}
-                          >
-                            <LogOut size={14} />
-                            Выйти
-                          </button>
-                        )}
-                      </Menu.Item>
-                    </div>
-                  </Menu.Items>
-                </Transition>
+              <Transition
+                as={Fragment}
+                enter="transition ease-out duration-100"
+                enterFrom="transform opacity-0 scale-95"
+                enterTo="transform opacity-100 scale-100"
+                leave="transition ease-in duration-75"
+                leaveFrom="transform opacity-100 scale-100"
+                leaveTo="transform opacity-0 scale-95"
+              >
+                <Menu.Items className="absolute right-0 mt-2 w-48 origin-top-right rounded-lg bg-[#1e293b] border border-slate-600/50 shadow-2xl shadow-black/60 focus:outline-none z-50">
+                  <div className="p-1">
+                    <Menu.Item>
+                      {({ active }) => (
+                        <NavLink
+                          to={PROFILE_ROUTE}
+                          className={clsx(
+                            "flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors",
+                            active ? "bg-teal-500/10 text-teal-400" : "text-slate-200"
+                          )}
+                        >
+                          <User size={14} />
+                          Профиль
+                        </NavLink>
+                      )}
+                    </Menu.Item>
+                  </div>
+                  <div className="border-t border-slate-600/30 p-1">
+                    <Menu.Item>
+                      {({ active }) => (
+                        <button
+                          onClick={logOut}
+                          className={clsx(
+                            "flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors",
+                            active ? "bg-red-900/30 text-red-400" : "text-slate-200"
+                          )}
+                        >
+                          <LogOut size={14} />
+                          Выйти
+                        </button>
+                      )}
+                    </Menu.Item>
+                  </div>
+                </Menu.Items>
+              </Transition>
             </Menu>
           ) : null}
         </div>

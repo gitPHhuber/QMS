@@ -1,220 +1,556 @@
 /**
- * DocumentsPage.tsx — Реестр документов СМК
- * НОВЫЙ ФАЙЛ: src/pages/Documents/DocumentsPage.tsx
+ * DocumentsPage.tsx — Полная реализация модуля Документы СМК
+ * Подключён к API /api/documents/, с пагинацией, фильтрацией, модалками.
+ *
+ * Заменяет предыдущую заглушку с захардкоженными данными.
  */
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
-  FileText, Plus, Search, ChevronRight,
-  AlertTriangle, Loader2, X
+  FileText, Plus, Search, Upload, ChevronRight,
+  CheckCircle, Clock, AlertTriangle, RefreshCw,
 } from "lucide-react";
-import { documentsApi } from "src/api/qmsApi";
-import type { DocumentShort, DocType } from "src/api/qmsApi";
 
-const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
-  DRAFT: { label: "Черновик", cls: "bg-gray-100 text-gray-700" },
-  REVIEW: { label: "Согласование", cls: "bg-blue-100 text-blue-700" },
-  APPROVED: { label: "Утверждён", cls: "bg-purple-100 text-purple-700" },
-  EFFECTIVE: { label: "Действующий", cls: "bg-emerald-100 text-emerald-700" },
-  REVISION: { label: "Пересмотр", cls: "bg-amber-100 text-amber-700" },
-  OBSOLETE: { label: "Устарел", cls: "bg-gray-100 text-gray-500" },
-  CANCELLED: { label: "Отменён", cls: "bg-red-100 text-red-700" },
+import { documentsApi } from "../../api/qmsApi";
+import type { DocumentShort, DocumentStats, DocumentApprovalItem } from "../../api/qmsApi";
+
+import Badge from "../../components/qms/Badge";
+import StatusDot from "../../components/qms/StatusDot";
+import TabBar from "../../components/qms/TabBar";
+import DataTable from "../../components/qms/DataTable";
+import ActionBtn from "../../components/qms/ActionBtn";
+import KpiRow from "../../components/qms/KpiRow";
+
+import CreateDocumentModal from "./CreateDocumentModal";
+import DocumentDetailModal from "./DocumentDetailModal";
+import Pagination from "./Pagination";
+
+/* ───────────────────── Constants & Maps ───────────────────── */
+
+const LIMIT = 20;
+
+const TABS = [
+  { key: "all",         label: "Все" },
+  { key: "policy",      label: "Политики" },
+  { key: "manual",      label: "Руководства" },
+  { key: "procedure",   label: "Процедуры" },
+  { key: "instruction", label: "Инструкции" },
+  { key: "form",        label: "Формы" },
+  { key: "record",      label: "Записи" },
+  { key: "plan",        label: "Планы" },
+  { key: "external",    label: "Внешние" },
+];
+
+const TAB_TO_TYPE: Record<string, string | undefined> = {
+  all:         undefined,
+  policy:      "POLICY",
+  manual:      "MANUAL",
+  procedure:   "PROCEDURE",
+  instruction: "WORK_INSTRUCTION",
+  form:        "FORM",
+  record:      "RECORD",
+  plan:        "PLAN",
+  external:    "EXTERNAL",
 };
 
-const TYPE_LABELS: Record<string, string> = {
-  POLICY: "Политика", MANUAL: "Руководство", PROCEDURE: "СТО",
-  WORK_INSTRUCTION: "Рабочая инструкция", FORM: "Форма", RECORD: "Запись",
-  SPECIFICATION: "Спецификация", PLAN: "План", EXTERNAL: "Внешний", OTHER: "Прочее",
+export const TYPE_LABELS: Record<string, string> = {
+  POLICY:           "Политика",
+  MANUAL:           "Руководство",
+  PROCEDURE:        "Процедура",
+  WORK_INSTRUCTION: "Инструкция",
+  FORM:             "Форма",
+  RECORD:           "Запись",
+  SPECIFICATION:    "Спецификация",
+  PLAN:             "План",
+  EXTERNAL:         "Внешний",
+  OTHER:            "Другое",
 };
+
+export const TYPE_COLORS: Record<string, string> = {
+  POLICY:           "#4A90E8",
+  MANUAL:           "#4A90E8",
+  PROCEDURE:        "#2DD4A8",
+  WORK_INSTRUCTION: "#A06AE8",
+  FORM:             "#E8A830",
+  RECORD:           "#E87040",
+  SPECIFICATION:    "#E87040",
+  PLAN:             "#4A90E8",
+  EXTERNAL:         "#3A4E62",
+  OTHER:            "#3A4E62",
+};
+
+export const STATUS_LABELS: Record<string, string> = {
+  DRAFT:     "Черновик",
+  REVIEW:    "Согласование",
+  APPROVED:  "Утверждён",
+  EFFECTIVE: "Действующий",
+  REVISION:  "Пересмотр",
+  OBSOLETE:  "Устарел",
+  CANCELLED: "Отменён",
+};
+
+const STATUS_DOT_MAP: Record<string, "accent" | "blue" | "amber" | "grey" | "red"> = {
+  DRAFT:     "grey",
+  REVIEW:    "blue",
+  APPROVED:  "accent",
+  EFFECTIVE: "accent",
+  REVISION:  "amber",
+  OBSOLETE:  "red",
+  CANCELLED: "red",
+};
+
+/* ───────────────────── Component ───────────────────── */
 
 export const DocumentsPage: React.FC = () => {
-  const [docs, setDocs] = useState<DocumentShort[]>([]);
-  const [count, setCount] = useState(0);
-  const [page, setPage] = useState(1);
+  /* ── State ── */
+  const [documents, setDocuments] = useState<DocumentShort[]>([]);
+  const [stats, setStats] = useState<DocumentStats | null>(null);
+  const [pendingApprovals, setPendingApprovals] = useState<DocumentApprovalItem[]>([]);
+
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
 
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("");
-  const [typeFilter, setTypeFilter] = useState<string>("");
+  const [searchDebounced, setSearchDebounced] = useState("");
+  const [activeTab, setActiveTab] = useState("all");
 
-  const [showCreate, setShowCreate] = useState(false);
-  const [createData, setCreateData] = useState({ title: "", type: "PROCEDURE" as DocType, category: "", description: "" });
-  const [creating, setCreating] = useState(false);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [detailDocId, setDetailDocId] = useState<number | null>(null);
 
-  const load = useCallback(async () => {
+  /* ── Search debounce ── */
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchDebounced(search);
+      setPage(1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  /* ── Reset page on filter change ── */
+  useEffect(() => {
+    setPage(1);
+  }, [activeTab]);
+
+  /* ── Fetch documents ── */
+  const fetchDocuments = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
-      const r = await documentsApi.getAll({
-        page, limit: 20, search: search || undefined,
-        status: statusFilter || undefined, type: typeFilter || undefined,
-      });
-      setDocs(r.rows);
-      setCount(r.count);
-    } finally { setLoading(false); }
-  }, [page, search, statusFilter, typeFilter]);
+      const params: Record<string, unknown> = {
+        page,
+        limit: LIMIT,
+      };
 
-  useEffect(() => { load(); }, [load]);
+      const typeVal = TAB_TO_TYPE[activeTab];
+      if (typeVal) params.type = typeVal;
+      if (searchDebounced.trim()) params.search = searchDebounced.trim();
 
-  const handleCreate = async () => {
-    if (!createData.title) return;
-    setCreating(true);
+      const result = await documentsApi.getAll(params);
+      setDocuments(result.rows);
+      setTotalCount(result.count);
+      setTotalPages(Math.ceil(result.count / LIMIT));
+    } catch (e: any) {
+      setError(e.response?.data?.message || e.message || "Ошибка загрузки документов");
+    } finally {
+      setLoading(false);
+    }
+  }, [page, activeTab, searchDebounced]);
+
+  useEffect(() => {
+    fetchDocuments();
+  }, [fetchDocuments]);
+
+  /* ── Fetch stats ── */
+  const fetchStats = useCallback(async () => {
     try {
-      await documentsApi.create(createData);
-      setShowCreate(false);
-      setCreateData({ title: "", type: "PROCEDURE", category: "", description: "" });
-      load();
-    } finally { setCreating(false); }
+      const s = await documentsApi.getStats();
+      setStats(s);
+    } catch (e) {
+      console.error("Stats fetch error:", e);
+    }
+  }, []);
+
+  /* ── Fetch pending approvals ── */
+  const fetchPending = useCallback(async () => {
+    try {
+      const p = await documentsApi.getPending();
+      setPendingApprovals(p);
+    } catch (e) {
+      console.error("Pending fetch error:", e);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchStats();
+    fetchPending();
+  }, [fetchStats, fetchPending]);
+
+  /* ── Handlers ── */
+  const openDetail = (id: number) => setDetailDocId(id);
+
+  const handleCreated = () => {
+    fetchDocuments();
+    fetchStats();
   };
 
-  const totalPages = Math.max(1, Math.ceil(count / 20));
+  const handleDetailAction = () => {
+    // After any action in detail (approve, effective, etc.)
+    fetchDocuments();
+    fetchStats();
+    fetchPending();
+  };
 
+  /* ── KPI items from stats ── */
+  const kpiItems = stats
+    ? [
+        {
+          label: "Всего документов",
+          value: stats.byStatus.reduce((sum, s) => sum + Number(s.count), 0),
+          color: "#4A90E8",
+          icon: <FileText size={18} />,
+        },
+        {
+          label: "Действующих",
+          value: Number(stats.byStatus.find((s) => s.status === "EFFECTIVE")?.count || 0),
+          color: "#2DD4A8",
+          icon: <CheckCircle size={18} />,
+        },
+        {
+          label: "На согласовании",
+          value: stats.pendingApprovalsCount,
+          color: "#E8A830",
+          icon: <Clock size={18} />,
+        },
+        {
+          label: "Просрочен пересмотр",
+          value: stats.overdueCount,
+          color: "#F06060",
+          icon: <AlertTriangle size={18} />,
+        },
+      ]
+    : [];
+
+  /* ── Table columns ── */
+  const columns = [
+    {
+      key: "code",
+      label: "Код",
+      width: "120px",
+      render: (row: DocumentShort) => (
+        <span
+          className="font-mono text-[12px] font-bold text-asvo-accent cursor-pointer hover:underline"
+          onClick={() => openDetail(row.id)}
+        >
+          {row.code}
+        </span>
+      ),
+    },
+    {
+      key: "title",
+      label: "Название",
+      render: (row: DocumentShort) => (
+        <span
+          className="font-medium text-asvo-text cursor-pointer hover:text-asvo-accent transition-colors"
+          onClick={() => openDetail(row.id)}
+        >
+          {row.title}
+        </span>
+      ),
+    },
+    {
+      key: "type",
+      label: "Тип",
+      width: "140px",
+      render: (row: DocumentShort) => {
+        const color = TYPE_COLORS[row.type] || "#3A4E62";
+        return (
+          <Badge color={color} bg={`${color}22`}>
+            {TYPE_LABELS[row.type] || row.type}
+          </Badge>
+        );
+      },
+    },
+    {
+      key: "version",
+      label: "Версия",
+      width: "80px",
+      render: (row: DocumentShort) => (
+        <span className="font-mono text-[12px] text-asvo-text-mid">
+          {row.currentVersion ? `v${row.currentVersion.version}` : "—"}
+        </span>
+      ),
+    },
+    {
+      key: "status",
+      label: "Статус",
+      width: "140px",
+      render: (row: DocumentShort) => {
+        const dotColor = STATUS_DOT_MAP[row.status] || "grey";
+        return (
+          <span className="flex items-center gap-2">
+            <StatusDot color={dotColor} />
+            <span className="text-asvo-text text-[13px]">
+              {STATUS_LABELS[row.status] || row.status}
+            </span>
+          </span>
+        );
+      },
+    },
+    {
+      key: "owner",
+      label: "Владелец",
+      width: "140px",
+      render: (row: DocumentShort) => (
+        <span className="text-asvo-text-mid text-[12px]">
+          {row.owner
+            ? `${row.owner.surname} ${row.owner.name.charAt(0)}.`
+            : "—"}
+        </span>
+      ),
+    },
+    {
+      key: "nextReviewDate",
+      label: "Пересмотр",
+      width: "110px",
+      render: (row: DocumentShort) => {
+        if (!row.nextReviewDate) return <span className="text-asvo-text-dim">—</span>;
+        const isOverdue = new Date(row.nextReviewDate) < new Date();
+        return (
+          <span
+            className={`text-[12px] ${
+              isOverdue ? "text-red-400 font-semibold" : "text-asvo-text-mid"
+            }`}
+          >
+            {new Date(row.nextReviewDate).toLocaleDateString("ru-RU")}
+          </span>
+        );
+      },
+    },
+    {
+      key: "actions",
+      label: "",
+      width: "50px",
+      align: "center" as const,
+      render: (row: DocumentShort) => (
+        <ChevronRight
+          size={14}
+          className="text-asvo-text-dim mx-auto cursor-pointer hover:text-asvo-accent transition-colors"
+          onClick={() => openDetail(row.id)}
+        />
+      ),
+    },
+  ];
+
+  /* ── Render ── */
   return (
-    <div className="px-4 py-6 max-w-[1600px] mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+    <div className="px-6 py-6 max-w-[1600px] mx-auto space-y-6">
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl flex items-center justify-center shadow-lg">
-            <FileText className="w-5 h-5 text-white" />
+          <div className="w-10 h-10 bg-asvo-accent/15 rounded-xl flex items-center justify-center">
+            <FileText className="w-5 h-5 text-asvo-accent" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">Документы СМК</h1>
-            <p className="text-sm text-gray-500">ISO 13485 §4.2.4 — Управление документацией</p>
+            <h1 className="text-xl font-bold text-asvo-text">Документы СМК</h1>
+            <p className="text-[12px] text-asvo-text-dim">
+              ISO 13485 §4.2.4 — Управление документацией
+            </p>
           </div>
         </div>
-        <button onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl shadow hover:shadow-lg transition text-sm font-medium">
-          <Plus size={16} /> Создать документ
-        </button>
-      </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3 mb-4">
-        <div className="relative flex-1 min-w-[200px] max-w-md">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
-            placeholder="Поиск по коду, названию..."
-            className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-400" />
+        <div className="flex items-center gap-2">
+          <ActionBtn variant="primary" icon={<Plus size={14} />} onClick={() => setCreateModalOpen(true)}>
+            Создать документ
+          </ActionBtn>
+          <ActionBtn variant="secondary" icon={<RefreshCw size={14} />} onClick={() => { fetchDocuments(); fetchStats(); }}>
+            Обновить
+          </ActionBtn>
         </div>
-        <select value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
-          className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white">
-          <option value="">Все статусы</option>
-          {Object.entries(STATUS_BADGE).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-        </select>
-        <select value={typeFilter} onChange={e => { setTypeFilter(e.target.value); setPage(1); }}
-          className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white">
-          <option value="">Все типы</option>
-          {Object.entries(TYPE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-        </select>
       </div>
 
-      {/* Table */}
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b">
-            <tr>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">Код</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">Название</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">Тип</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">Статус</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">Версия</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">Владелец</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">Пересмотр</th>
-              <th className="w-8"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr><td colSpan={8} className="text-center py-12"><Loader2 className="w-6 h-6 animate-spin text-gray-400 mx-auto" /></td></tr>
-            ) : docs.length === 0 ? (
-              <tr><td colSpan={8} className="text-center py-12 text-gray-400">Документы не найдены</td></tr>
-            ) : docs.map(doc => {
-              const sb = STATUS_BADGE[doc.status] || STATUS_BADGE.DRAFT;
-              const overdue = doc.nextReviewDate && new Date(doc.nextReviewDate) < new Date();
-              return (
-                <tr key={doc.id} className="border-b last:border-0 hover:bg-gray-50 cursor-pointer"
-                  onClick={() => window.location.href = `/documents/${doc.id}`}>
-                  <td className="px-4 py-3 font-mono text-xs text-blue-600 font-bold">{doc.code}</td>
-                  <td className="px-4 py-3 font-medium text-gray-800 max-w-xs truncate">{doc.title}</td>
-                  <td className="px-4 py-3 text-gray-600">{TYPE_LABELS[doc.type] || doc.type}</td>
-                  <td className="px-4 py-3">
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${sb.cls}`}>{sb.label}</span>
-                  </td>
-                  <td className="px-4 py-3 text-gray-600">{doc.currentVersion?.version || "—"}</td>
-                  <td className="px-4 py-3 text-gray-600 text-xs">
-                    {doc.owner ? `${doc.owner.name} ${doc.owner.surname}` : "—"}
-                  </td>
-                  <td className="px-4 py-3">
-                    {doc.nextReviewDate ? (
-                      <span className={`flex items-center gap-1 text-xs ${overdue ? "text-red-600 font-bold" : "text-gray-500"}`}>
-                        {overdue && <AlertTriangle size={12} />}
-                        {new Date(doc.nextReviewDate).toLocaleDateString("ru-RU")}
-                      </span>
-                    ) : "—"}
-                  </td>
-                  <td className="px-4 py-3"><ChevronRight size={14} className="text-gray-400" /></td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      {/* ── KPI Row ── */}
+      {stats && <KpiRow items={kpiItems} />}
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between mt-4 text-sm text-gray-600">
-          <span>Всего: {count}</span>
-          <div className="flex gap-1">
-            {Array.from({ length: Math.min(totalPages, 10) }, (_, i) => i + 1).map(p => (
-              <button key={p} onClick={() => setPage(p)}
-                className={`px-3 py-1 rounded ${p === page ? "bg-blue-600 text-white" : "bg-gray-100 hover:bg-gray-200"}`}>{p}</button>
+      {/* ── Pending Approvals Banner ── */}
+      {pendingApprovals.length > 0 && (
+        <div className="bg-[#E8A830]/10 border border-[#E8A830]/30 rounded-xl p-4">
+          <h3 className="text-[13px] font-semibold text-[#E8A830] mb-3 flex items-center gap-2">
+            <Clock size={16} />
+            Ожидают вашего согласования ({pendingApprovals.length})
+          </h3>
+          <div className="space-y-2">
+            {pendingApprovals.slice(0, 5).map((a) => (
+              <div
+                key={a.id}
+                className="flex items-center justify-between bg-asvo-surface-2 rounded-lg px-3 py-2"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="font-mono text-asvo-accent text-[12px] flex-shrink-0">
+                    {a.version.document.code}
+                  </span>
+                  <span className="text-asvo-text text-[13px] truncate">
+                    {a.version.document.title}
+                  </span>
+                  <Badge color="#A06AE8" bg="rgba(160,106,232,0.14)">
+                    v{a.version.version}
+                  </Badge>
+                </div>
+                <ActionBtn
+                  variant="primary"
+                  icon={<ChevronRight size={12} />}
+                  onClick={() => openDetail(a.version.document.id)}
+                >
+                  Рассмотреть
+                </ActionBtn>
+              </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Create Modal */}
-      {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-gray-800">Новый документ</h2>
-              <button onClick={() => setShowCreate(false)}><X size={20} className="text-gray-400" /></button>
+      {/* ── Search & Filters ── */}
+      <div className="flex items-center gap-4">
+        <div className="relative w-full max-w-sm">
+          <Search
+            size={14}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-asvo-text-dim"
+          />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Поиск по коду, названию..."
+            className="w-full pl-9 pr-3 py-2 bg-asvo-surface border border-asvo-border rounded-lg text-[13px] text-asvo-text placeholder:text-asvo-text-dim focus:outline-none focus:border-asvo-accent/40 transition-colors"
+          />
+        </div>
+      </div>
+
+      <TabBar tabs={TABS} active={activeTab} onChange={setActiveTab} />
+
+      {/* ── Error State ── */}
+      {error && (
+        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 flex items-center gap-3">
+          <AlertTriangle className="text-red-400 flex-shrink-0" size={18} />
+          <span className="text-red-400 text-[13px] flex-1">{error}</span>
+          <ActionBtn variant="secondary" onClick={fetchDocuments}>
+            Повторить
+          </ActionBtn>
+        </div>
+      )}
+
+      {/* ── Loading State ── */}
+      {loading && !error && (
+        <div className="flex items-center justify-center py-20">
+          <div className="w-8 h-8 border-2 border-asvo-accent/30 border-t-asvo-accent rounded-full animate-spin" />
+        </div>
+      )}
+
+      {/* ── Empty State ── */}
+      {!loading && !error && documents.length === 0 && (
+        <div className="text-center py-16">
+          <FileText className="mx-auto text-asvo-text-dim mb-3" size={48} />
+          <p className="text-asvo-text-mid text-[14px]">Документы не найдены</p>
+          <p className="text-asvo-text-dim text-[12px] mt-1">
+            Создайте первый документ или измените фильтры
+          </p>
+        </div>
+      )}
+
+      {/* ── Data Table ── */}
+      {!loading && !error && documents.length > 0 && (
+        <>
+          <DataTable<DocumentShort>
+            columns={columns}
+            data={documents}
+          />
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            totalCount={totalCount}
+            limit={LIMIT}
+            onChange={setPage}
+          />
+        </>
+      )}
+
+      {/* ── Stats Panel ── */}
+      {stats && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* By Type */}
+          <div className="bg-asvo-surface-2 border border-asvo-border rounded-xl p-5">
+            <h3 className="text-[13px] font-semibold text-asvo-text mb-4">
+              По типам документов
+            </h3>
+            <div className="space-y-2">
+              {stats.byType
+                .sort((a, b) => Number(b.count) - Number(a.count))
+                .map((t) => {
+                  const total = stats.byType.reduce((s, x) => s + Number(x.count), 0);
+                  const pct = total > 0 ? (Number(t.count) / total) * 100 : 0;
+                  const color = TYPE_COLORS[t.type] || "#3A4E62";
+                  return (
+                    <div key={t.type} className="flex items-center gap-3">
+                      <span className="text-[12px] text-asvo-text-mid w-24 truncate">
+                        {TYPE_LABELS[t.type] || t.type}
+                      </span>
+                      <div className="flex-1 h-2 bg-asvo-surface rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all"
+                          style={{ width: `${pct}%`, background: color }}
+                        />
+                      </div>
+                      <span className="text-[12px] font-mono w-8 text-right" style={{ color }}>
+                        {t.count}
+                      </span>
+                    </div>
+                  );
+                })}
             </div>
-            <div className="space-y-3">
-              <div>
-                <label className="text-xs text-gray-600 font-medium">Название *</label>
-                <input value={createData.title} onChange={e => setCreateData(d => ({ ...d, title: e.target.value }))}
-                  className="w-full mt-1 px-3 py-2 border rounded-lg text-sm" placeholder="Руководство по качеству" />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs text-gray-600 font-medium">Тип *</label>
-                  <select value={createData.type} onChange={e => setCreateData(d => ({ ...d, type: e.target.value as DocType }))}
-                    className="w-full mt-1 px-3 py-2 border rounded-lg text-sm bg-white">
-                    {Object.entries(TYPE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs text-gray-600 font-medium">Категория</label>
-                  <input value={createData.category} onChange={e => setCreateData(d => ({ ...d, category: e.target.value }))}
-                    className="w-full mt-1 px-3 py-2 border rounded-lg text-sm" placeholder="Производство" />
-                </div>
-              </div>
-              <div>
-                <label className="text-xs text-gray-600 font-medium">Описание</label>
-                <textarea value={createData.description} onChange={e => setCreateData(d => ({ ...d, description: e.target.value }))}
-                  className="w-full mt-1 px-3 py-2 border rounded-lg text-sm" rows={3} />
-              </div>
-            </div>
-            <div className="flex justify-end gap-2 mt-4">
-              <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">Отмена</button>
-              <button onClick={handleCreate} disabled={creating || !createData.title}
-                className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-1">
-                {creating && <Loader2 size={14} className="animate-spin" />} Создать
-              </button>
+          </div>
+
+          {/* By Status */}
+          <div className="bg-asvo-surface-2 border border-asvo-border rounded-xl p-5">
+            <h3 className="text-[13px] font-semibold text-asvo-text mb-4">
+              По статусам
+            </h3>
+            <div className="grid grid-cols-2 gap-3">
+              {stats.byStatus.map((s) => {
+                const dotColor = STATUS_DOT_MAP[s.status] || "grey";
+                return (
+                  <div
+                    key={s.status}
+                    className="flex items-center gap-2 bg-asvo-surface rounded-lg px-3 py-2"
+                  >
+                    <StatusDot color={dotColor} />
+                    <span className="text-[12px] text-asvo-text-mid flex-1">
+                      {STATUS_LABELS[s.status] || s.status}
+                    </span>
+                    <span className="text-[14px] font-bold text-asvo-text">{s.count}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── Modals ── */}
+      <CreateDocumentModal
+        isOpen={createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
+        onCreated={handleCreated}
+      />
+
+      {detailDocId !== null && (
+        <DocumentDetailModal
+          docId={detailDocId}
+          isOpen={true}
+          onClose={() => setDetailDocId(null)}
+          onAction={handleDetailAction}
+        />
       )}
     </div>
   );

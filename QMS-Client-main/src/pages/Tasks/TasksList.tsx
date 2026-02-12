@@ -12,12 +12,16 @@ import { fetchProjects, ProjectModel } from "src/api/projectsApi";
 import { fetchUsers } from "src/api/userApi";
 import { userGetModel } from "src/types/UserModel";
 import {
-  Plus, Loader2, GripVertical, Edit3, Save, X, Briefcase, Clock,
-  CheckCircle2, Circle, User as UserIcon, Calendar, Search,
+  Plus, Loader2, Edit3, Save, X, Clock,
+  CheckCircle2, Circle, Calendar, Search,
   AlertTriangle, Eye, Archive, Filter, MapPin, ChevronRight,
   LayoutGrid, List,
 } from "lucide-react";
 import { Modal } from "src/components/Modal/Modal";
+import Badge from "src/components/qms/Badge";
+import StatusDot from "src/components/qms/StatusDot";
+import ProgressBar from "src/components/qms/ProgressBar";
+import Avatar from "src/components/qms/Avatar";
 
 /* ─── Types ─────────────────────────────────────────────────────────── */
 
@@ -26,58 +30,117 @@ interface ExtendedTask extends ProductionTask { stats?: TaskStats; }
 
 /* ─── Column config ─────────────────────────────────────────────────── */
 
-const COLUMNS = [
-  { key: "NEW",         label: "Новые",       icon: Circle,       accent: "blue",   borderActive: "border-blue-500",   headerBg: "bg-blue-500/10",  textColor: "text-blue-400",   badge: "bg-blue-900/40 text-blue-300",   dotColor: "bg-blue-500" },
-  { key: "IN_PROGRESS", label: "В работе",    icon: Clock,        accent: "amber",  borderActive: "border-amber-500",  headerBg: "bg-amber-500/10", textColor: "text-amber-400",  badge: "bg-amber-900/40 text-amber-300", dotColor: "bg-amber-500" },
-  { key: "REVIEW",      label: "На проверке", icon: Eye,          accent: "violet", borderActive: "border-violet-500", headerBg: "bg-violet-500/10",textColor: "text-violet-400", badge: "bg-violet-900/40 text-violet-300",dotColor: "bg-violet-500" },
-  { key: "DONE",        label: "Готово",      icon: CheckCircle2, accent: "green",  borderActive: "border-green-500",  headerBg: "bg-green-500/10", textColor: "text-green-400",  badge: "bg-green-900/40 text-green-300",  dotColor: "bg-green-500" },
-  { key: "CLOSED",      label: "Закрыто",     icon: Archive,      accent: "slate",  borderActive: "border-slate-500",  headerBg: "bg-slate-600/10", textColor: "text-slate-400",  badge: "bg-slate-700/40 text-slate-300",  dotColor: "bg-slate-500" },
-] as const;
+type StatusDotColor = "blue" | "amber" | "purple" | "accent" | "grey";
+type ProgressBarColor = "blue" | "amber" | "purple" | "accent" | "green";
+
+interface ColumnDef {
+  key: string;
+  label: string;
+  icon: React.FC<{ size?: number; className?: string }>;
+  dotColor: StatusDotColor;
+  progressColor: ProgressBarColor;
+  textCls: string;
+  badgeCls: string;
+  borderTopCls: string;
+  gradientCls: string;
+  dragBorderCls: string;
+}
+
+const COLUMNS: ColumnDef[] = [
+  {
+    key: "NEW", label: "Новые", icon: Circle, dotColor: "blue", progressColor: "blue",
+    textCls: "text-[#4A90E8]", badgeCls: "bg-[#4A90E8]/15 text-[#4A90E8]",
+    borderTopCls: "border-t-2 border-[#4A90E8]/40",
+    gradientCls: "bg-gradient-to-br from-[#4A90E8]/[0.04] to-transparent",
+    dragBorderCls: "border-[#4A90E8]",
+  },
+  {
+    key: "IN_PROGRESS", label: "В работе", icon: Clock, dotColor: "amber", progressColor: "amber",
+    textCls: "text-[#E8A830]", badgeCls: "bg-[#E8A830]/15 text-[#E8A830]",
+    borderTopCls: "border-t-2 border-[#E8A830]/40",
+    gradientCls: "bg-gradient-to-br from-[#E8A830]/[0.04] to-transparent",
+    dragBorderCls: "border-[#E8A830]",
+  },
+  {
+    key: "REVIEW", label: "На проверке", icon: Eye, dotColor: "purple", progressColor: "purple",
+    textCls: "text-[#A06AE8]", badgeCls: "bg-[#A06AE8]/15 text-[#A06AE8]",
+    borderTopCls: "border-t-2 border-[#A06AE8]/40",
+    gradientCls: "bg-gradient-to-br from-[#A06AE8]/[0.04] to-transparent",
+    dragBorderCls: "border-[#A06AE8]",
+  },
+  {
+    key: "DONE", label: "Готово", icon: CheckCircle2, dotColor: "accent", progressColor: "accent",
+    textCls: "text-[#2DD4A8]", badgeCls: "bg-[#2DD4A8]/15 text-[#2DD4A8]",
+    borderTopCls: "border-t-2 border-[#2DD4A8]/40",
+    gradientCls: "bg-gradient-to-br from-[#2DD4A8]/[0.04] to-transparent",
+    dragBorderCls: "border-[#2DD4A8]",
+  },
+  {
+    key: "CLOSED", label: "Закрыто", icon: Archive, dotColor: "grey", progressColor: "green",
+    textCls: "text-[#3A4E62]", badgeCls: "bg-[#3A4E62]/15 text-[#8899AB]",
+    borderTopCls: "border-t-2 border-[#3A4E62]/40",
+    gradientCls: "bg-gradient-to-br from-[#3A4E62]/[0.04] to-transparent",
+    dragBorderCls: "border-[#3A4E62]",
+  },
+];
 
 /* ─── Source / origin filters ───────────────────────────────────────── */
 
 const SOURCE_FILTERS = [
-  { key: "ALL",        label: "Все" },
-  { key: "NC",         label: "NC" },
-  { key: "CAPA",       label: "CAPA" },
-  { key: "RISK",       label: "Риск" },
-  { key: "AUDIT",      label: "Аудит" },
-  { key: "TRAINING",   label: "Обучение" },
-  { key: "PRODUCT",    label: "Изделие" },
-  { key: "COMPONENT",  label: "Компонент" },
+  { key: "ALL",       label: "Все",        color: "#2DD4A8" },
+  { key: "NC",        label: "NC",         color: "#F06060" },
+  { key: "CAPA",      label: "CAPA",       color: "#E8A830" },
+  { key: "RISK",      label: "Риск",       color: "#A06AE8" },
+  { key: "AUDIT",     label: "Аудит",      color: "#4A90E8" },
+  { key: "TRAINING",  label: "Обучение",   color: "#36B5E0" },
+  { key: "PRODUCT",   label: "Изделие",    color: "#E06890" },
+  { key: "COMPONENT", label: "Компонент",  color: "#3A4E62" },
 ];
 
-const sourceStyle: Record<string, string> = {
-  NC:        "bg-red-900/30 text-red-400 border-red-800/50",
-  CAPA:      "bg-orange-900/30 text-orange-400 border-orange-800/50",
-  RISK:      "bg-rose-900/30 text-rose-400 border-rose-800/50",
-  AUDIT:     "bg-violet-900/30 text-violet-400 border-violet-800/50",
-  TRAINING:  "bg-cyan-900/30 text-cyan-400 border-cyan-800/50",
-  PRODUCT:   "bg-indigo-900/30 text-indigo-400 border-indigo-800/50",
-  COMPONENT: "bg-purple-900/30 text-purple-400 border-purple-800/50",
+type BadgeVariant = "nc" | "capa" | "risk" | "audit" | "training" | "sop" | "closed" | "product" | "component";
+
+const originToBadge: Record<string, BadgeVariant> = {
+  NC: "nc", CAPA: "capa", RISK: "risk", AUDIT: "audit",
+  TRAINING: "training", PRODUCT: "product", COMPONENT: "component",
+};
+
+/* ─── Priority config ──────────────────────────────────────────────── */
+
+interface PriorityConfig {
+  icon: string;
+  color: string;
+  borderCls: string;
+  title: string;
+}
+
+const PRIORITY_MAP: Record<number, PriorityConfig> = {
+  3: { icon: "▲▲", color: "text-[#F06060]",  borderCls: "border-l-[3px] border-l-[#F06060]/60",  title: "Критический" },
+  2: { icon: "●",  color: "text-[#E8A830]",  borderCls: "border-l-[3px] border-l-[#E8A830]/60",  title: "Средний" },
+  1: { icon: "▼",  color: "text-[#4A90E8]",  borderCls: "border-l-[3px] border-l-[#4A90E8]/60",  title: "Низкий" },
+};
+
+const getPriority = (p: number | null | undefined): PriorityConfig => {
+  return PRIORITY_MAP[p || 1] || PRIORITY_MAP[1];
 };
 
 /* ─── Helpers ───────────────────────────────────────────────────────── */
-
-const priorityDot = (p: number | null | undefined) => {
-  if (p === 3) return { cls: "bg-red-500", title: "Высокий" };
-  if (p === 2) return { cls: "bg-amber-500", title: "Средний" };
-  return { cls: "bg-slate-500", title: "Низкий" };
-};
-
-const initials = (u?: { name: string; surname: string } | null) => {
-  if (!u) return "?";
-  return `${(u.surname || "")[0] || ""}${(u.name || "")[0] || ""}`.toUpperCase();
-};
 
 const isOverdue = (d?: string | null) => {
   if (!d) return false;
   return new Date(d) < new Date(new Date().toISOString().slice(0, 10));
 };
 
+const formatDate = (d: string) => {
+  return new Date(d).toLocaleDateString("ru", { day: "numeric", month: "short" });
+};
+
 /* ─── Component ─────────────────────────────────────────────────────── */
 
-const TasksList: React.FC = () => {
+interface TasksListProps {
+  projectId?: number;
+}
+
+const TasksList: React.FC<TasksListProps> = ({ projectId }) => {
   const [tasks, setTasks] = useState<ExtendedTask[]>([]);
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState<userGetModel[]>([]);
@@ -87,6 +150,7 @@ const TasksList: React.FC = () => {
   const [search, setSearch] = useState("");
   const [sourceFilter, setSourceFilter] = useState("ALL");
   const [assigneeFilter, setAssigneeFilter] = useState<string>("");
+  const [searchFocused, setSearchFocused] = useState(false);
 
   // View mode
   const [viewMode, setViewMode] = useState<"board" | "list">("board");
@@ -109,11 +173,14 @@ const TasksList: React.FC = () => {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetchTasks({ page: 1, limit: 500 });
+      const res = await fetchTasks({ page: 1, limit: 500, ...(projectId ? { projectId } : {}) });
       setTasks(res.rows as unknown as ExtendedTask[]);
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
-  }, []);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  }, [projectId]);
 
   useEffect(() => {
     loadData();
@@ -215,84 +282,100 @@ const TasksList: React.FC = () => {
   return (
     <div className="space-y-4">
 
-      {/* ── Filter bar ── */}
-      <div className="flex flex-col lg:flex-row items-start lg:items-center gap-3">
-        {/* Source chips */}
-        <div className="flex items-center gap-1 flex-wrap">
-          <Filter size={14} className="text-slate-500 mr-1" />
-          {SOURCE_FILTERS.map(f => (
-            <button
-              key={f.key}
-              onClick={() => setSourceFilter(f.key)}
-              className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all border ${
-                sourceFilter === f.key
-                  ? "bg-teal-900/40 text-teal-300 border-teal-700/60"
-                  : "bg-slate-800/40 text-slate-500 border-slate-700/40 hover:text-slate-300 hover:border-slate-600"
-              }`}
+      {/* ── Top bar: summary + search + filters + actions ── */}
+      <div className="flex flex-col gap-3">
+        {/* Row 1: Summary + controls */}
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-asvo-text-dim">
+            Всего: <b className="text-asvo-text">{tasks.length}</b>
+          </span>
+          {filtered.length !== tasks.length && (
+            <span className="text-xs text-asvo-text-dim">
+              Найдено: <b className="text-asvo-accent">{filtered.length}</b>
+            </span>
+          )}
+
+          <div className="flex items-center gap-2 ml-auto">
+            {/* Search */}
+            <div className="relative">
+              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-asvo-text-dim" />
+              <input
+                type="text"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setSearchFocused(false)}
+                placeholder="Поиск..."
+                className={`pl-8 pr-3 py-1.5 bg-transparent border border-asvo-border rounded-lg text-xs text-asvo-text placeholder:text-asvo-text-dim focus:bg-asvo-surface focus:border-asvo-border-lt focus:outline-none transition-all ${
+                  searchFocused ? "w-60" : "w-[180px]"
+                }`}
+              />
+            </div>
+
+            {/* Assignee dropdown */}
+            <select
+              value={assigneeFilter}
+              onChange={e => setAssigneeFilter(e.target.value)}
+              className="px-2 py-1.5 bg-asvo-surface border border-asvo-border rounded-lg text-[13px] text-asvo-text-mid focus:border-asvo-border-lt focus:outline-none min-w-[140px]"
             >
-              {f.label}
+              <option value="">Все исполнители</option>
+              {users.map(u => <option key={u.id} value={u.id}>{u.surname} {u.name}</option>)}
+            </select>
+
+            {/* View toggle */}
+            <div className="flex bg-asvo-surface border border-asvo-border rounded-lg overflow-hidden">
+              <button
+                onClick={() => setViewMode("board")}
+                className={`p-1.5 transition-all ${viewMode === "board" ? "bg-asvo-accent text-asvo-bg" : "text-asvo-text-mid hover:text-asvo-text"}`}
+                title="Доска"
+              >
+                <LayoutGrid size={14} />
+              </button>
+              <button
+                onClick={() => setViewMode("list")}
+                className={`p-1.5 transition-all ${viewMode === "list" ? "bg-asvo-accent text-asvo-bg" : "text-asvo-text-mid hover:text-asvo-text"}`}
+                title="Список"
+              >
+                <List size={14} />
+              </button>
+            </div>
+
+            {/* Create button */}
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-br from-asvo-accent to-asvo-accent/80 text-asvo-bg font-bold rounded-lg text-xs transition-all shadow-[0_2px_12px_rgba(45,212,168,0.3)] hover:shadow-[0_4px_16px_rgba(45,212,168,0.4)]"
+            >
+              <Plus size={14} /> Задача
             </button>
-          ))}
+          </div>
         </div>
 
-        <div className="flex items-center gap-2 ml-auto">
-          {/* Assignee */}
-          <select
-            value={assigneeFilter}
-            onChange={e => setAssigneeFilter(e.target.value)}
-            className="px-2 py-1.5 bg-slate-800/60 border border-slate-700 rounded-lg text-xs text-slate-300 focus:border-teal-500/50 focus:outline-none min-w-[140px]"
-          >
-            <option value="">Все исполнители</option>
-            {users.map(u => <option key={u.id} value={u.id}>{u.surname} {u.name}</option>)}
-          </select>
-
-          {/* Search */}
-          <div className="relative">
-            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" />
-            <input
-              type="text" value={search} onChange={e => setSearch(e.target.value)}
-              placeholder="Поиск..."
-              className="pl-8 pr-3 py-1.5 w-48 bg-slate-800/60 border border-slate-700 rounded-lg text-xs text-slate-200 placeholder:text-slate-500 focus:border-teal-500/50 focus:outline-none"
-            />
-          </div>
-
-          {/* View toggle */}
-          <div className="flex bg-slate-800/60 border border-slate-700 rounded-lg overflow-hidden">
-            <button
-              onClick={() => setViewMode("board")}
-              className={`p-1.5 transition ${viewMode === "board" ? "bg-teal-900/40 text-teal-400" : "text-slate-500 hover:text-slate-300"}`}
-              title="Доска"
-            >
-              <LayoutGrid size={14} />
-            </button>
-            <button
-              onClick={() => setViewMode("list")}
-              className={`p-1.5 transition ${viewMode === "list" ? "bg-teal-900/40 text-teal-400" : "text-slate-500 hover:text-slate-300"}`}
-              title="Список"
-            >
-              <List size={14} />
-            </button>
-          </div>
-
-          {/* Create */}
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-600 hover:bg-teal-500 text-white rounded-lg text-xs font-medium transition-colors"
-          >
-            <Plus size={14} /> Задача
-          </button>
+        {/* Row 2: Source filter pills */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <Filter size={13} className="text-asvo-text-dim mr-0.5" />
+          {SOURCE_FILTERS.map(f => {
+            const isActive = sourceFilter === f.key;
+            return (
+              <button
+                key={f.key}
+                onClick={() => setSourceFilter(f.key)}
+                className={`px-3.5 py-1 rounded-full text-xs font-semibold transition-all ${
+                  isActive
+                    ? "border-[1.5px] bg-opacity-10 text-opacity-100"
+                    : "border border-asvo-border text-asvo-text-dim hover:text-asvo-text-mid hover:border-asvo-border-lt"
+                }`}
+                style={isActive ? {
+                  borderColor: f.color,
+                  backgroundColor: `${f.color}10`,
+                  color: f.color,
+                  borderWidth: '1.5px',
+                } : undefined}
+              >
+                {f.label}
+              </button>
+            );
+          })}
         </div>
-      </div>
-
-      {/* ── Summary ── */}
-      <div className="flex items-center gap-4 text-[11px] text-slate-500 px-1">
-        <span>Всего: <b className="text-slate-300">{tasks.length}</b></span>
-        {filtered.length !== tasks.length && <span>Отфильтровано: <b className="text-teal-400">{filtered.length}</b></span>}
-        {COLUMNS.map(c => {
-          const n = grouped[c.key]?.length || 0;
-          if (n === 0) return null;
-          return <span key={c.key} className={c.textColor}>{c.label}: <b>{n}</b></span>;
-        })}
       </div>
 
       {/* ── Board view ── */}
@@ -305,41 +388,45 @@ const TasksList: React.FC = () => {
             return (
               <div
                 key={col.key}
-                className={`flex flex-col rounded-xl border transition-all min-h-[350px] ${
+                className={`flex flex-col rounded-xl transition-all min-h-[350px] ${
                   isDragTarget
-                    ? `border-2 ${col.borderActive} bg-slate-800/80`
-                    : "border-slate-700/40 bg-slate-800/30"
+                    ? `border-2 ${col.dragBorderCls} bg-asvo-surface/80`
+                    : "border border-asvo-border bg-asvo-surface/30"
                 }`}
                 onDragOver={e => onDragOver(e, col.key)}
                 onDragLeave={onDragLeave}
                 onDrop={e => onDrop(e, col.key)}
               >
                 {/* Column header */}
-                <div className={`flex items-center justify-between px-3 py-2.5 rounded-t-xl border-b border-slate-700/40 ${col.headerBg}`}>
+                <div className={`flex items-center justify-between px-3 py-2.5 rounded-t-xl ${col.borderTopCls} ${col.gradientCls}`}>
                   <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${col.dotColor}`} />
-                    <span className={`text-xs font-bold ${col.textColor}`}>{col.label}</span>
+                    <StatusDot color={col.dotColor} />
+                    <span className={`text-xs font-bold uppercase tracking-wide ${col.textCls}`}>{col.label}</span>
                   </div>
-                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${col.badge}`}>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${col.badgeCls}`}>
                     {colTasks.length}
                   </span>
                 </div>
 
                 {/* Cards */}
-                <div className="flex-1 p-1.5 space-y-1.5 overflow-y-auto max-h-[calc(100vh-310px)]">
+                <div className="flex-1 p-2 space-y-2 overflow-y-auto max-h-[calc(100vh-310px)] kanban-scroll">
                   {loading && colTasks.length === 0 && (
                     <div className="flex items-center justify-center py-10">
-                      <Loader2 className="animate-spin text-slate-600" size={18} />
+                      <Loader2 className="animate-spin text-asvo-text-dim" size={18} />
                     </div>
                   )}
 
                   {colTasks.map(task => {
                     const stats = task.stats || { done: 0, inWork: 0, onStock: 0, total: 0 };
                     const pDone = task.targetQty > 0 ? Math.min(100, Math.round((stats.done / task.targetQty) * 100)) : 0;
-                    const projName = projects.find(p => p.id === task.projectId)?.title;
-                    const prio = priorityDot(task.priority);
+                    const prio = getPriority(task.priority);
                     const isDragging = draggingId === task.id;
                     const overdue = task.status !== "DONE" && task.status !== "CLOSED" && isOverdue(task.dueDate);
+                    const isSelected = drawerTask?.task.id === task.id && drawerOpen;
+                    const showProgress = col.key === "IN_PROGRESS" || col.key === "REVIEW";
+                    const responsibleName = task.responsible
+                      ? `${task.responsible.surname} ${task.responsible.name}`
+                      : null;
 
                     return (
                       <div
@@ -348,63 +435,73 @@ const TasksList: React.FC = () => {
                         onDragStart={e => onDragStart(e, task)}
                         onDragEnd={onDragEnd}
                         onClick={() => openDrawer(task.id)}
-                        className={`group rounded-lg border p-2.5 cursor-pointer transition-all select-none ${
+                        className={`group bg-asvo-card border border-asvo-border ${prio.borderCls} rounded-[10px] p-3.5 cursor-grab transition-all duration-200 select-none ${
                           isDragging
-                            ? "opacity-30 scale-95 border-teal-500/40"
-                            : drawerTask?.task.id === task.id && drawerOpen
-                            ? "border-teal-500 bg-slate-700/50 ring-1 ring-teal-500/20"
-                            : "border-slate-700/40 bg-slate-800/50 hover:border-slate-600 hover:bg-slate-700/30"
+                            ? "opacity-30 scale-95"
+                            : isSelected
+                            ? "border-asvo-accent bg-asvo-card-hover ring-1 ring-asvo-accent/20"
+                            : "hover:bg-asvo-card-hover hover:border-asvo-border-lt hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.3)]"
                         }`}
                       >
-                        {/* Row 1: priority dot + title + grip */}
-                        <div className="flex items-start gap-1.5 mb-1.5">
-                          <div className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${prio.cls}`} title={prio.title} />
-                          <h4 className="flex-1 text-[13px] font-medium text-slate-100 leading-tight line-clamp-2">{task.title}</h4>
-                          <GripVertical size={12} className="text-slate-700 shrink-0 opacity-0 group-hover:opacity-60 transition-opacity mt-0.5" />
+                        {/* Row 1: ID + TypeBadge + Priority */}
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-[11px] font-semibold text-asvo-accent">
+                              #{task.id}
+                            </span>
+                            {task.originType && originToBadge[task.originType] && (
+                              <Badge variant={originToBadge[task.originType]}>
+                                {task.originType}
+                              </Badge>
+                            )}
+                          </div>
+                          <span className={`text-[10px] font-bold ${prio.color}`} title={prio.title}>
+                            {prio.icon}
+                          </span>
                         </div>
 
-                        {/* Row 2: project */}
-                        {projName && (
-                          <div className="flex items-center gap-1 text-[10px] text-indigo-400/80 font-medium mb-1.5 pl-3">
-                            <Briefcase size={9} /> {projName}
+                        {/* Row 2: Title */}
+                        <h4 className="text-[13px] font-medium text-asvo-text leading-[1.45] line-clamp-2 mb-2">
+                          {task.title}
+                        </h4>
+
+                        {/* Row 3: Progress (only for IN_PROGRESS and REVIEW) */}
+                        {showProgress && (
+                          <div className="mb-2">
+                            <ProgressBar value={pDone} color={col.progressColor} />
+                            <span className="text-[10px] text-asvo-text-dim font-mono mt-0.5 block">
+                              {pDone}%
+                            </span>
                           </div>
                         )}
 
-                        {/* Row 3: progress */}
-                        <div className="h-1 w-full bg-slate-700/60 rounded-full overflow-hidden mb-2 mx-auto" style={{ width: "calc(100% - 12px)", marginLeft: 12 }}>
-                          <div
-                            style={{ width: `${pDone}%` }}
-                            className={`h-full transition-all rounded-full ${pDone >= 100 ? "bg-green-500" : pDone > 50 ? "bg-teal-500" : "bg-blue-500/80"}`}
-                          />
-                        </div>
-
-                        {/* Row 4: meta */}
-                        <div className="flex items-center justify-between gap-1 pl-3">
-                          <div className="flex items-center gap-1.5 min-w-0">
-                            {task.originType && (
-                              <span className={`text-[9px] px-1.5 py-0.5 rounded border font-semibold leading-none ${sourceStyle[task.originType] || "bg-slate-700/30 text-slate-400 border-slate-600/50"}`}>
-                                {task.originType}
-                              </span>
-                            )}
-                            <span className="text-[10px] text-slate-500 font-mono">{stats.done}/{task.targetQty}</span>
+                        {/* Row 4: Tags */}
+                        {task.originType && !originToBadge[task.originType] && (
+                          <div className="mb-2">
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-asvo-accent-dim text-asvo-text-mid">
+                              {task.originType}
+                            </span>
                           </div>
+                        )}
 
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            {task.dueDate && (
-                              <span className={`flex items-center gap-0.5 text-[10px] ${overdue ? "text-red-400 font-semibold" : "text-slate-500"}`}>
-                                {overdue && <AlertTriangle size={9} />}
-                                <Calendar size={8} />
-                                {new Date(task.dueDate).toLocaleDateString("ru", { day: "numeric", month: "short" })}
-                              </span>
+                        {/* Row 5: Footer - Avatar + meta */}
+                        <div className="flex items-center justify-between mt-1">
+                          <div className="flex items-center gap-1.5">
+                            {responsibleName && (
+                              <Avatar
+                                name={responsibleName}
+                                size="sm"
+                                color="accent"
+                              />
                             )}
-
-                            {task.responsible && (
-                              <div
-                                className="w-5 h-5 rounded-full bg-slate-700 flex items-center justify-center text-[8px] font-bold text-slate-300 ring-1 ring-slate-600"
-                                title={`${task.responsible.surname} ${task.responsible.name}`}
-                              >
-                                {initials(task.responsible)}
-                              </div>
+                          </div>
+                          <div className="flex items-center gap-2 text-[11px] text-asvo-text-dim">
+                            {task.dueDate && (
+                              <span className={`flex items-center gap-0.5 ${overdue ? "text-asvo-red font-semibold" : ""}`}>
+                                {overdue && <AlertTriangle size={9} />}
+                                <Calendar size={9} />
+                                {formatDate(task.dueDate)}
+                              </span>
                             )}
                           </div>
                         </div>
@@ -412,21 +509,23 @@ const TasksList: React.FC = () => {
                     );
                   })}
 
+                  {/* Empty column */}
                   {!loading && colTasks.length === 0 && (
-                    <div className="flex flex-col items-center justify-center py-14 text-slate-700">
-                      <col.icon size={20} className="mb-1.5 opacity-40" />
-                      <span className="text-[10px]">Нет задач</span>
+                    <div className="border border-dashed border-asvo-border rounded-[10px] bg-asvo-surface/50 p-8 text-center">
+                      <col.icon size={24} className="mx-auto mb-2 opacity-40 text-asvo-text-dim" />
+                      <span className="text-[13px] text-asvo-text-dim">Нет задач</span>
                     </div>
                   )}
                 </div>
 
+                {/* "+ Новая задача" button at bottom of NEW column */}
                 {col.key === "NEW" && (
-                  <div className="p-1.5 border-t border-slate-700/30">
+                  <div className="p-2">
                     <button
                       onClick={() => setIsModalOpen(true)}
-                      className="w-full py-1.5 border border-dashed border-slate-700/50 rounded-lg text-slate-600 text-[10px] font-medium hover:border-teal-600/40 hover:text-teal-400 transition flex justify-center items-center gap-1"
+                      className="w-full border-[1.5px] border-dashed border-asvo-border rounded-[10px] p-2.5 text-asvo-text-dim text-[13px] font-medium hover:border-asvo-accent/30 hover:text-asvo-accent hover:bg-asvo-accent-dim transition-all flex items-center justify-center gap-1.5"
                     >
-                      <Plus size={12} /> Новая задача
+                      <Plus size={14} /> Новая задача
                     </button>
                   </div>
                 )}
@@ -438,76 +537,78 @@ const TasksList: React.FC = () => {
 
       {/* ── List view ── */}
       {viewMode === "list" && (
-        <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl overflow-hidden">
+        <div className="bg-asvo-surface border border-asvo-border rounded-xl overflow-hidden">
           <table className="w-full">
             <thead>
-              <tr className="bg-slate-800/60 border-b border-slate-700/50">
-                <th className="text-left px-3 py-2.5 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Задача</th>
-                <th className="text-left px-3 py-2.5 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Статус</th>
-                <th className="text-left px-3 py-2.5 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Источник</th>
-                <th className="text-left px-3 py-2.5 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Прогресс</th>
-                <th className="text-left px-3 py-2.5 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Срок</th>
-                <th className="text-left px-3 py-2.5 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Исполнитель</th>
+              <tr className="bg-asvo-surface border-b border-asvo-border">
+                <th className="text-left px-3 py-2.5 text-[10px] font-semibold text-asvo-text-dim uppercase tracking-wider">Задача</th>
+                <th className="text-left px-3 py-2.5 text-[10px] font-semibold text-asvo-text-dim uppercase tracking-wider">Статус</th>
+                <th className="text-left px-3 py-2.5 text-[10px] font-semibold text-asvo-text-dim uppercase tracking-wider">Источник</th>
+                <th className="text-left px-3 py-2.5 text-[10px] font-semibold text-asvo-text-dim uppercase tracking-wider">Прогресс</th>
+                <th className="text-left px-3 py-2.5 text-[10px] font-semibold text-asvo-text-dim uppercase tracking-wider">Срок</th>
+                <th className="text-left px-3 py-2.5 text-[10px] font-semibold text-asvo-text-dim uppercase tracking-wider">Исполнитель</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={6} className="text-center py-10 text-slate-500"><Loader2 className="animate-spin inline" size={16} /></td></tr>
+                <tr><td colSpan={6} className="text-center py-10 text-asvo-text-dim"><Loader2 className="animate-spin inline" size={16} /></td></tr>
               ) : filtered.length === 0 ? (
-                <tr><td colSpan={6} className="text-center py-10 text-slate-600 text-xs">Нет задач</td></tr>
+                <tr><td colSpan={6} className="text-center py-10 text-asvo-text-dim text-xs">Нет задач</td></tr>
               ) : filtered.map(task => {
                 const stats = task.stats || { done: 0, total: 0, inWork: 0, onStock: 0 };
                 const pDone = task.targetQty > 0 ? Math.min(100, Math.round((stats.done / task.targetQty) * 100)) : 0;
                 const col = COLUMNS.find(c => c.key === task.status) || COLUMNS[0];
                 const overdue = task.status !== "DONE" && task.status !== "CLOSED" && isOverdue(task.dueDate);
-                const prio = priorityDot(task.priority);
+                const prio = getPriority(task.priority);
+                const responsibleName = task.responsible
+                  ? `${task.responsible.surname} ${task.responsible.name}`
+                  : null;
 
                 return (
                   <tr
                     key={task.id}
                     onClick={() => openDrawer(task.id)}
-                    className="border-b border-slate-700/30 hover:bg-slate-700/20 cursor-pointer transition-colors"
+                    className="border-b border-asvo-border/50 hover:bg-asvo-card cursor-pointer transition-colors"
                   >
                     <td className="px-3 py-2.5">
                       <div className="flex items-center gap-2">
-                        <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${prio.cls}`} />
-                        <span className="text-sm text-slate-200 truncate max-w-[300px]">{task.title}</span>
+                        <span className={`text-[10px] font-bold ${prio.color}`}>{prio.icon}</span>
+                        <span className="font-mono text-[11px] text-asvo-accent font-semibold">#{task.id}</span>
+                        <span className="text-sm text-asvo-text truncate max-w-[300px]">{task.title}</span>
                       </div>
                     </td>
                     <td className="px-3 py-2.5">
-                      <span className={`text-[10px] px-2 py-0.5 rounded font-semibold ${col.badge}`}>{col.label}</span>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${col.badgeCls}`}>{col.label}</span>
                     </td>
                     <td className="px-3 py-2.5">
-                      {task.originType && (
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded border font-semibold ${sourceStyle[task.originType] || "text-slate-400"}`}>
-                          {task.originType}
-                        </span>
-                      )}
+                      {task.originType && originToBadge[task.originType] ? (
+                        <Badge variant={originToBadge[task.originType]}>{task.originType}</Badge>
+                      ) : task.originType ? (
+                        <span className="text-[10px] text-asvo-text-mid">{task.originType}</span>
+                      ) : null}
                     </td>
                     <td className="px-3 py-2.5">
                       <div className="flex items-center gap-2">
-                        <div className="h-1 w-16 bg-slate-700/60 rounded-full overflow-hidden">
-                          <div style={{ width: `${pDone}%` }} className={`h-full rounded-full ${pDone >= 100 ? "bg-green-500" : "bg-teal-500"}`} />
+                        <div className="w-16">
+                          <ProgressBar value={pDone} color={pDone >= 100 ? "accent" : "blue"} />
                         </div>
-                        <span className="text-[10px] text-slate-400 font-mono">{pDone}%</span>
+                        <span className="text-[10px] text-asvo-text-dim font-mono">{pDone}%</span>
                       </div>
                     </td>
                     <td className="px-3 py-2.5">
                       {task.dueDate ? (
-                        <span className={`text-xs ${overdue ? "text-red-400 font-semibold" : "text-slate-400"}`}>
+                        <span className={`text-xs ${overdue ? "text-asvo-red font-semibold" : "text-asvo-text-mid"}`}>
                           {new Date(task.dueDate).toLocaleDateString("ru")}
                         </span>
-                      ) : <span className="text-slate-600">—</span>}
+                      ) : <span className="text-asvo-text-dim">—</span>}
                     </td>
                     <td className="px-3 py-2.5">
-                      {task.responsible ? (
+                      {responsibleName ? (
                         <div className="flex items-center gap-1.5">
-                          <div className="w-5 h-5 rounded-full bg-slate-700 flex items-center justify-center text-[8px] font-bold text-slate-300 ring-1 ring-slate-600">
-                            {initials(task.responsible)}
-                          </div>
-                          <span className="text-xs text-slate-400">{task.responsible.surname}</span>
+                          <Avatar name={responsibleName} size="sm" color="accent" />
+                          <span className="text-xs text-asvo-text-mid">{task.responsible!.surname}</span>
                         </div>
-                      ) : <span className="text-slate-600 text-xs">—</span>}
+                      ) : <span className="text-asvo-text-dim text-xs">—</span>}
                     </td>
                   </tr>
                 );
@@ -521,23 +622,26 @@ const TasksList: React.FC = () => {
       {drawerOpen && drawerTask && (
         <>
           {/* Backdrop */}
-          <div className="fixed inset-0 z-40 bg-black/40" onClick={closeDrawer} />
+          <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" onClick={closeDrawer} />
 
           {/* Panel */}
-          <div className="fixed top-0 right-0 z-50 h-full w-full max-w-lg bg-slate-900 border-l border-slate-700 shadow-2xl overflow-y-auto animate-slide-in">
+          <div className="fixed top-0 right-0 z-50 h-full w-full max-w-lg bg-asvo-surface border-l border-asvo-border shadow-2xl overflow-y-auto animate-slide-in">
             {/* Drawer header */}
-            <div className="sticky top-0 z-10 bg-slate-900/95 backdrop-blur border-b border-slate-700/50 px-5 py-4 flex items-center justify-between">
-              <h2 className="text-base font-bold text-slate-100 truncate pr-4">{drawerTask.task.title}</h2>
-              <div className="flex items-center gap-2">
+            <div className="sticky top-0 z-10 bg-asvo-surface/95 backdrop-blur border-b border-asvo-border px-5 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-2 min-w-0 pr-4">
+                <span className="font-mono text-[11px] font-semibold text-asvo-accent shrink-0">#{drawerTask.task.id}</span>
+                <h2 className="text-base font-bold text-asvo-text truncate">{drawerTask.task.title}</h2>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
                 {isEditing ? (
                   <>
-                    <button onClick={saveChanges} className="p-1.5 bg-green-900/30 text-green-400 rounded-lg hover:bg-green-900/50 transition"><Save size={15} /></button>
-                    <button onClick={() => setIsEditing(false)} className="p-1.5 bg-slate-700 text-slate-400 rounded-lg hover:bg-slate-600 transition"><X size={15} /></button>
+                    <button onClick={saveChanges} className="p-1.5 bg-asvo-accent/15 text-asvo-accent rounded-lg hover:bg-asvo-accent/25 transition"><Save size={15} /></button>
+                    <button onClick={() => setIsEditing(false)} className="p-1.5 bg-asvo-card text-asvo-text-mid rounded-lg hover:bg-asvo-card-hover transition"><X size={15} /></button>
                   </>
                 ) : (
-                  <button onClick={startEditing} className="p-1.5 bg-teal-900/30 text-teal-400 rounded-lg hover:bg-teal-900/50 transition"><Edit3 size={15} /></button>
+                  <button onClick={startEditing} className="p-1.5 bg-asvo-accent/15 text-asvo-accent rounded-lg hover:bg-asvo-accent/25 transition"><Edit3 size={15} /></button>
                 )}
-                <button onClick={closeDrawer} className="p-1.5 text-slate-500 hover:text-slate-300 transition"><ChevronRight size={18} /></button>
+                <button onClick={closeDrawer} className="p-1.5 text-asvo-text-dim hover:text-asvo-text transition"><ChevronRight size={18} /></button>
               </div>
             </div>
 
@@ -548,113 +652,123 @@ const TasksList: React.FC = () => {
                   value={editForm.comment || ""}
                   onChange={e => setEditForm({ ...editForm, comment: e.target.value })}
                   placeholder="Описание задачи..."
-                  className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-sm text-slate-200 placeholder:text-slate-500 focus:border-teal-500/50 focus:outline-none min-h-[60px] resize-none"
+                  className="w-full px-3 py-2 bg-asvo-card border border-asvo-border rounded-lg text-sm text-asvo-text placeholder:text-asvo-text-dim focus:border-asvo-border-lt focus:outline-none min-h-[60px] resize-none"
                 />
               ) : drawerTask.task.comment ? (
-                <p className="text-sm text-slate-400 leading-relaxed">{drawerTask.task.comment}</p>
+                <p className="text-sm text-asvo-text-mid leading-relaxed">{drawerTask.task.comment}</p>
               ) : null}
 
               {/* Fields grid */}
               <div className="grid grid-cols-2 gap-3">
                 {/* Status */}
-                <div className="bg-slate-800/50 border border-slate-700/40 rounded-lg p-3">
-                  <span className="block text-[10px] text-slate-500 uppercase font-bold mb-1.5">Статус</span>
+                <div className="bg-asvo-card border border-asvo-border rounded-lg p-3">
+                  <span className="block text-[10px] text-asvo-text-dim uppercase font-bold mb-1.5">Статус</span>
                   {isEditing ? (
-                    <select value={editForm.status} onChange={e => setEditForm({ ...editForm, status: e.target.value })} className="w-full px-2 py-1 bg-slate-900 border border-slate-600 rounded text-xs text-slate-200">
+                    <select value={editForm.status} onChange={e => setEditForm({ ...editForm, status: e.target.value })} className="w-full px-2 py-1 bg-asvo-bg border border-asvo-border rounded text-xs text-asvo-text focus:border-asvo-border-lt focus:outline-none">
                       {COLUMNS.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
                     </select>
                   ) : (
-                    <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold ${COLUMNS.find(c => c.key === drawerTask.task.status)?.badge || "text-slate-400"}`}>
+                    <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold ${COLUMNS.find(c => c.key === drawerTask.task.status)?.badgeCls || "text-asvo-text-mid"}`}>
                       {COLUMNS.find(c => c.key === drawerTask.task.status)?.label || drawerTask.task.status}
                     </span>
                   )}
                 </div>
 
                 {/* Priority */}
-                <div className="bg-slate-800/50 border border-slate-700/40 rounded-lg p-3">
-                  <span className="block text-[10px] text-slate-500 uppercase font-bold mb-1.5">Приоритет</span>
+                <div className="bg-asvo-card border border-asvo-border rounded-lg p-3">
+                  <span className="block text-[10px] text-asvo-text-dim uppercase font-bold mb-1.5">Приоритет</span>
                   {isEditing ? (
-                    <select value={editForm.priority || 1} onChange={e => setEditForm({ ...editForm, priority: e.target.value })} className="w-full px-2 py-1 bg-slate-900 border border-slate-600 rounded text-xs text-slate-200">
+                    <select value={editForm.priority || 1} onChange={e => setEditForm({ ...editForm, priority: e.target.value })} className="w-full px-2 py-1 bg-asvo-bg border border-asvo-border rounded text-xs text-asvo-text focus:border-asvo-border-lt focus:outline-none">
                       <option value="1">Низкий</option>
                       <option value="2">Средний</option>
                       <option value="3">Высокий</option>
                     </select>
                   ) : (
                     <div className="flex items-center gap-1.5">
-                      <div className={`w-2 h-2 rounded-full ${priorityDot(drawerTask.task.priority).cls}`} />
-                      <span className="text-xs text-slate-300">{priorityDot(drawerTask.task.priority).title}</span>
+                      <span className={`text-[11px] font-bold ${getPriority(drawerTask.task.priority).color}`}>
+                        {getPriority(drawerTask.task.priority).icon}
+                      </span>
+                      <span className="text-xs text-asvo-text">{getPriority(drawerTask.task.priority).title}</span>
                     </div>
                   )}
                 </div>
 
                 {/* Project */}
-                <div className="bg-slate-800/50 border border-slate-700/40 rounded-lg p-3">
-                  <span className="block text-[10px] text-slate-500 uppercase font-bold mb-1.5">Проект</span>
+                <div className="bg-asvo-card border border-asvo-border rounded-lg p-3">
+                  <span className="block text-[10px] text-asvo-text-dim uppercase font-bold mb-1.5">Проект</span>
                   {isEditing ? (
-                    <select value={editForm.projectId || ""} onChange={e => setEditForm({ ...editForm, projectId: e.target.value || null })} className="w-full px-2 py-1 bg-slate-900 border border-slate-600 rounded text-xs text-slate-200">
+                    <select value={editForm.projectId || ""} onChange={e => setEditForm({ ...editForm, projectId: e.target.value || null })} className="w-full px-2 py-1 bg-asvo-bg border border-asvo-border rounded text-xs text-asvo-text focus:border-asvo-border-lt focus:outline-none">
                       <option value="">Без проекта</option>
                       {projects.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
                     </select>
                   ) : (
-                    <span className="text-xs text-indigo-400 font-medium">{projects.find(p => p.id === drawerTask.task.projectId)?.title || "—"}</span>
+                    <span className="text-xs text-asvo-blue font-medium">{projects.find(p => p.id === drawerTask.task.projectId)?.title || "—"}</span>
                   )}
                 </div>
 
                 {/* Responsible */}
-                <div className="bg-slate-800/50 border border-slate-700/40 rounded-lg p-3">
-                  <span className="block text-[10px] text-slate-500 uppercase font-bold mb-1.5">Исполнитель</span>
+                <div className="bg-asvo-card border border-asvo-border rounded-lg p-3">
+                  <span className="block text-[10px] text-asvo-text-dim uppercase font-bold mb-1.5">Исполнитель</span>
                   {isEditing ? (
-                    <select value={editForm.responsibleId || ""} onChange={e => setEditForm({ ...editForm, responsibleId: e.target.value || null })} className="w-full px-2 py-1 bg-slate-900 border border-slate-600 rounded text-xs text-slate-200">
+                    <select value={editForm.responsibleId || ""} onChange={e => setEditForm({ ...editForm, responsibleId: e.target.value || null })} className="w-full px-2 py-1 bg-asvo-bg border border-asvo-border rounded text-xs text-asvo-text focus:border-asvo-border-lt focus:outline-none">
                       <option value="">Не назначен</option>
                       {users.map(u => <option key={u.id} value={u.id}>{u.surname} {u.name}</option>)}
                     </select>
                   ) : (
                     <div className="flex items-center gap-2">
                       {drawerTask.task.responsible && (
-                        <div className="w-5 h-5 rounded-full bg-slate-700 flex items-center justify-center text-[8px] font-bold text-slate-300 ring-1 ring-slate-600">
-                          {initials(drawerTask.task.responsible)}
-                        </div>
+                        <Avatar
+                          name={`${drawerTask.task.responsible.surname} ${drawerTask.task.responsible.name}`}
+                          size="sm"
+                          color="accent"
+                        />
                       )}
-                      <span className="text-xs text-slate-300">{drawerTask.task.responsible ? `${drawerTask.task.responsible.surname} ${drawerTask.task.responsible.name}` : "—"}</span>
+                      <span className="text-xs text-asvo-text">{drawerTask.task.responsible ? `${drawerTask.task.responsible.surname} ${drawerTask.task.responsible.name}` : "—"}</span>
                     </div>
                   )}
                 </div>
 
                 {/* Due date */}
-                <div className="bg-slate-800/50 border border-slate-700/40 rounded-lg p-3">
-                  <span className="block text-[10px] text-slate-500 uppercase font-bold mb-1.5">Срок сдачи</span>
+                <div className="bg-asvo-card border border-asvo-border rounded-lg p-3">
+                  <span className="block text-[10px] text-asvo-text-dim uppercase font-bold mb-1.5">Срок сдачи</span>
                   {isEditing ? (
-                    <input type="date" value={editForm.dueDate || ""} onChange={e => setEditForm({ ...editForm, dueDate: e.target.value })} className="w-full px-2 py-1 bg-slate-900 border border-slate-600 rounded text-xs text-slate-200" />
+                    <input type="date" value={editForm.dueDate || ""} onChange={e => setEditForm({ ...editForm, dueDate: e.target.value })} className="w-full px-2 py-1 bg-asvo-bg border border-asvo-border rounded text-xs text-asvo-text focus:border-asvo-border-lt focus:outline-none" />
                   ) : (
-                    <span className={`text-xs ${isOverdue(drawerTask.task.dueDate) && drawerTask.task.status !== "DONE" && drawerTask.task.status !== "CLOSED" ? "text-red-400 font-semibold" : "text-slate-300"}`}>
+                    <span className={`text-xs ${isOverdue(drawerTask.task.dueDate) && drawerTask.task.status !== "DONE" && drawerTask.task.status !== "CLOSED" ? "text-asvo-red font-semibold" : "text-asvo-text"}`}>
                       {drawerTask.task.dueDate ? new Date(drawerTask.task.dueDate).toLocaleDateString("ru") : "—"}
                     </span>
                   )}
                 </div>
 
                 {/* Source */}
-                <div className="bg-slate-800/50 border border-slate-700/40 rounded-lg p-3">
-                  <span className="block text-[10px] text-slate-500 uppercase font-bold mb-1.5">Источник</span>
+                <div className="bg-asvo-card border border-asvo-border rounded-lg p-3">
+                  <span className="block text-[10px] text-asvo-text-dim uppercase font-bold mb-1.5">Источник</span>
                   {drawerTask.task.originType ? (
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded border font-semibold ${sourceStyle[drawerTask.task.originType] || "text-slate-400 border-slate-600"}`}>
-                      {drawerTask.task.originType}
-                      {drawerTask.task.originId && ` #${drawerTask.task.originId}`}
-                    </span>
-                  ) : <span className="text-xs text-slate-500">—</span>}
+                    <div className="flex items-center gap-1.5">
+                      {originToBadge[drawerTask.task.originType] ? (
+                        <Badge variant={originToBadge[drawerTask.task.originType]}>
+                          {drawerTask.task.originType}
+                          {drawerTask.task.originId ? ` #${drawerTask.task.originId}` : ""}
+                        </Badge>
+                      ) : (
+                        <span className="text-xs text-asvo-text-mid">{drawerTask.task.originType}</span>
+                      )}
+                    </div>
+                  ) : <span className="text-xs text-asvo-text-dim">—</span>}
                 </div>
               </div>
 
               {/* Breakdown */}
               {drawerTask.breakdown.length > 0 && (
                 <div>
-                  <h3 className="flex items-center gap-2 text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-2">
-                    <MapPin size={12} className="text-teal-400" /> Локализация изделий
+                  <h3 className="flex items-center gap-2 text-[10px] font-bold text-asvo-text-dim uppercase tracking-wide mb-2">
+                    <MapPin size={12} className="text-asvo-accent" /> Локализация изделий
                   </h3>
                   <div className="grid grid-cols-2 gap-2">
                     {drawerTask.breakdown.map((item, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-2 bg-slate-800/40 border border-slate-700/30 rounded-lg text-xs">
-                        <span className="text-slate-400">{item.sectionTitle || "Склад"}</span>
-                        <span className="font-bold text-slate-200">{item.qty} шт</span>
+                      <div key={idx} className="flex items-center justify-between p-2 bg-asvo-card border border-asvo-border rounded-lg text-xs">
+                        <span className="text-asvo-text-mid">{item.sectionTitle || "Склад"}</span>
+                        <span className="font-bold text-asvo-text">{item.qty} шт</span>
                       </div>
                     ))}
                   </div>
@@ -667,16 +781,31 @@ const TasksList: React.FC = () => {
 
       {/* ── Create modal ── */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-        <div className="p-6 bg-slate-800 rounded-xl">
-          <h2 className="text-lg font-bold text-slate-100 mb-4">Создать задачу</h2>
+        <div className="p-1">
+          <h2 className="text-lg font-bold text-asvo-text mb-5">
+            Создать задачу
+          </h2>
           <div className="space-y-3">
-            <input className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 text-sm placeholder:text-slate-500 focus:border-teal-500/50 focus:outline-none" placeholder="Название" value={createForm.title || ""} onChange={e => setCreateForm({ ...createForm, title: e.target.value })} />
-            <select className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 text-sm" value={createForm.projectId || ""} onChange={e => setCreateForm({ ...createForm, projectId: e.target.value })}>
+            <input
+              className="w-full px-3 py-2 bg-asvo-card border border-asvo-border rounded-lg text-asvo-text text-sm placeholder:text-asvo-text-dim focus:border-asvo-border-lt focus:outline-none"
+              placeholder="Название"
+              value={createForm.title || ""}
+              onChange={e => setCreateForm({ ...createForm, title: e.target.value })}
+            />
+            <select
+              className="w-full px-3 py-2 bg-asvo-card border border-asvo-border rounded-lg text-asvo-text text-sm focus:border-asvo-border-lt focus:outline-none"
+              value={createForm.projectId || ""}
+              onChange={e => setCreateForm({ ...createForm, projectId: e.target.value })}
+            >
               <option value="">Без проекта</option>
               {projects.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
             </select>
             <div className="grid grid-cols-2 gap-2">
-              <select className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 text-sm" value={createForm.originType || ""} onChange={e => setCreateForm({ ...createForm, originType: e.target.value })}>
+              <select
+                className="w-full px-3 py-2 bg-asvo-card border border-asvo-border rounded-lg text-asvo-text text-sm focus:border-asvo-border-lt focus:outline-none"
+                value={createForm.originType || ""}
+                onChange={e => setCreateForm({ ...createForm, originType: e.target.value })}
+              >
                 <option value="">Без источника</option>
                 <option value="PRODUCT">Изделие</option>
                 <option value="COMPONENT">Комплектующее</option>
@@ -686,21 +815,46 @@ const TasksList: React.FC = () => {
                 <option value="AUDIT">Аудит</option>
                 <option value="TRAINING">Обучение</option>
               </select>
-              <input type="number" className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 text-sm placeholder:text-slate-500" placeholder="ID объекта" value={createForm.originId || ""} onChange={e => setCreateForm({ ...createForm, originId: e.target.value })} />
+              <input
+                type="number"
+                className="w-full px-3 py-2 bg-asvo-card border border-asvo-border rounded-lg text-asvo-text text-sm placeholder:text-asvo-text-dim focus:border-asvo-border-lt focus:outline-none"
+                placeholder="ID объекта"
+                value={createForm.originId || ""}
+                onChange={e => setCreateForm({ ...createForm, originId: e.target.value })}
+              />
             </div>
             <div className="grid grid-cols-3 gap-2">
-              <input type="number" className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 text-sm font-bold placeholder:text-slate-500" placeholder="Кол-во" value={createForm.targetQty} onChange={e => setCreateForm({ ...createForm, targetQty: e.target.value })} />
-              <select className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 text-sm" value={createForm.priority || "1"} onChange={e => setCreateForm({ ...createForm, priority: e.target.value })}>
+              <input
+                type="number"
+                className="w-full px-3 py-2 bg-asvo-card border border-asvo-border rounded-lg text-asvo-text text-sm font-bold placeholder:text-asvo-text-dim focus:border-asvo-border-lt focus:outline-none"
+                placeholder="Кол-во"
+                value={createForm.targetQty}
+                onChange={e => setCreateForm({ ...createForm, targetQty: e.target.value })}
+              />
+              <select
+                className="w-full px-3 py-2 bg-asvo-card border border-asvo-border rounded-lg text-asvo-text text-sm focus:border-asvo-border-lt focus:outline-none"
+                value={createForm.priority || "1"}
+                onChange={e => setCreateForm({ ...createForm, priority: e.target.value })}
+              >
                 <option value="1">Низкий</option>
                 <option value="2">Средний</option>
                 <option value="3">Высокий</option>
               </select>
-              <select className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 text-sm" value={createForm.responsibleId || ""} onChange={e => setCreateForm({ ...createForm, responsibleId: e.target.value })}>
+              <select
+                className="w-full px-3 py-2 bg-asvo-card border border-asvo-border rounded-lg text-asvo-text text-sm focus:border-asvo-border-lt focus:outline-none"
+                value={createForm.responsibleId || ""}
+                onChange={e => setCreateForm({ ...createForm, responsibleId: e.target.value })}
+              >
                 <option value="">Исполнитель</option>
                 {users.map(u => <option key={u.id} value={u.id}>{u.surname} {u.name}</option>)}
               </select>
             </div>
-            <input type="date" className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 text-sm" value={createForm.dueDate || ""} onChange={e => setCreateForm({ ...createForm, dueDate: e.target.value })} />
+            <input
+              type="date"
+              className="w-full px-3 py-2 bg-asvo-card border border-asvo-border rounded-lg text-asvo-text text-sm focus:border-asvo-border-lt focus:outline-none"
+              value={createForm.dueDate || ""}
+              onChange={e => setCreateForm({ ...createForm, dueDate: e.target.value })}
+            />
             <button
               onClick={async () => {
                 if (!createForm.title || !createForm.targetQty) return;
@@ -716,7 +870,7 @@ const TasksList: React.FC = () => {
                 setCreateForm({ priority: "1", targetQty: "" });
                 loadData();
               }}
-              className="w-full py-2.5 bg-teal-600 hover:bg-teal-500 text-white font-medium rounded-lg transition-colors text-sm"
+              className="w-full mt-2 py-3 bg-gradient-to-r from-asvo-accent to-asvo-accent/80 hover:from-asvo-accent hover:to-asvo-accent text-asvo-bg font-bold rounded-xl transition-all text-sm shadow-[0_2px_12px_rgba(45,212,168,0.3)] hover:shadow-[0_4px_16px_rgba(45,212,168,0.4)]"
             >
               Создать
             </button>

@@ -1,222 +1,188 @@
-import React, { useEffect, useState } from 'react';
-import { Wrench, Plus, Search, AlertTriangle, Calendar } from 'lucide-react';
-import { equipmentApi } from '../../api/qmsApi';
+import React, { useState } from "react";
+import {
+  Wrench,
+  Plus,
+  CalendarClock,
+  Download,
+  CheckCircle2,
+  AlertTriangle,
+  Clock,
+  Boxes,
+} from "lucide-react";
+import KpiRow from "../../components/qms/KpiRow";
+import ActionBtn from "../../components/qms/ActionBtn";
+import DataTable from "../../components/qms/DataTable";
+import Badge from "../../components/qms/Badge";
+import Card from "../../components/qms/Card";
+import SectionTitle from "../../components/qms/SectionTitle";
+import Timeline from "../../components/qms/Timeline";
 
-interface EquipmentItem {
-  id: number;
-  inventoryNumber: string;
+/* ─── mock data ─────────────────────────────────────────────────────── */
+
+interface EquipmentRow {
+  [key: string]: unknown;
+  id: string;
   name: string;
-  manufacturer: string;
-  model: string;
   type: string;
-  location: string;
-  lastCalibrationDate: string | null;
-  nextCalibrationDate: string | null;
+  manufacturer: string;
+  serial: string;
+  lastCalibration: string;
+  nextCalibration: string;
+  daysUntil: number;
   status: string;
-  responsible?: { id: number; name: string; surname: string };
-  calibrations?: Array<any>;
 }
 
-const statusColor: Record<string, string> = {
-  IN_SERVICE: 'bg-green-900/40 text-green-400',
-  OUT_OF_SERVICE: 'bg-red-900/40 text-red-400',
-  IN_CALIBRATION: 'bg-blue-900/40 text-blue-400',
-  OVERDUE: 'bg-orange-900/40 text-orange-400',
-  DECOMMISSIONED: 'bg-slate-700/40 text-slate-400',
+const equipmentData: EquipmentRow[] = [
+  { id: "EQ-001", name: "Мультиметр Fluke 87V",      type: "Измерительное",   manufacturer: "Fluke",     serial: "FL87V-2024-0891",  lastCalibration: "10.01.2026", nextCalibration: "10.07.2026", daysUntil: 149,  status: "Исправно" },
+  { id: "EQ-005", name: "Осциллограф Rigol DS1104",   type: "Измерительное",   manufacturer: "Rigol",     serial: "RG-DS1104-2891",   lastCalibration: "15.12.2025", nextCalibration: "15.06.2026", daysUntil: 124,  status: "Исправно" },
+  { id: "EQ-008", name: "Паяльная станция JBC CD-2BE", type: "Технологическое", manufacturer: "JBC",       serial: "JBC-CD2-7721",     lastCalibration: "01.01.2026", nextCalibration: "01.04.2026", daysUntil: 49,   status: "Исправно" },
+  { id: "EQ-012", name: "Паяльная станция JBC DM-2A",  type: "Технологическое", manufacturer: "JBC",       serial: "JBC-DM2-4402",     lastCalibration: "15.09.2025", nextCalibration: "15.03.2026", daysUntil: 32,   status: "Калибровка" },
+  { id: "EQ-015", name: "Микроскоп Olympus SZX7",     type: "Контрольное",     manufacturer: "Olympus",   serial: "OL-SZX7-1823",     lastCalibration: "01.06.2025", nextCalibration: "01.12.2025", daysUntil: -72,  status: "Просрочено" },
+  { id: "EQ-020", name: "Климатическая камера",        type: "Испытательное",   manufacturer: "Binder",    serial: "BN-MK56-3301",     lastCalibration: "01.08.2025", nextCalibration: "01.02.2026", daysUntil: -10,  status: "Просрочено" },
+  { id: "EQ-025", name: "Весы аналитические",          type: "Измерительное",   manufacturer: "Sartorius", serial: "SAR-224-8812",      lastCalibration: "20.01.2026", nextCalibration: "20.07.2026", daysUntil: 159,  status: "Исправно" },
+];
+
+/* ─── passport (EQ-001) ─────────────────────────────────────────────── */
+
+const passportRows: { label: string; value: string }[] = [
+  { label: "Название",        value: "Мультиметр Fluke 87V" },
+  { label: "Инв.номер",       value: "EQ-001" },
+  { label: "Серийный",        value: "FL87V-2024-0891" },
+  { label: "Производитель",   value: "Fluke Corporation" },
+  { label: "Дата ввода",      value: "15.03.2024" },
+  { label: "Расположение",    value: "Лаборатория ОТК" },
+  { label: "Класс точности",  value: "0.05%" },
+  { label: "Ответственный",   value: "Чирков И.А." },
+];
+
+/* ─── calibration history ────────────────────────────────────────────── */
+
+const calibrationHistory = [
+  { date: "10.01.2026", title: "Калибровка выполнена. Результат: годен. Отклонение: 0.02%", color: "#2DD4A8" },
+  { date: "10.07.2025", title: "Калибровка выполнена. Результат: годен. Отклонение: 0.03%", color: "#2DD4A8" },
+  { date: "10.01.2025", title: "Калибровка выполнена. Результат: годен. Отклонение: 0.01%", color: "#2DD4A8" },
+];
+
+/* ─── helpers ────────────────────────────────────────────────────────── */
+
+const daysBadge = (d: number) => {
+  if (d <= 7)  return <Badge color="#F06060">{d}&nbsp;дн.</Badge>;
+  if (d <= 30) return <Badge color="#E8A830">{d}&nbsp;дн.</Badge>;
+  return <Badge color="#2DD4A8">{d}&nbsp;дн.</Badge>;
 };
 
-const typeLabels: Record<string, string> = {
-  MEASURING: 'Измерительное',
-  TEST: 'Испытательное',
-  PRODUCTION: 'Производственное',
-  MONITORING: 'Мониторинг',
-  IT: 'ИТ',
+const statusBadge = (s: string) => {
+  switch (s) {
+    case "Исправно":    return <Badge color="#2DD4A8">{s}</Badge>;
+    case "Калибровка":  return <Badge color="#E8A830">{s}</Badge>;
+    case "Просрочено":  return <Badge color="#F06060">{s}</Badge>;
+    default:            return <Badge>{s}</Badge>;
+  }
 };
+
+/* ─── columns ────────────────────────────────────────────────────────── */
+
+const columns = [
+  {
+    key: "id",
+    label: "ID",
+    width: "90px",
+    render: (r: EquipmentRow) => (
+      <span className="font-mono text-asvo-accent">{r.id}</span>
+    ),
+  },
+  { key: "name",            label: "Название",             render: (r: EquipmentRow) => <span className="text-asvo-text">{r.name}</span> },
+  { key: "type",            label: "Тип",                  render: (r: EquipmentRow) => <span className="text-asvo-text-mid">{r.type}</span> },
+  { key: "manufacturer",    label: "Производитель",        render: (r: EquipmentRow) => <span className="text-asvo-text-mid">{r.manufacturer}</span> },
+  { key: "serial",          label: "Серийный номер",       render: (r: EquipmentRow) => <span className="font-mono text-asvo-text-mid text-[12px]">{r.serial}</span> },
+  { key: "lastCalibration", label: "Послед. калибровка",   render: (r: EquipmentRow) => <span className="text-asvo-text-mid">{r.lastCalibration}</span> },
+  { key: "nextCalibration", label: "Следующая калибровка", render: (r: EquipmentRow) => <span className="text-asvo-text-mid">{r.nextCalibration}</span> },
+  {
+    key: "daysUntil",
+    label: "Дней до калибр.",
+    align: "center" as const,
+    render: (r: EquipmentRow) => daysBadge(r.daysUntil),
+  },
+  {
+    key: "status",
+    label: "Статус",
+    align: "center" as const,
+    render: (r: EquipmentRow) => statusBadge(r.status),
+  },
+];
+
+/* ─── component ──────────────────────────────────────────────────────── */
 
 const EquipmentPage: React.FC = () => {
-  const [items, setItems] = useState<EquipmentItem[]>([]);
-  const [stats, setStats] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [showCreate, setShowCreate] = useState(false);
-  const [form, setForm] = useState({ name: '', manufacturer: '', model: '', type: 'MEASURING', location: '', calibrationType: 'CALIBRATION', calibrationInterval: 12 });
-  const [creating, setCreating] = useState(false);
-
-  useEffect(() => { loadData(); }, []);
-
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const [itemsData, statsData] = await Promise.all([
-        equipmentApi.getAll(),
-        equipmentApi.getStats(),
-      ]);
-      setItems(itemsData.rows || []);
-      setStats(statsData);
-    } catch (e) {
-      console.error('EquipmentPage loadData error:', e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCreate = async () => {
-    try {
-      setCreating(true);
-      await equipmentApi.create(form);
-      setShowCreate(false);
-      setForm({ name: '', manufacturer: '', model: '', type: 'MEASURING', location: '', calibrationType: 'CALIBRATION', calibrationInterval: 12 });
-      await loadData();
-    } catch (e) {
-      console.error('Create equipment error:', e);
-    } finally {
-      setCreating(false);
-    }
-  };
-
-  const isOverdue = (nextDate: string | null) => {
-    if (!nextDate) return false;
-    return new Date(nextDate) < new Date();
-  };
-
-  const filtered = items.filter(i =>
-    i.name?.toLowerCase().includes(search.toLowerCase()) ||
-    i.inventoryNumber?.toLowerCase().includes(search.toLowerCase()) ||
-    i.location?.toLowerCase().includes(search.toLowerCase())
-  );
+  const [_selected] = useState<string | null>("EQ-001");
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="min-h-screen bg-asvo-bg p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-amber-500/10 rounded-lg">
-            <Wrench className="text-amber-400" size={24} />
+          <div className="p-2 bg-asvo-amber-dim rounded-lg">
+            <Wrench className="text-[#E8A830]" size={24} />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-100">Оборудование и калибровка</h1>
-            <p className="text-slate-400 text-sm">ISO 13485 &sect;7.6 &mdash; Управление оборудованием</p>
+            <h1 className="text-2xl font-bold text-asvo-text">
+              Оборудование и калибровка
+            </h1>
+            <p className="text-asvo-text-dim text-sm">
+              ISO 13485 &sect;7.6 &mdash; Управление оборудованием для мониторинга и измерений
+            </p>
           </div>
         </div>
-        <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-lg transition-colors text-sm font-medium">
-          <Plus size={16} />
-          Добавить
-        </button>
       </div>
 
-      {/* Stats */}
-      {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { label: 'Всего', value: stats.total, color: 'text-slate-100' },
-            { label: 'В эксплуатации', value: stats.inService, color: 'text-green-400' },
-            { label: 'Просрочено', value: stats.overdue, color: 'text-red-400' },
-            { label: 'На калибровке', value: stats.inCalibration, color: 'text-blue-400' },
-          ].map(s => (
-            <div key={s.label} className="bg-slate-800/60 border border-slate-700 rounded-xl p-4">
-              <div className={`text-2xl font-bold ${s.color}`}>{s.value}</div>
-              <div className="text-xs text-slate-400">{s.label}</div>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* KPI Row */}
+      <KpiRow
+        items={[
+          { label: "Всего оборудования", value: 56, icon: <Boxes size={18} />,          color: "#4A90E8" },
+          { label: "На калибровке",       value: 4,  icon: <Clock size={18} />,           color: "#E8A830" },
+          { label: "Просрочено",          value: 2,  icon: <AlertTriangle size={18} />,   color: "#F06060" },
+          { label: "Исправно",            value: 48, icon: <CheckCircle2 size={18} />,    color: "#2DD4A8" },
+        ]}
+      />
 
-      {/* Search */}
-      <div className="flex gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
-          <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Поиск по инв.номеру, названию или расположению..." className="w-full pl-10 pr-4 py-2 bg-slate-800/60 border border-slate-700 rounded-lg text-slate-200 placeholder:text-slate-500 focus:border-teal-500/50 focus:outline-none text-sm" />
-        </div>
+      {/* Action buttons */}
+      <div className="flex items-center gap-3">
+        <ActionBtn variant="primary" icon={<Plus size={15} />}>
+          + Добавить оборудование
+        </ActionBtn>
+        <ActionBtn variant="secondary" color="#4A90E8" icon={<CalendarClock size={15} />}>
+          График калибровки
+        </ActionBtn>
+        <ActionBtn variant="secondary" icon={<Download size={15} />}>
+          Экспорт
+        </ActionBtn>
       </div>
 
-      {/* Table */}
-      <div className="bg-slate-800/60 border border-slate-700 rounded-xl overflow-hidden">
-        <table className="w-full">
-          <thead>
-            <tr className="bg-slate-800/80 border-b border-slate-700">
-              <th className="text-left px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">Инв. &#8470;</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">Название</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">Тип</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">Расположение</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">Калибровка</th>
-              <th className="text-center px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">Статус</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr><td colSpan={6} className="text-center py-8 text-slate-500">Загрузка...</td></tr>
-            ) : filtered.length === 0 ? (
-              <tr><td colSpan={6} className="text-center py-8 text-slate-500">Нет данных</td></tr>
-            ) : filtered.map(item => (
-              <tr key={item.id} className="border-b border-slate-700/50 hover:bg-slate-700/20 transition-colors">
-                <td className="px-4 py-3 text-sm font-mono text-teal-400">{item.inventoryNumber}</td>
-                <td className="px-4 py-3 text-sm text-slate-200">
-                  <div>{item.name}</div>
-                  {item.manufacturer && <div className="text-xs text-slate-500">{item.manufacturer} {item.model}</div>}
-                </td>
-                <td className="px-4 py-3 text-sm text-slate-300">{typeLabels[item.type] || item.type}</td>
-                <td className="px-4 py-3 text-sm text-slate-300">{item.location || '-'}</td>
-                <td className="px-4 py-3 text-sm">
-                  <div className="flex items-center gap-1">
-                    {isOverdue(item.nextCalibrationDate) && <AlertTriangle size={12} className="text-red-400" />}
-                    <Calendar size={12} className="text-slate-500" />
-                    <span className={isOverdue(item.nextCalibrationDate) ? 'text-red-400' : 'text-slate-300'}>
-                      {item.nextCalibrationDate ? new Date(item.nextCalibrationDate).toLocaleDateString('ru') : '-'}
-                    </span>
-                  </div>
-                </td>
-                <td className="px-4 py-3 text-center">
-                  <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${statusColor[item.status] || 'text-slate-400'}`}>
-                    {item.status}
-                  </span>
-                </td>
-              </tr>
+      {/* Data table */}
+      <SectionTitle>Реестр оборудования</SectionTitle>
+      <DataTable<EquipmentRow> columns={columns} data={equipmentData} />
+
+      {/* Passport + History for EQ-001 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* Equipment passport */}
+        <Card>
+          <SectionTitle>Паспорт оборудования &mdash; EQ-001</SectionTitle>
+          <div className="divide-y divide-asvo-border">
+            {passportRows.map((r) => (
+              <div key={r.label} className="flex justify-between py-2.5 text-[13px]">
+                <span className="text-asvo-text-mid">{r.label}</span>
+                <span className="text-asvo-text font-medium">{r.value}</span>
+              </div>
             ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Create Modal */}
-      {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-slate-800 border border-slate-700 rounded-xl p-6 w-full max-w-lg space-y-4">
-            <h2 className="text-lg font-bold text-slate-100">Новое оборудование</h2>
-            <div className="space-y-3">
-              <input type="text" placeholder="Наименование" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 text-sm focus:border-teal-500/50 focus:outline-none" />
-              <div className="grid grid-cols-2 gap-3">
-                <input type="text" placeholder="Производитель" value={form.manufacturer} onChange={e => setForm({ ...form, manufacturer: e.target.value })} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 text-sm focus:border-teal-500/50 focus:outline-none" />
-                <input type="text" placeholder="Модель" value={form.model} onChange={e => setForm({ ...form, model: e.target.value })} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 text-sm focus:border-teal-500/50 focus:outline-none" />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <select value={form.type} onChange={e => setForm({ ...form, type: e.target.value })} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 text-sm focus:border-teal-500/50 focus:outline-none">
-                  {Object.entries(typeLabels).map(([k, v]) => (
-                    <option key={k} value={k}>{v}</option>
-                  ))}
-                </select>
-                <input type="text" placeholder="Расположение" value={form.location} onChange={e => setForm({ ...form, location: e.target.value })} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 text-sm focus:border-teal-500/50 focus:outline-none" />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <select value={form.calibrationType} onChange={e => setForm({ ...form, calibrationType: e.target.value })} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 text-sm focus:border-teal-500/50 focus:outline-none">
-                  <option value="VERIFICATION">Поверка</option>
-                  <option value="CALIBRATION">Калибровка</option>
-                  <option value="VALIDATION">Валидация</option>
-                  <option value="NONE">Не требуется</option>
-                </select>
-                <div>
-                  <label className="block text-xs text-slate-400 mb-1">Интервал (мес.)</label>
-                  <input type="number" min={1} value={form.calibrationInterval} onChange={e => setForm({ ...form, calibrationInterval: +e.target.value })} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 text-sm focus:border-teal-500/50 focus:outline-none" />
-                </div>
-              </div>
-            </div>
-            <div className="flex justify-end gap-3 pt-2">
-              <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-sm text-slate-400 hover:text-slate-200 transition-colors">Отмена</button>
-              <button onClick={handleCreate} disabled={creating || !form.name} className="px-4 py-2 bg-teal-600 hover:bg-teal-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors">
-                {creating ? 'Создание...' : 'Создать'}
-              </button>
-            </div>
           </div>
-        </div>
-      )}
+        </Card>
+
+        {/* Calibration history */}
+        <Card>
+          <SectionTitle>История калибровок &mdash; EQ-001</SectionTitle>
+          <Timeline events={calibrationHistory} />
+        </Card>
+      </div>
     </div>
   );
 };

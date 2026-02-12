@@ -1,13 +1,20 @@
 const ApiError = require("../../../error/ApiError");
 const { User, Session, Role } = require("../../../models/index");
 const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
 const uuid = require("uuid");
 const path = require("path");
 
+const SALT_ROUNDS = 10;
+
 const generateJWT = (id, login, role, name, surname, img) => {
+  const secret = process.env.SECRET_KEY;
+  if (!secret) {
+    throw new Error("SECRET_KEY is not defined in environment variables");
+  }
   return jwt.sign(
     { id, login, role, name, surname, img },
-    process.env.SECRET_KEY,
+    secret,
     {
       expiresIn: "5h",
     }
@@ -36,6 +43,7 @@ class UserController {
   async getUsers(req, res, next) {
     try {
       const usersAll = await User.findAll({
+        attributes: { exclude: ["password"] },
         order: [["name", "ASC"]],
       });
       return res.json(usersAll);
@@ -54,6 +62,7 @@ class UserController {
 
       const user = await User.findOne({
         where: { id },
+        attributes: { exclude: ["password"] },
       });
       return res.json(user);
     } catch (e) {
@@ -76,7 +85,7 @@ class UserController {
 
 
       if (password && password.trim() !== "") {
-        updateData.password = password;
+        updateData.password = await bcrypt.hash(password, SALT_ROUNDS);
       }
 
       await User.update(updateData, { where: { id } });
@@ -97,7 +106,12 @@ class UserController {
       checkAccess(req, id);
 
       const { img } = req.files;
-      let fileName = uuid.v4() + ".jpg";
+      const allowedMimeTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+      if (!allowedMimeTypes.includes(img.mimetype)) {
+        return next(ApiError.badRequest("Допустимые форматы: JPEG, PNG, WebP, GIF"));
+      }
+      const ext = path.extname(img.name) || ".jpg";
+      let fileName = uuid.v4() + ext;
       img.mv(path.resolve(__dirname, "..", "static", fileName));
 
       await User.update({ img: fileName }, { where: { id } });
@@ -131,7 +145,8 @@ class UserController {
         if (roleEntity) roleId = roleEntity.id;
       }
 
-      const user = await User.create({ login, password, roleId, name, surname });
+      const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+      const user = await User.create({ login, password: hashedPassword, roleId, name, surname });
       const token = generateJWT(
         user.id,
         user.login,
@@ -161,8 +176,21 @@ class UserController {
         return next(ApiError.internal("Такого пользователя нет"));
       }
 
-      if (currentUser.password != password) {
-        return next(ApiError.internal("неверный пароль"));
+      // Support both bcrypt-hashed and legacy plaintext passwords.
+      // Legacy plaintext passwords are rehashed on successful login.
+      let isPasswordValid = false;
+      const isHashed = currentUser.password && currentUser.password.startsWith("$2");
+      if (isHashed) {
+        isPasswordValid = await bcrypt.compare(password, currentUser.password);
+      } else {
+        isPasswordValid = password === currentUser.password;
+        if (isPasswordValid) {
+          const hashed = await bcrypt.hash(password, SALT_ROUNDS);
+          await User.update({ password: hashed }, { where: { id: currentUser.id } });
+        }
+      }
+      if (!isPasswordValid) {
+        return next(ApiError.badRequest("неверный пароль"));
       }
 
       const isAciveSession = await Session.findAll({

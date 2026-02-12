@@ -75,6 +75,7 @@ export const fetchTasks = async (params?: {
   status?: string;
   search?: string;
   originType?: string;
+  projectId?: number;
 }) => {
   const { data } = await $authHost.get("api/tasks", { params });
   return data as TaskListResponse;
