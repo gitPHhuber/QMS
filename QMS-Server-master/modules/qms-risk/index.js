@@ -14,5 +14,10 @@ module.exports = {
       m.User.hasMany(m.RiskRegister, { as: 'ownedRisks', foreignKey: 'ownerId' });
       m.RiskRegister.belongsTo(m.User, { as: 'owner', foreignKey: 'ownerId' });
     }
+
+    if (m.RiskMitigation && m.Capa) {
+      m.RiskMitigation.belongsTo(m.Capa, { as: 'capa', foreignKey: 'capaId' });
+      m.Capa.hasMany(m.RiskMitigation, { as: 'riskMitigations', foreignKey: 'capaId' });
+    }
   },
 };

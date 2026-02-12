@@ -1,5 +1,5 @@
 const { RiskRegister, RiskAssessment, RiskMitigation } = require("../models/Risk");
-const { User } = require("../../../models/index");
+const { User, Capa } = require("../../../models/index");
 const RiskMatrixService = require("../services/RiskMatrixService");
 const { logAudit } = require("../../core/utils/auditLogger");
 const { Op } = require("sequelize");
@@ -34,7 +34,7 @@ const getAll = async (req, res, next) => {
       where,
       include: [
         { model: RiskAssessment, as: "assessments", limit: 1, order: [["assessmentDate", "DESC"]] },
-        { model: RiskMitigation, as: "mitigations" },
+        { model: RiskMitigation, as: "mitigations", include: [{ model: Capa, as: "capa", attributes: ["id", "number", "status", "title"] }] },
         { model: User, as: "owner", attributes: ["id", "name", "surname"] },
       ],
       order: [["initialRiskLevel", "DESC"], ["createdAt", "DESC"]],
@@ -54,7 +54,7 @@ const getOne = async (req, res, next) => {
     const risk = await RiskRegister.findByPk(req.params.id, {
       include: [
         { model: RiskAssessment, as: "assessments", order: [["assessmentDate", "DESC"]] },
-        { model: RiskMitigation, as: "mitigations", order: [["createdAt", "ASC"]] },
+        { model: RiskMitigation, as: "mitigations", order: [["createdAt", "ASC"]], include: [{ model: Capa, as: "capa", attributes: ["id", "number", "status", "title"] }] },
         { model: User, as: "owner", attributes: ["id", "name", "surname"] },
       ],
     });
@@ -190,7 +190,7 @@ const addAssessment = async (req, res, next) => {
 
 // Допустимые поля для создания митигации
 const MITIGATION_FIELDS = [
-  "mitigationType", "description", "responsibleId", "dueDate", "priority",
+  "mitigationType", "description", "responsibleId", "dueDate", "priority", "capaId",
 ];
 
 const addMitigation = async (req, res, next) => {
@@ -202,6 +202,11 @@ const addMitigation = async (req, res, next) => {
     const safeData = {};
     for (const field of MITIGATION_FIELDS) {
       if (req.body[field] !== undefined) safeData[field] = req.body[field];
+    }
+
+    if (safeData.capaId !== undefined && safeData.capaId !== null) {
+      const capa = await Capa.findByPk(safeData.capaId);
+      if (!capa) return next(ApiError.badRequest(`CAPA с id=${safeData.capaId} не найдена`));
     }
 
     const mitigation = await RiskMitigation.create({
@@ -217,6 +222,9 @@ const addMitigation = async (req, res, next) => {
     }
 
     await logAudit(req, "risk.mitigation.add", "risk_register", risk.id, { mitigationType: safeData.mitigationType });
+    if (mitigation.capaId) {
+      await logAudit(req, "risk.capa.link", "risk_mitigation", mitigation.id, { riskRegisterId: risk.id, capaId: mitigation.capaId });
+    }
     res.status(201).json(mitigation);
   } catch (e) {
     next(ApiError.internal(e.message));

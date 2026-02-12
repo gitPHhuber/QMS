@@ -10,7 +10,7 @@ const {
   NC_STATUSES, CAPA_STATUSES,
 } = require("../models/NcCapa");
 const { User } = require("../../../models/index");
-const { logNonconformity, logCapa } = require("../../core/utils/auditLogger");
+const { logNonconformity, logCapa, logAudit } = require("../../core/utils/auditLogger");
 
 // Допустимые переходы состояний NC (state machine)
 const NC_TRANSITIONS = {
@@ -227,6 +227,24 @@ class NcCapaService {
         effectivenessCheckDays: checkDays,
       }, { transaction: t });
 
+      if (data.riskRegisterId) {
+        const { RiskRegister, RiskMitigation } = require("../../qms-risk/models/Risk");
+        const risk = await RiskRegister.findByPk(data.riskRegisterId, { transaction: t });
+        if (!risk) throw new Error(`Риск с id=${data.riskRegisterId} не найден`);
+
+        const mitigation = await RiskMitigation.create({
+          riskRegisterId: risk.id,
+          mitigationType: data.riskMitigationType || "PROCESS_CONTROL",
+          description: data.riskMitigationDescription || `CAPA ${number}: ${data.title || "Mitigation"}`,
+          responsibleId: data.assignedToId || null,
+          plannedDate: data.dueDate || null,
+          status: "PLANNED",
+          capaId: capa.id,
+        }, { transaction: t });
+
+        capa._linkedRiskMitigationId = mitigation.id;
+      }
+
       // Создаём actions если переданы
       if (data.actions?.length) {
         for (let i = 0; i < data.actions.length; i++) {
@@ -240,6 +258,13 @@ class NcCapaService {
 
       await t.commit();
       await logCapa(req, capa, "create");
+      if (capa._linkedRiskMitigationId) {
+        await logAudit(req, "risk.capa.link", "risk_mitigation", capa._linkedRiskMitigationId, {
+          capaId: capa.id,
+          riskRegisterId: data.riskRegisterId,
+          source: "capa.create",
+        });
+      }
       return capa;
     } catch (e) { await t.rollback(); throw e; }
   }
