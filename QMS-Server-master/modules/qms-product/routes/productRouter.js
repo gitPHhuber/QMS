@@ -3,14 +3,15 @@ const router = new Router();
 const productController = require("../controllers/productController");
 const authMiddleware = require("../../core/middleware/authMiddleware");
 const syncUserMiddleware = require("../../core/middleware/syncUserMiddleware");
+const checkAbility = require("../../core/middleware/checkAbilityMiddleware");
 
 const protect = [authMiddleware, syncUserMiddleware];
 
-router.get("/stats", ...protect, productController.getStats);
+router.get("/stats", ...protect, checkAbility("product.read"), productController.getStats);
 
-router.get("/", ...protect, productController.getAll);
-router.get("/:id", ...protect, productController.getOne);
-router.post("/", ...protect, productController.create);
-router.put("/:id", ...protect, productController.update);
+router.get("/", ...protect, checkAbility("product.read"), productController.getAll);
+router.get("/:id", ...protect, checkAbility("product.read"), productController.getOne);
+router.post("/", ...protect, checkAbility("product.manage"), productController.create);
+router.put("/:id", ...protect, checkAbility("product.manage"), productController.update);
 
 module.exports = router;

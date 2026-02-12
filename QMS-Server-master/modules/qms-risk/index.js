@@ -20,6 +20,11 @@ module.exports = {
       m.RiskRegister.belongsTo(m.User, { as: 'owner', foreignKey: 'ownerId' });
     }
 
+
+    if (m.RiskMitigation && m.Capa) {
+      m.RiskMitigation.belongsTo(m.Capa, { as: 'capa', foreignKey: 'capaId' });
+      m.Capa.hasMany(m.RiskMitigation, { as: 'riskMitigations', foreignKey: 'capaId' });
+
     // RiskManagementPlan <-> User (responsible person)
     if (m.RiskManagementPlan && m.User) {
       m.User.hasMany(m.RiskManagementPlan, { as: 'riskManagementPlans', foreignKey: 'responsiblePersonId' });
@@ -42,6 +47,7 @@ module.exports = {
     if (m.RiskControlTraceability && m.RiskMitigation) {
       m.RiskMitigation.hasMany(m.RiskControlTraceability, { as: 'traceabilityRecords', foreignKey: 'linkedMitigationId' });
       m.RiskControlTraceability.belongsTo(m.RiskMitigation, { as: 'linkedMitigation', foreignKey: 'linkedMitigationId' });
+
     }
   },
 };

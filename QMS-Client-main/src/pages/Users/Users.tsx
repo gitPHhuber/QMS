@@ -45,7 +45,7 @@ export const Users: React.FC = () => {
     return currentPC;
   };
 
-  let allUsers = users.map((user: userGetModel) => (
+  const allUsers = users.map((user: userGetModel) => (
     <OneUser
       key={user.id}
       login={user.login}

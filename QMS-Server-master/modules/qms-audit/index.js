@@ -6,5 +6,13 @@ module.exports = {
   },
 
   getModels() { return require('./models/InternalAudit'); },
-  setupAssociations() {},
+
+  setupAssociations({ User }) {
+    const { AuditChecklistResponse, AuditFinding } = require('./models/InternalAudit');
+
+    // AuditChecklistResponse → User (аудитор)
+    if (User && AuditChecklistResponse) {
+      AuditChecklistResponse.belongsTo(User, { as: "auditor", foreignKey: "auditorId" });
+    }
+  },
 };

@@ -87,6 +87,11 @@ async function backfill() {
     const transaction = await sequelize.transaction();
 
     try {
+      await sequelize.query(
+        "SELECT set_config('audit.allow_mutation', 'on', true);",
+        { transaction }
+      );
+
       for (const record of records) {
         const dataHash = computeDataHash({
           userId: record.userId,
