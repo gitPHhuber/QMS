@@ -4,7 +4,9 @@ import "@fontsource-variable/inter";
 import "@fontsource-variable/jetbrains-mono";
 import "@fontsource-variable/dm-sans";
 import "@fontsource/instrument-serif";
+
 import "@fontsource/instrument-serif/400-italic.css";
+
 import App from "./App.tsx";
 import "./index.css";
 import { BrowserRouter } from "react-router-dom";
@@ -85,7 +87,12 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         modules: new ModuleStore(),
       }}
     >
-      <BrowserRouter>
+      <BrowserRouter
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
+      >
         <AuthWrapper>
           <App />
         </AuthWrapper>
