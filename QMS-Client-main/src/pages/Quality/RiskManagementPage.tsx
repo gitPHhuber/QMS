@@ -61,16 +61,16 @@ interface TraceRow {
 const PLANS: PlanRow[] = [
   { id: '1', planNumber: 'RMP-2026-001', title: 'Kardiomonitor KM-200', product: 'KM-200', phase: 'Proizvodstvo', status: 'EFFECTIVE', hazardCount: 18, version: '2.1' },
   { id: '2', planNumber: 'RMP-2026-002', title: 'Infuzniy nasos IN-100', product: 'IN-100', phase: 'Verifikatsiya', status: 'APPROVED', hazardCount: 24, version: '1.0' },
-  { id: '3', planNumber: 'RMP-2026-003', title: 'Pul'soksimetr PO-50', product: 'PO-50', phase: 'Proyektirovaniye', status: 'DRAFT', hazardCount: 7, version: '0.3' },
+  { id: '3', planNumber: 'RMP-2026-003', title: "Pul'soksimetr PO-50", product: 'PO-50', phase: 'Proyektirovaniye', status: 'DRAFT', hazardCount: 7, version: '0.3' },
 ];
 
 const HAZARDS: HazardRow[] = [
-  { id: '1', number: 'HAZ-001', category: 'ENERGY', description: 'Elektricheskiy udar cherez korpus', harm: 'Smert' patsiyenta', p: 2, s: 5, level: 10, riskClass: 'HIGH', residualClass: 'LOW', status: 'VERIFIED', controlCount: 3 },
+  { id: '1', number: 'HAZ-001', category: 'ENERGY', description: 'Elektricheskiy udar cherez korpus', harm: "Smert' patsiyenta", p: 2, s: 5, level: 10, riskClass: 'HIGH', residualClass: 'LOW', status: 'VERIFIED', controlCount: 3 },
   { id: '2', number: 'HAZ-002', category: 'SOFTWARE', description: 'Oshibka algoritma rasschyota SpO2', harm: 'Nevernaya diagnostika', p: 3, s: 4, level: 12, riskClass: 'HIGH', residualClass: 'MEDIUM', status: 'CONTROLLED', controlCount: 2 },
   { id: '3', number: 'HAZ-003', category: 'MECHANICAL', description: 'Razrusheniye krepleniya datchika', harm: 'Travma kozhi patsiyenta', p: 2, s: 3, level: 6, riskClass: 'MEDIUM', residualClass: 'LOW', status: 'ACCEPTED', controlCount: 1 },
-  { id: '4', number: 'HAZ-004', category: 'USE_ERROR', description: 'Nepravil'noye podklyucheniye elektrodov', harm: 'Nevernaya EKG-diagnostika', p: 4, s: 4, level: 16, riskClass: 'CRITICAL', residualClass: 'MEDIUM', status: 'CONTROLLED', controlCount: 4 },
+  { id: '4', number: 'HAZ-004', category: 'USE_ERROR', description: "Nepravil'noye podklyucheniye elektrodov", harm: 'Nevernaya EKG-diagnostika', p: 4, s: 4, level: 16, riskClass: 'CRITICAL', residualClass: 'MEDIUM', status: 'CONTROLLED', controlCount: 4 },
   { id: '5', number: 'HAZ-005', category: 'ELECTROMAGNETIC', description: 'EMI ot sosednikh priborov', harm: 'Artefakty signala', p: 3, s: 3, level: 9, riskClass: 'MEDIUM', residualClass: null, status: 'IDENTIFIED', controlCount: 0 },
-  { id: '6', number: 'HAZ-006', category: 'BIOLOGICAL', description: 'Bionesovmestimost' materiala elektroda', harm: 'Allergicheskaya reaktsiya', p: 2, s: 3, level: 6, riskClass: 'MEDIUM', residualClass: 'LOW', status: 'VERIFIED', controlCount: 2 },
+  { id: '6', number: 'HAZ-006', category: 'BIOLOGICAL', description: "Bionesovmestimost' materiala elektroda", harm: 'Allergicheskaya reaktsiya', p: 2, s: 3, level: 6, riskClass: 'MEDIUM', residualClass: 'LOW', status: 'VERIFIED', controlCount: 2 },
 ];
 
 const TRACE_MATRIX: TraceRow[] = [
