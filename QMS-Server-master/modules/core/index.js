@@ -10,13 +10,15 @@ module.exports = {
     router.use('/audit',     require('./routes/auditRouter'));
     router.use('/tasks',     require('./routes/taskRouter'));
     router.use('/projects',  require('./routes/projectRouter'));
+    router.use('/notifications', require('./routes/notificationRouter'));
   },
 
   getModels() {
     const general = require('./models/General');
     const structure = require('./models/Structure');
     const project = require('./models/Project');
-    return { ...general, ...structure, ...project };
+    const notification = require('./models/Notification');
+    return { ...general, ...structure, ...project, ...notification };
   },
 
   setupAssociations(m) {
@@ -47,5 +49,11 @@ module.exports = {
     // Project <-> User
     m.Project.belongsTo(m.User, { foreignKey: 'createdById', as: 'author' });
     m.User.hasMany(m.Project, { foreignKey: 'createdById', as: 'projects' });
+
+    // Notification <-> User
+    if (m.Notification) {
+      m.Notification.belongsTo(m.User, { foreignKey: 'userId', as: 'user' });
+      m.User.hasMany(m.Notification, { foreignKey: 'userId', as: 'notifications' });
+    }
   },
 };

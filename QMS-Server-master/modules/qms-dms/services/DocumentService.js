@@ -35,6 +35,27 @@ const { logDocumentCreate, logDocumentApproval, logDocumentEffective, logAudit, 
 // Директория для хранения файлов документов
 const DOCS_STORAGE = process.env.DOCS_STORAGE_PATH || path.join(__dirname, "..", "static", "documents");
 
+const DOCUMENT_ATTRIBUTES = [
+  "id",
+  "code",
+  "title",
+  "type",
+  "category",
+  "description",
+  "status",
+  "currentVersionId",
+  "ownerId",
+  "reviewCycleMonths",
+  "nextReviewDate",
+  "effectiveDate",
+  "obsoleteDate",
+  "replacedById",
+  "isoSection",
+  "tags",
+  "createdAt",
+  "updatedAt",
+];
+
 class DocumentService {
   // ═══════════════════════════════════════════════════════════════
   // СОЗДАНИЕ ДОКУМЕНТА
@@ -589,6 +610,7 @@ class DocumentService {
 
     return Document.findAndCountAll({
       where,
+      attributes: DOCUMENT_ATTRIBUTES,
       include: [
         { model: User, as: "owner", attributes: ["id", "name", "surname"] },
         {
@@ -608,6 +630,7 @@ class DocumentService {
    */
   async getDocumentDetail(documentId) {
     return Document.findByPk(documentId, {
+      attributes: DOCUMENT_ATTRIBUTES,
       include: [
         { model: User, as: "owner", attributes: ["id", "name", "surname"] },
         {
@@ -670,6 +693,7 @@ class DocumentService {
    */
   async getOverdueReviews() {
     return Document.findAll({
+      attributes: DOCUMENT_ATTRIBUTES,
       where: {
         status: DOCUMENT_STATUSES.EFFECTIVE,
         nextReviewDate: { [Op.lt]: new Date() },

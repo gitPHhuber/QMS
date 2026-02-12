@@ -92,6 +92,24 @@ const initInitialData = async () => {
       { code: "review.read", description: "Просмотр анализа руководства" },
       { code: "review.manage", description: "Проведение анализа руководства" },
 
+      // Рекламации
+      { code: "complaint.read", description: "Просмотр рекламаций" },
+      { code: "complaint.create", description: "Создание рекламаций" },
+      { code: "complaint.manage", description: "Управление рекламациями" },
+
+      // Управление изменениями
+      { code: "change.read", description: "Просмотр запросов на изменение" },
+      { code: "change.create", description: "Создание запросов на изменение" },
+      { code: "change.approve", description: "Одобрение изменений" },
+
+      // Валидация процессов
+      { code: "validation.read", description: "Просмотр валидаций" },
+      { code: "validation.manage", description: "Управление валидациями" },
+
+      // Реестр изделий
+      { code: "product.read", description: "Просмотр реестра изделий" },
+      { code: "product.manage", description: "Управление реестром изделий" },
+
       // Аналитика
       { code: "analytics.view", description: "Просмотр дашбордов и KPI" },
       { code: "audit.log.view", description: "Просмотр журнала аудита" },
@@ -151,6 +169,10 @@ const initInitialData = async () => {
       "training.read", "training.manage",
       "equipment.read", "equipment.calibrate",
       "review.read", "review.manage",
+      "complaint.read", "complaint.create", "complaint.manage",
+      "change.read", "change.create", "change.approve",
+      "validation.read", "validation.manage",
+      "product.read", "product.manage",
       "qms.audit.view", "qms.audit.verify", "qms.audit.report",
       "analytics.view", "audit.log.view",
       "warehouse.view", "rbac.manage", "users.manage",
@@ -164,6 +186,10 @@ const initInitialData = async () => {
       "supplier.read",
       "training.read", "training.manage",
       "equipment.read", "equipment.calibrate",
+      "complaint.read", "complaint.create",
+      "change.read", "change.create",
+      "validation.read", "validation.manage",
+      "product.read",
       "review.read",
       "qms.audit.view",
       "analytics.view", "audit.log.view",
@@ -207,7 +233,8 @@ const initInitialData = async () => {
     await assign("VIEWER", [
       "dms.view", "nc.view", "capa.view", "risk.read",
       "supplier.read", "training.read", "equipment.read",
-      "review.read", "analytics.view",
+      "review.read", "complaint.read", "change.read",
+      "validation.read", "product.read", "analytics.view",
     ]);
 
     console.log(">>> [RBAC] Инициализация завершена успешно.");

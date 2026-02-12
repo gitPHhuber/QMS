@@ -20,9 +20,10 @@
 @tailwind components;
 @tailwind utilities;
 
-/* --- Dark background for root elements (prevents white flash on load) --- */
+
 html, body, #root {
   background-color: #080E14;
+
   margin: 0;
   padding: 0;
 }

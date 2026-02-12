@@ -9,7 +9,6 @@ import { fetchStructure } from "src/api/structureApi";
 import { fetchAlerts } from "src/api/warehouseApi";
 import { SectionModel } from "src/store/StructureStore";
 import { productModel } from "src/types/ProductModel";
-import { componentModel } from "src/types/ComponentModel";
 import { WAREHOUSE_ANALYTICS_ROUTE, WAREHOUSE_INVENTORY_ROUTE } from "src/utils/consts";
 
 import { ProjectDashboard } from "./components/ProjectDashboard";
@@ -22,6 +21,12 @@ import { WarehouseLabels } from "./tabs/WarehouseLabels";
 import { VideoTransmittersLabel } from "./tabs/VideoTransmittersLabel";
 import { WarehousePrintHistory } from "./tabs/WarehousePrintHistory";
 
+type WarehouseComponentModel = {
+  id: number;
+  title: string;
+  article?: string | null;
+};
+
 type Tab = "INTAKE" | "MOVES" | "BALANCE" | "DOCS" | "SETTINGS" | "LABELS" | "VIDEO_LABEL" | "HISTORY";
 
 export const WarehousePage: React.FC = () => {
@@ -31,7 +36,7 @@ export const WarehousePage: React.FC = () => {
 
   const [sections, setSections] = useState<SectionModel[]>([]);
   const [productsList, setProductsList] = useState<productModel[]>([]);
-  const [componentsList, setComponentsList] = useState<componentModel[]>([]);
+  const [componentsList, setComponentsList] = useState<WarehouseComponentModel[]>([]);
 
   useEffect(() => {
     fetchStructure().then(setSections);
