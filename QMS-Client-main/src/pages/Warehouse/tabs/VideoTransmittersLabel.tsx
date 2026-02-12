@@ -362,14 +362,14 @@ export const VideoTransmittersLabel: React.FC = () => {
 
             <div className="mb-6 flex flex-col md:flex-row justify-center items-center gap-4">
                 <div className="bg-asvo-surface p-1 rounded-xl border border-asvo-border shadow-sm inline-flex gap-1">
-                    <button onClick={() => {setTemplateType("VIDEO_KIT"); setIsConstructorMode(false); setLabelSize({width: 140, height: 90})}} className={clsx("px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all", templateType === "VIDEO_KIT" && !isConstructorMode ? "bg-asvo-accent text-asvo-bg shadow-md" : "text-asvo-text-mid hover:bg-asvo-surface-2")}>
+                    <button onClick={() => {setTemplateType("VIDEO_KIT"); setIsConstructorMode(false); setLabelSize({width: 140, height: 90})}} className={clsx("px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all", templateType === "VIDEO_KIT" && !isConstructorMode ? "bg-asvo-accent text-white shadow-md" : "text-asvo-text-mid hover:bg-asvo-surface-2")}>
                         <Tv size={18}/> Стандартный
                     </button>
-                    <button onClick={() => {setTemplateType("SIMPLE"); setIsConstructorMode(false); setLabelSize({width: 100, height: 60})}} className={clsx("px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all", templateType === "SIMPLE" && !isConstructorMode ? "bg-asvo-accent text-asvo-bg shadow-md" : "text-asvo-text-mid hover:bg-asvo-surface-2")}>
+                    <button onClick={() => {setTemplateType("SIMPLE"); setIsConstructorMode(false); setLabelSize({width: 100, height: 60})}} className={clsx("px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all", templateType === "SIMPLE" && !isConstructorMode ? "bg-asvo-accent text-white shadow-md" : "text-asvo-text-mid hover:bg-asvo-surface-2")}>
                         <Tag size={18}/> Простой
                     </button>
 
-                    <button onClick={() => {setTemplateType("CUSTOM"); setIsConstructorMode(false)}} className={clsx("px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all", templateType === "CUSTOM" && !isConstructorMode ? "bg-asvo-accent text-asvo-bg shadow-md" : "text-asvo-text-mid hover:bg-asvo-surface-2")}>
+                    <button onClick={() => {setTemplateType("CUSTOM"); setIsConstructorMode(false)}} className={clsx("px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all", templateType === "CUSTOM" && !isConstructorMode ? "bg-asvo-accent text-white shadow-md" : "text-asvo-text-mid hover:bg-asvo-surface-2")}>
                         <LayoutTemplate size={18}/> {customTemplateName || "Мои шаблоны"}
                     </button>
                 </div>
@@ -482,7 +482,7 @@ export const VideoTransmittersLabel: React.FC = () => {
                                 <div className="font-mono font-bold">{form.code} <ArrowRight size={12} className="inline"/> {endCode}</div>
                             </div>
 
-                            <button onClick={handlePrint} disabled={loading} className="w-full py-4 bg-asvo-accent hover:bg-asvo-accent/80 text-asvo-bg font-bold text-xl rounded-xl shadow-lg transition flex justify-center items-center gap-3">
+                            <button onClick={handlePrint} disabled={loading} className="w-full py-4 bg-asvo-accent hover:bg-asvo-accent/80 text-white font-bold text-xl rounded-xl shadow-lg transition flex justify-center items-center gap-3">
                                 {loading ? "Генерация..." : <><Printer /> ПЕЧАТЬ</>}
                             </button>
                         </div>
