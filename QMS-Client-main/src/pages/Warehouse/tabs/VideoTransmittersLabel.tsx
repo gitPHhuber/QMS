@@ -67,7 +67,7 @@ const LabelPreviewCard: React.FC<{
 
     return (
         <div className="flex flex-col items-center animate-fade-in">
-            <div className="text-xs font-bold text-gray-400 uppercase mb-2 bg-white px-2 py-1 rounded shadow-sm border border-gray-100">
+            <div className="text-xs font-bold text-asvo-text-dim uppercase mb-2 bg-asvo-surface-2 px-2 py-1 rounded shadow-sm border border-asvo-border">
                 {title}
             </div>
 
@@ -227,7 +227,7 @@ const LabelPreviewCard: React.FC<{
                     })}
                 </div>
             </div>
-            <div className="mt-2 text-[10px] text-gray-400 font-mono">
+            <div className="mt-2 text-[10px] text-asvo-text-dim font-mono">
                 {size.w} x {size.h} мм
             </div>
         </div>
@@ -361,22 +361,22 @@ export const VideoTransmittersLabel: React.FC = () => {
 
 
             <div className="mb-6 flex flex-col md:flex-row justify-center items-center gap-4">
-                <div className="bg-white p-1 rounded-xl border border-gray-200 shadow-sm inline-flex gap-1">
-                    <button onClick={() => {setTemplateType("VIDEO_KIT"); setIsConstructorMode(false); setLabelSize({width: 140, height: 90})}} className={clsx("px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all", templateType === "VIDEO_KIT" && !isConstructorMode ? "bg-indigo-600 text-white shadow-md" : "text-gray-500 hover:bg-gray-100")}>
+                <div className="bg-asvo-surface-2 p-1 rounded-xl border border-asvo-border shadow-sm inline-flex gap-1">
+                    <button onClick={() => {setTemplateType("VIDEO_KIT"); setIsConstructorMode(false); setLabelSize({width: 140, height: 90})}} className={clsx("px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all", templateType === "VIDEO_KIT" && !isConstructorMode ? "bg-asvo-accent text-asvo-bg shadow-md" : "text-asvo-text-mid hover:bg-asvo-surface-3")}>
                         <Tv size={18}/> Стандартный
                     </button>
-                    <button onClick={() => {setTemplateType("SIMPLE"); setIsConstructorMode(false); setLabelSize({width: 100, height: 60})}} className={clsx("px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all", templateType === "SIMPLE" && !isConstructorMode ? "bg-indigo-600 text-white shadow-md" : "text-gray-500 hover:bg-gray-100")}>
+                    <button onClick={() => {setTemplateType("SIMPLE"); setIsConstructorMode(false); setLabelSize({width: 100, height: 60})}} className={clsx("px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all", templateType === "SIMPLE" && !isConstructorMode ? "bg-asvo-accent text-asvo-bg shadow-md" : "text-asvo-text-mid hover:bg-asvo-surface-3")}>
                         <Tag size={18}/> Простой
                     </button>
 
-                    <button onClick={() => {setTemplateType("CUSTOM"); setIsConstructorMode(false)}} className={clsx("px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all", templateType === "CUSTOM" && !isConstructorMode ? "bg-indigo-600 text-white shadow-md" : "text-gray-500 hover:bg-gray-100")}>
+                    <button onClick={() => {setTemplateType("CUSTOM"); setIsConstructorMode(false)}} className={clsx("px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all", templateType === "CUSTOM" && !isConstructorMode ? "bg-asvo-accent text-asvo-bg shadow-md" : "text-asvo-text-mid hover:bg-asvo-surface-3")}>
                         <LayoutTemplate size={18}/> {customTemplateName || "Мои шаблоны"}
                     </button>
                 </div>
 
                 <button
                     onClick={() => setIsConstructorMode(!isConstructorMode)}
-                    className={clsx("px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all border", isConstructorMode ? "bg-red-50 text-red-600 border-red-200" : "bg-white text-indigo-600 border-indigo-200 hover:bg-indigo-50")}
+                    className={clsx("px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all border", isConstructorMode ? "bg-asvo-red-dim text-asvo-red border-asvo-red/30" : "bg-asvo-surface-2 text-asvo-accent border-asvo-accent/30 hover:bg-asvo-accent-dim")}
                 >
                     {isConstructorMode ? <Trash2 size={18}/> : <PenTool size={18}/>}
                     {isConstructorMode ? "Закрыть редактор" : "Конструктор"}
@@ -396,25 +396,25 @@ export const VideoTransmittersLabel: React.FC = () => {
                 <div className="flex flex-col xl:flex-row gap-8">
 
 
-                    <div className="flex-1 space-y-5 bg-white p-6 rounded-3xl shadow-xl border border-gray-100">
-                        <div className="flex items-center gap-2 text-indigo-800 border-b pb-4 mb-2">
-                            <Printer className="text-indigo-600"/>
+                    <div className="flex-1 space-y-5 bg-asvo-surface-2 p-6 rounded-3xl shadow-xl border border-asvo-border">
+                        <div className="flex items-center gap-2 text-asvo-accent border-b border-asvo-border pb-4 mb-2">
+                            <Printer className="text-asvo-accent"/>
                             <h2 className="text-xl font-bold">Параметры печати</h2>
                         </div>
 
 
                         {savedTemplates.length > 0 && (
-                            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
-                                <div className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-2 mb-2">
+                            <div className="bg-asvo-surface p-3 rounded-xl border border-asvo-border">
+                                <div className="text-[10px] font-bold text-asvo-text-dim uppercase flex items-center gap-2 mb-2">
                                     <FolderOpen size={12}/> Выберите шаблон:
                                 </div>
                                 <div className="flex flex-wrap gap-2">
                                     {savedTemplates.map(t => (
-                                        <div key={t.id} className={clsx("group flex items-center bg-white border rounded-lg overflow-hidden shadow-sm transition cursor-pointer", customTemplateName === t.name ? "border-indigo-500 ring-1 ring-indigo-500" : "border-gray-300 hover:border-indigo-400")}>
-                                            <div onClick={() => applySavedTemplate(t)} className="px-3 py-1.5 text-xs font-bold text-gray-700 hover:text-indigo-600">
-                                                {t.name} <span className="text-gray-400 font-normal ml-1">{t.width}x{t.height}</span>
+                                        <div key={t.id} className={clsx("group flex items-center bg-asvo-surface-2 border rounded-lg overflow-hidden shadow-sm transition cursor-pointer", customTemplateName === t.name ? "border-asvo-accent ring-1 ring-asvo-accent" : "border-asvo-border hover:border-asvo-accent/40")}>
+                                            <div onClick={() => applySavedTemplate(t)} className="px-3 py-1.5 text-xs font-bold text-asvo-text hover:text-asvo-accent">
+                                                {t.name} <span className="text-asvo-text-dim font-normal ml-1">{t.width}x{t.height}</span>
                                             </div>
-                                            <button onClick={(e) => { e.stopPropagation(); deleteSavedTemplate(t.id); }} className="px-2 py-1.5 hover:bg-red-50 text-gray-400 hover:text-red-500 border-l">
+                                            <button onClick={(e) => { e.stopPropagation(); deleteSavedTemplate(t.id); }} className="px-2 py-1.5 hover:bg-asvo-red-dim text-asvo-text-dim hover:text-asvo-red border-l border-asvo-border">
                                                 <Trash2 size={12}/>
                                             </button>
                                         </div>
@@ -426,54 +426,54 @@ export const VideoTransmittersLabel: React.FC = () => {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="md:col-span-2">
-                                <label className="text-xs font-bold text-gray-500 uppercase">Наименование</label>
-                                <input value={form.productName} onChange={e => setForm({...form, productName: e.target.value})} className="w-full p-2.5 border border-gray-300 rounded-lg font-bold text-gray-800 focus:border-indigo-500 outline-none" />
+                                <label className="text-xs font-bold text-asvo-text-mid uppercase">Наименование</label>
+                                <input value={form.productName} onChange={e => setForm({...form, productName: e.target.value})} className="w-full p-2.5 border border-asvo-border rounded-lg font-bold text-asvo-text bg-transparent focus:border-asvo-accent outline-none" />
                             </div>
 
                             <div>
-                                <label className="text-xs font-bold text-gray-500 uppercase">ID / Номер</label>
-                                <input value={form.id} onChange={e => setForm({...form, id: e.target.value})} className="w-full p-2.5 border border-gray-300 rounded-lg focus:border-indigo-500 outline-none" />
+                                <label className="text-xs font-bold text-asvo-text-mid uppercase">ID / Номер</label>
+                                <input value={form.id} onChange={e => setForm({...form, id: e.target.value})} className="w-full p-2.5 border border-asvo-border rounded-lg bg-transparent text-asvo-text focus:border-asvo-accent outline-none" />
                             </div>
                             <div>
-                                <label className="text-xs font-bold text-gray-500 uppercase">Дата</label>
+                                <label className="text-xs font-bold text-asvo-text-mid uppercase">Дата</label>
                                 <div className="flex gap-1">
-                                    <input value={form.date} onChange={e => setForm({...form, date: e.target.value})} className="w-full p-2.5 border border-gray-300 rounded-lg text-sm focus:border-indigo-500 outline-none" />
-                                    <button onClick={updateTime} className="p-2.5 bg-gray-100 rounded-lg hover:bg-gray-200"><RefreshCw size={16}/></button>
+                                    <input value={form.date} onChange={e => setForm({...form, date: e.target.value})} className="w-full p-2.5 border border-asvo-border rounded-lg text-sm bg-transparent text-asvo-text focus:border-asvo-accent outline-none" />
+                                    <button onClick={updateTime} className="p-2.5 bg-asvo-surface-3 rounded-lg hover:bg-asvo-border"><RefreshCw size={16}/></button>
                                 </div>
                             </div>
 
                             <div>
-                                <label className="text-xs font-bold text-gray-500 uppercase">Кол-во</label>
-                                <input value={form.quantity} onChange={e => setForm({...form, quantity: e.target.value})} className="w-full p-2.5 border border-gray-300 rounded-lg focus:border-indigo-500 outline-none" />
+                                <label className="text-xs font-bold text-asvo-text-mid uppercase">Кол-во</label>
+                                <input value={form.quantity} onChange={e => setForm({...form, quantity: e.target.value})} className="w-full p-2.5 border border-asvo-border rounded-lg bg-transparent text-asvo-text focus:border-asvo-accent outline-none" />
                             </div>
                             <div>
-                                <label className="text-xs font-bold text-gray-500 uppercase">Ед. изм.</label>
-                                <input value={form.unit} onChange={e => setForm({...form, unit: e.target.value})} className="w-full p-2.5 border border-gray-300 rounded-lg bg-white focus:border-indigo-500 outline-none" />
+                                <label className="text-xs font-bold text-asvo-text-mid uppercase">Ед. изм.</label>
+                                <input value={form.unit} onChange={e => setForm({...form, unit: e.target.value})} className="w-full p-2.5 border border-asvo-border rounded-lg bg-transparent text-asvo-text focus:border-asvo-accent outline-none" />
                             </div>
 
                             <div className="md:col-span-2">
-                                <label className="text-xs font-bold text-gray-500 uppercase">Договор / Инфо</label>
-                                <input value={form.contract} onChange={e => setForm({...form, contract: e.target.value})} className="w-full p-2.5 border border-gray-300 rounded-lg text-sm focus:border-indigo-500 outline-none" />
+                                <label className="text-xs font-bold text-asvo-text-mid uppercase">Договор / Инфо</label>
+                                <input value={form.contract} onChange={e => setForm({...form, contract: e.target.value})} className="w-full p-2.5 border border-asvo-border rounded-lg text-sm bg-transparent text-asvo-text focus:border-asvo-accent outline-none" />
                             </div>
                         </div>
 
 
-                        <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-100 space-y-4">
+                        <div className="bg-asvo-surface p-4 rounded-xl border border-asvo-border space-y-4">
                             <div>
-                                <label className="text-xs font-bold text-indigo-800 uppercase flex justify-between">
+                                <label className="text-xs font-bold text-asvo-accent uppercase flex justify-between">
                                     <span>Стартовый номер (Для QR)</span>
                                 </label>
-                                <input value={form.code} onChange={e => setForm({...form, code: e.target.value})} className="w-full p-3 border-2 border-indigo-200 rounded-xl font-mono text-xl font-black text-indigo-900 focus:border-indigo-500 outline-none shadow-sm" />
+                                <input value={form.code} onChange={e => setForm({...form, code: e.target.value})} className="w-full p-3 border-2 border-asvo-accent/30 rounded-xl font-mono text-xl font-black text-asvo-accent bg-transparent focus:border-asvo-accent outline-none shadow-sm" />
                             </div>
 
                             <div className="flex items-end gap-4">
                                 <div className="flex-1">
-                                    <label className="text-xs font-bold text-indigo-800 uppercase mb-1 block">Тираж</label>
-                                    <input type="number" min="1" max="1000" value={printCount} onChange={e => setPrintCount(Number(e.target.value))} className="w-full p-3 border-2 border-indigo-200 rounded-xl font-bold text-lg" />
+                                    <label className="text-xs font-bold text-asvo-accent uppercase mb-1 block">Тираж</label>
+                                    <input type="number" min="1" max="1000" value={printCount} onChange={e => setPrintCount(Number(e.target.value))} className="w-full p-3 border-2 border-asvo-accent/30 rounded-xl font-bold text-lg bg-transparent text-asvo-text" />
                                 </div>
-                                <div className="flex items-center gap-2 p-3 bg-white/60 rounded-xl border border-indigo-100">
-                                    <Ruler size={18} className="text-indigo-400"/>
-                                    <div className="text-xs font-bold text-indigo-900">{labelSize.width} x {labelSize.height} мм</div>
+                                <div className="flex items-center gap-2 p-3 bg-asvo-surface-2/60 rounded-xl border border-asvo-border">
+                                    <Ruler size={18} className="text-asvo-accent/60"/>
+                                    <div className="text-xs font-bold text-asvo-accent">{labelSize.width} x {labelSize.height} мм</div>
                                 </div>
                             </div>
 

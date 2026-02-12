@@ -40,20 +40,20 @@ export const WarehousePage: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 pb-20 font-sans text-gray-700">
+    <div className="min-h-screen p-6 pb-20 font-sans text-asvo-text">
 
 
       <div className="max-w-7xl mx-auto mb-6">
         <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6 mb-6">
             <div className="flex items-center gap-4">
-               <div className="p-3 bg-indigo-100 rounded-2xl relative">
-                  <Package className="w-8 h-8 text-indigo-600" />
+               <div className="p-3 bg-asvo-accent-dim rounded-2xl relative">
+                  <Package className="w-8 h-8 text-asvo-accent" />
 
-                  {alertsCount > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white animate-pulse"></span>}
+                  {alertsCount > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-asvo-red rounded-full border-2 border-asvo-bg animate-pulse"></span>}
                </div>
                <div>
-                  <h1 className="text-3xl font-bold text-gray-800">Складская система</h1>
-                  <p className="text-indigo-600/80 font-medium">WMS ASVO-QMS v2.4</p>
+                  <h1 className="text-3xl font-bold text-asvo-text">Складская система</h1>
+                  <p className="text-asvo-accent/80 font-medium">WMS ASVO-QMS v2.4</p>
                </div>
             </div>
 
@@ -64,25 +64,25 @@ export const WarehousePage: React.FC = () => {
                 <div className="flex gap-2">
                     <button
                         onClick={() => navigate(WAREHOUSE_ANALYTICS_ROUTE)}
-                        className="flex flex-col items-center justify-center w-24 h-20 bg-white border border-indigo-100 rounded-xl shadow-sm hover:shadow-md hover:border-indigo-300 transition group"
+                        className="flex flex-col items-center justify-center w-24 h-20 bg-asvo-surface-2 border border-asvo-border rounded-xl shadow-sm hover:shadow-md hover:border-asvo-accent/40 transition group"
                     >
-                        <div className="p-2 bg-indigo-50 rounded-full group-hover:bg-indigo-100 text-indigo-600 mb-1"><BarChart3 size={20}/></div>
-                        <span className="text-[10px] font-bold text-gray-600 uppercase">Аналитика</span>
+                        <div className="p-2 bg-asvo-accent-dim rounded-full group-hover:bg-asvo-accent/20 text-asvo-accent mb-1"><BarChart3 size={20}/></div>
+                        <span className="text-[10px] font-bold text-asvo-text-mid uppercase">Аналитика</span>
                     </button>
 
                     <button
                         onClick={() => navigate(WAREHOUSE_INVENTORY_ROUTE)}
-                        className="flex flex-col items-center justify-center w-24 h-20 bg-white border border-orange-100 rounded-xl shadow-sm hover:shadow-md hover:border-orange-300 transition group"
+                        className="flex flex-col items-center justify-center w-24 h-20 bg-asvo-surface-2 border border-asvo-border rounded-xl shadow-sm hover:shadow-md hover:border-asvo-amber/40 transition group"
                     >
-                        <div className="p-2 bg-orange-50 rounded-full group-hover:bg-orange-100 text-orange-600 mb-1"><ClipboardCheck size={20}/></div>
-                        <span className="text-[10px] font-bold text-gray-600 uppercase">Ревизия</span>
+                        <div className="p-2 bg-asvo-amber-dim rounded-full group-hover:bg-asvo-amber/20 text-asvo-amber mb-1"><ClipboardCheck size={20}/></div>
+                        <span className="text-[10px] font-bold text-asvo-text-mid uppercase">Ревизия</span>
                     </button>
                 </div>
             </div>
         </div>
 
 
-        <div className="flex gap-2 border-b border-gray-200 pb-1 overflow-x-auto">
+        <div className="flex gap-2 border-b border-asvo-border pb-1 overflow-x-auto">
            {[
                { id: "INTAKE", label: "Приёмка", icon: <Truck size={18}/> },
                { id: "MOVES", label: "Операции", icon: <ArrowRightLeft size={18}/> },
@@ -96,7 +96,7 @@ export const WarehousePage: React.FC = () => {
                { id: "SETTINGS", label: "Настройки / Лимиты", icon:
                  <div className="relative flex items-center gap-1">
                     <Settings size={18}/>
-                    {alertsCount > 0 && <span className="bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full ml-1">{alertsCount}</span>}
+                    {alertsCount > 0 && <span className="bg-asvo-red text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full ml-1">{alertsCount}</span>}
                  </div>
                },
            ].map(tab => (
@@ -105,8 +105,8 @@ export const WarehousePage: React.FC = () => {
                   onClick={() => setActiveTab(tab.id as Tab)}
                   className={`flex items-center gap-2 px-5 py-3 rounded-t-lg font-bold text-sm transition-all relative top-[1px] whitespace-nowrap ${
                       activeTab === tab.id
-                      ? "bg-white text-indigo-700 border border-gray-200 border-b-white shadow-sm z-10"
-                      : "text-gray-500 hover:text-indigo-600 hover:bg-gray-100/50"
+                      ? "bg-asvo-surface-2 text-asvo-accent border border-asvo-border border-b-asvo-surface-2 shadow-sm z-10"
+                      : "text-asvo-text-dim hover:text-asvo-accent hover:bg-asvo-surface-2/50"
                   }`}
                >
                    {tab.icon} {tab.label}

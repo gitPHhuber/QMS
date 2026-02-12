@@ -11,6 +11,7 @@ import { SELECT_PC_ROUTE } from "./utils/consts";
 import { check } from "./api/userApi";
 import { Toaster } from 'react-hot-toast';
 import { LoginPage } from "./pages/Login/LoginPage";
+import { ErrorBoundary } from "./components/common/ErrorBoundary";
 
 const App = observer(() => {
   const auth = useAuth();
@@ -117,7 +118,7 @@ const App = observer(() => {
 
 
   return (
-    <div className="bg-[#0b1120] min-h-screen flex flex-col">
+    <div className="bg-asvo-bg min-h-screen flex flex-col">
       <Toaster
         position="top-right"
         toastOptions={{
@@ -132,7 +133,9 @@ const App = observer(() => {
       />
       <Header />
       <main className="flex-1 overflow-auto pb-4 pt-14">
-        <AppRouter />
+        <ErrorBoundary>
+          <AppRouter />
+        </ErrorBoundary>
       </main>
     </div>
   );

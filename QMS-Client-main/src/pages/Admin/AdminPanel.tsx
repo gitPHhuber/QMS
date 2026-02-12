@@ -51,8 +51,8 @@ const BentoItem: React.FC<BentoItemProps> = ({
   icon: Icon,
   link,
   className,
-  colorClass = "bg-white hover:border-indigo-300",
-  iconColorClass = "text-indigo-600 bg-indigo-50",
+  colorClass = "bg-asvo-surface-2 hover:border-asvo-accent/40",
+  iconColorClass = "text-asvo-accent bg-asvo-accent-dim",
   onAdd,
 }) => {
   const navigate = useNavigate();
@@ -61,7 +61,7 @@ const BentoItem: React.FC<BentoItemProps> = ({
     <div
       onClick={() => navigate(link)}
       className={clsx(
-        "relative p-6 rounded-3xl border border-transparent shadow-sm transition-all duration-300 cursor-pointer group overflow-hidden flex flex-col justify-between hover:shadow-xl hover:-translate-y-1",
+        "relative p-6 rounded-3xl border border-asvo-border shadow-sm transition-all duration-300 cursor-pointer group overflow-hidden flex flex-col justify-between hover:shadow-xl hover:-translate-y-1",
         colorClass,
         className
       )}
@@ -72,15 +72,15 @@ const BentoItem: React.FC<BentoItemProps> = ({
         <div className={clsx("p-3 rounded-2xl", iconColorClass)}>
           <Icon size={28} strokeWidth={1.5} />
         </div>
-        <div className="p-2 rounded-full text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="p-2 rounded-full text-asvo-text-dim opacity-0 group-hover:opacity-100 transition-opacity">
           <ArrowUpRight size={20} />
         </div>
       </div>
 
       <div className="mt-4 z-10">
-        <h3 className="text-xl font-bold tracking-tight mb-1">{title}</h3>
+        <h3 className="text-xl font-bold tracking-tight text-asvo-text mb-1">{title}</h3>
         {subtitle && (
-          <p className="text-sm opacity-70 font-medium leading-tight">
+          <p className="text-sm text-asvo-text-mid font-medium leading-tight">
             {subtitle}
           </p>
         )}
@@ -92,7 +92,7 @@ const BentoItem: React.FC<BentoItemProps> = ({
             e.stopPropagation();
             onAdd();
           }}
-          className="absolute bottom-4 right-4 p-2 bg-white/90 backdrop-blur-sm border border-slate-200 rounded-xl text-slate-600 shadow-sm hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all z-20"
+          className="absolute bottom-4 right-4 p-2 bg-asvo-surface-3/90 backdrop-blur-sm border border-asvo-border rounded-xl text-asvo-text-mid shadow-sm hover:bg-asvo-accent hover:text-asvo-bg hover:border-asvo-accent transition-all z-20"
           title="Быстрое создание"
         >
           <Plus size={20} />
@@ -117,23 +117,23 @@ export const AdminPanel: React.FC = observer(() => {
   return (
     <div className="p-6 max-w-[1600px] mx-auto min-h-screen">
       <div className="mb-8">
-        <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">
+        <h1 className="text-4xl font-extrabold text-asvo-text tracking-tight">
           Центр управления
         </h1>
-        <p className="text-slate-500 mt-2 text-lg">
+        <p className="text-asvo-text-mid mt-2 text-lg">
           Администрирование системы менеджмента качества
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 auto-rows-[180px]">
         {(canManageUsers || user.can("rbac.manage")) && (
-          <div className="md:col-span-2 row-span-2 bg-slate-900 rounded-3xl p-8 text-white relative overflow-hidden group shadow-2xl">
-            <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500 rounded-full blur-[100px] opacity-20 -mr-20 -mt-20 pointer-events-none" />
+          <div className="md:col-span-2 row-span-2 bg-asvo-surface rounded-3xl p-8 text-white relative overflow-hidden group shadow-2xl border border-asvo-border">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-asvo-accent rounded-full blur-[100px] opacity-10 -mr-20 -mt-20 pointer-events-none" />
 
             <div className="relative z-10 flex flex-col h-full justify-between">
               <div className="flex justify-between items-start">
                 <div className="p-4 bg-white/10 backdrop-blur-md rounded-2xl border border-white/10">
-                  <Shield size={40} className="text-emerald-400" />
+                  <Shield size={40} className="text-asvo-accent" />
                 </div>
                 <div className="flex gap-2">
                   <button
@@ -147,26 +147,26 @@ export const AdminPanel: React.FC = observer(() => {
 
               <div>
                 <h2 className="text-3xl font-bold mb-2">Безопасность</h2>
-                <p className="text-slate-400 mb-6 max-w-md">
+                <p className="text-asvo-text-mid mb-6 max-w-md">
                   Управление ролевой моделью (RBAC), пользователями и рабочими станциями.
                 </p>
 
                 <div className="flex gap-3 flex-wrap">
                   <button
                     onClick={() => navigate(ADMIN_RBAC_ROUTE)}
-                    className="flex items-center gap-2 px-5 py-3 bg-indigo-600 hover:bg-indigo-500 rounded-xl font-bold transition shadow-lg shadow-indigo-900/50"
+                    className="flex items-center gap-2 px-5 py-3 bg-asvo-accent hover:bg-asvo-accent/80 text-asvo-bg rounded-xl font-bold transition shadow-lg shadow-asvo-accent/20"
                   >
                     <Settings size={18} /> Доступ (RBAC)
                   </button>
                   <button
                     onClick={() => navigate(ADMIN_USERS_ROUTE)}
-                    className="flex items-center gap-2 px-5 py-3 bg-slate-700 hover:bg-slate-600 rounded-xl font-bold transition"
+                    className="flex items-center gap-2 px-5 py-3 bg-asvo-surface-3 hover:bg-asvo-border rounded-xl font-bold transition"
                   >
                     <Users size={18} /> Пользователи
                   </button>
                   <button
                     onClick={() => navigate(AUDIT_LOG_ROUTE)}
-                    className="flex items-center gap-2 px-5 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl font-bold transition"
+                    className="flex items-center gap-2 px-5 py-3 bg-asvo-surface-2 hover:bg-asvo-surface-3 border border-asvo-border rounded-xl font-bold transition"
                   >
                     <History size={18} /> Аудит
                   </button>
@@ -183,8 +183,8 @@ export const AdminPanel: React.FC = observer(() => {
             icon={Network}
             link={STRUCTURE_ROUTE}
             className="md:col-span-2"
-            colorClass="bg-gradient-to-br from-indigo-50 to-blue-50 border border-blue-100 hover:shadow-lg"
-            iconColorClass="bg-blue-100 text-blue-600"
+            colorClass="bg-asvo-surface-2 border border-asvo-border hover:border-asvo-blue/40 hover:shadow-lg"
+            iconColorClass="bg-asvo-blue-dim text-asvo-blue"
           />
         )}
 
@@ -194,8 +194,8 @@ export const AdminPanel: React.FC = observer(() => {
             subtitle="Поставки и хранение"
             icon={Package}
             link={ADMIN_WAREHOUSE_ROUTE}
-            colorClass="bg-white border-slate-200 hover:border-emerald-400"
-            iconColorClass="bg-emerald-50 text-emerald-600"
+            colorClass="bg-asvo-surface-2 border-asvo-border hover:border-asvo-green/40"
+            iconColorClass="bg-asvo-green-dim text-asvo-green"
           />
         )}
 
@@ -205,8 +205,8 @@ export const AdminPanel: React.FC = observer(() => {
             subtitle="Тариф и активные модули"
             icon={Blocks}
             link={ADMIN_MODULES_ROUTE}
-            colorClass="bg-gradient-to-br from-violet-50 to-purple-50 border border-purple-100 hover:shadow-lg"
-            iconColorClass="bg-purple-100 text-purple-600"
+            colorClass="bg-asvo-surface-2 border border-asvo-border hover:border-asvo-purple/40 hover:shadow-lg"
+            iconColorClass="bg-asvo-purple-dim text-asvo-purple"
           />
         )}
       </div>
