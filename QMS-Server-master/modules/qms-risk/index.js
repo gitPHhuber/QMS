@@ -24,6 +24,7 @@ module.exports = {
     if (m.RiskMitigation && m.Capa) {
       m.RiskMitigation.belongsTo(m.Capa, { as: 'capa', foreignKey: 'capaId' });
       m.Capa.hasMany(m.RiskMitigation, { as: 'riskMitigations', foreignKey: 'capaId' });
+    }
 
     // RiskManagementPlan <-> User (responsible person)
     if (m.RiskManagementPlan && m.User) {
