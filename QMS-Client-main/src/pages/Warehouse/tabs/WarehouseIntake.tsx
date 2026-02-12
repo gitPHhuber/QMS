@@ -7,13 +7,18 @@ import { createBoxesBatch, downloadBoxesExcel, printBoxesPdf } from "src/api/war
 import { InventoryBoxModel } from "src/types/WarehouseModels";
 import { SectionModel } from "src/store/StructureStore";
 import { productModel } from "src/types/ProductModel";
-import { componentModel } from "src/types/ComponentModel";
 import { LabelPreview } from "../components/LabelPreview";
+
+type WarehouseComponentModel = {
+  id: number;
+  title: string;
+  article?: string | null;
+};
 
 interface Props {
   sections: SectionModel[];
   productsList: productModel[];
-  componentsList: componentModel[];
+  componentsList: WarehouseComponentModel[];
 }
 
 export const WarehouseIntake: React.FC<Props> = ({ sections, productsList, componentsList }) => {
