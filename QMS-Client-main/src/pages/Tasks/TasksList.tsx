@@ -36,7 +36,7 @@ type ProgressBarColor = "blue" | "amber" | "purple" | "accent" | "green";
 interface ColumnDef {
   key: string;
   label: string;
-  icon: React.FC<{ size?: number; className?: string }>;
+  icon: React.ComponentType<{ size?: string | number; className?: string }>;
   dotColor: StatusDotColor;
   progressColor: ProgressBarColor;
   textCls: string;
