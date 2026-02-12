@@ -1,6 +1,7 @@
 const { RiskRegister, RiskAssessment, RiskMitigation } = require("../models/Risk");
 const { User } = require("../../../models/index");
 const RiskMatrixService = require("../services/RiskMatrixService");
+const RiskMonitoringService = require("../services/RiskMonitoringService");
 const { logAudit } = require("../../core/utils/auditLogger");
 const { Op } = require("sequelize");
 const sequelize = require("../../../db");
@@ -161,6 +162,7 @@ const addAssessment = async (req, res, next) => {
     if (!risk) return next(ApiError.notFound("Риск не найден"));
 
     const { level, riskClass } = RiskMatrixService.calculate(probability, severity);
+    const previousClass = assessmentType === "POST_MITIGATION" ? risk.residualRiskClass : risk.initialRiskClass;
 
     const assessment = await RiskAssessment.create({
       riskRegisterId: risk.id,
@@ -176,10 +178,24 @@ const addAssessment = async (req, res, next) => {
 
     // Обновляем остаточный риск если это POST_MITIGATION
     if (assessmentType === "POST_MITIGATION") {
-      await RiskMatrixService.recalculateRisk(risk, { probability, severity, isResidual: true });
+      await RiskMatrixService.recalculateRisk(risk, {
+        probability,
+        severity,
+        isResidual: true,
+        actorUserId: req.user.id,
+        source: "addAssessment",
+      });
       risk.status = RiskMatrixService.isAcceptable(riskClass) ? "ACCEPTED" : "MITIGATED";
       await risk.save();
     }
+
+    await RiskMonitoringService.notifyLevelChanged({
+      risk,
+      previousClass,
+      nextClass: riskClass,
+      source: "addAssessment",
+      actorUserId: req.user.id,
+    });
 
     await logAudit(req, "risk.assess", "risk_register", risk.id, { riskClass, level });
     res.status(201).json(assessment);

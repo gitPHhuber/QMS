@@ -9,6 +9,7 @@ const router = require("./routes/index");
 const errorHandler = require("./middleware/ErrorHandlingMiddleware");
 const path = require("path");
 const { startAuditRetentionScheduler } = require("./modules/core/utils/auditRetentionService");
+const RiskMonitoringService = require("./modules/qms-risk/services/RiskMonitoringService");
 
 const PORT = process.env.PORT || 5000;
 const app = express();
@@ -253,6 +254,7 @@ const start = async () => {
 
     await initInitialData();
     startAuditRetentionScheduler();
+    RiskMonitoringService.startScheduler();
 
     app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
   } catch (e) {
