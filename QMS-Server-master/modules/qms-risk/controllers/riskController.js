@@ -1,6 +1,7 @@
 const { RiskRegister, RiskAssessment, RiskMitigation } = require("../models/Risk");
-const { User } = require("../../../models/index");
+const { User, Capa } = require("../../../models/index");
 const RiskMatrixService = require("../services/RiskMatrixService");
+const RiskMonitoringService = require("../services/RiskMonitoringService");
 const { logAudit } = require("../../core/utils/auditLogger");
 const { Op } = require("sequelize");
 const sequelize = require("../../../db");
@@ -34,7 +35,7 @@ const getAll = async (req, res, next) => {
       where,
       include: [
         { model: RiskAssessment, as: "assessments", limit: 1, order: [["assessmentDate", "DESC"]] },
-        { model: RiskMitigation, as: "mitigations" },
+        { model: RiskMitigation, as: "mitigations", include: [{ model: Capa, as: "capa", attributes: ["id", "number", "status", "title"] }] },
         { model: User, as: "owner", attributes: ["id", "name", "surname"] },
       ],
       order: [["initialRiskLevel", "DESC"], ["createdAt", "DESC"]],
@@ -51,6 +52,15 @@ const getAll = async (req, res, next) => {
 
 const getOne = async (req, res, next) => {
   try {
+
+    const risk = await RiskRegister.findByPk(req.params.id, {
+      include: [
+        { model: RiskAssessment, as: "assessments", order: [["assessmentDate", "DESC"]] },
+        { model: RiskMitigation, as: "mitigations", order: [["createdAt", "ASC"]], include: [{ model: Capa, as: "capa", attributes: ["id", "number", "status", "title"] }] },
+        { model: User, as: "owner", attributes: ["id", "name", "surname"] },
+      ],
+    });
+
     const includes = [
       { model: RiskAssessment, as: "assessments", order: [["assessmentDate", "DESC"]] },
       { model: RiskMitigation, as: "mitigations", order: [["createdAt", "ASC"]] },
@@ -67,6 +77,7 @@ const getOne = async (req, res, next) => {
     } catch { /* NC модуль не доступен */ }
 
     const risk = await RiskRegister.findByPk(req.params.id, { include: includes });
+
 
     if (!risk) return next(ApiError.notFound("Риск не найден"));
     res.json(risk);
@@ -138,9 +149,13 @@ const update = async (req, res, next) => {
       if (req.body[field] !== undefined) updateData[field] = req.body[field];
     }
 
-    // Если обновляется оценка — пересчитываем
-    if (updateData.initialProbability && updateData.initialSeverity) {
-      const { level, riskClass } = RiskMatrixService.calculate(updateData.initialProbability, updateData.initialSeverity);
+    // Если обновляется хотя бы одно поле оценки — пересчитываем
+    const hasInitialProbability = updateData.initialProbability !== undefined;
+    const hasInitialSeverity = updateData.initialSeverity !== undefined;
+    if (hasInitialProbability || hasInitialSeverity) {
+      const effectiveProbability = hasInitialProbability ? updateData.initialProbability : risk.initialProbability;
+      const effectiveSeverity = hasInitialSeverity ? updateData.initialSeverity : risk.initialSeverity;
+      const { level, riskClass } = RiskMatrixService.calculate(effectiveProbability, effectiveSeverity);
       updateData.initialRiskLevel = level;
       updateData.initialRiskClass = riskClass;
     }
@@ -166,6 +181,7 @@ const addAssessment = async (req, res, next) => {
     if (!risk) return next(ApiError.notFound("Риск не найден"));
 
     const { level, riskClass } = RiskMatrixService.calculate(probability, severity);
+    const previousClass = assessmentType === "POST_MITIGATION" ? risk.residualRiskClass : risk.initialRiskClass;
 
     const assessment = await RiskAssessment.create({
       riskRegisterId: risk.id,
@@ -181,10 +197,24 @@ const addAssessment = async (req, res, next) => {
 
     // Обновляем остаточный риск если это POST_MITIGATION
     if (assessmentType === "POST_MITIGATION") {
-      await RiskMatrixService.recalculateRisk(risk, { probability, severity, isResidual: true });
+      await RiskMatrixService.recalculateRisk(risk, {
+        probability,
+        severity,
+        isResidual: true,
+        actorUserId: req.user.id,
+        source: "addAssessment",
+      });
       risk.status = RiskMatrixService.isAcceptable(riskClass) ? "ACCEPTED" : "MITIGATED";
       await risk.save();
     }
+
+    await RiskMonitoringService.notifyLevelChanged({
+      risk,
+      previousClass,
+      nextClass: riskClass,
+      source: "addAssessment",
+      actorUserId: req.user.id,
+    });
 
     await logAudit(req, "risk.assess", "risk_register", risk.id, { riskClass, level });
     res.status(201).json(assessment);
@@ -199,7 +229,7 @@ const addAssessment = async (req, res, next) => {
 
 // Допустимые поля для создания митигации
 const MITIGATION_FIELDS = [
-  "mitigationType", "description", "responsibleId", "dueDate", "priority",
+  "mitigationType", "description", "responsibleId", "dueDate", "priority", "capaId",
 ];
 
 const addMitigation = async (req, res, next) => {
@@ -211,6 +241,11 @@ const addMitigation = async (req, res, next) => {
     const safeData = {};
     for (const field of MITIGATION_FIELDS) {
       if (req.body[field] !== undefined) safeData[field] = req.body[field];
+    }
+
+    if (safeData.capaId !== undefined && safeData.capaId !== null) {
+      const capa = await Capa.findByPk(safeData.capaId);
+      if (!capa) return next(ApiError.badRequest(`CAPA с id=${safeData.capaId} не найдена`));
     }
 
     const mitigation = await RiskMitigation.create({
@@ -226,6 +261,9 @@ const addMitigation = async (req, res, next) => {
     }
 
     await logAudit(req, "risk.mitigation.add", "risk_register", risk.id, { mitigationType: safeData.mitigationType });
+    if (mitigation.capaId) {
+      await logAudit(req, "risk.capa.link", "risk_mitigation", mitigation.id, { riskRegisterId: risk.id, capaId: mitigation.capaId });
+    }
     res.status(201).json(mitigation);
   } catch (e) {
     next(ApiError.internal(e.message));
