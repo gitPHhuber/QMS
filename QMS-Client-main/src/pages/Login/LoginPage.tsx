@@ -100,7 +100,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
       className={`min-h-screen flex flex-col ${isTransitioning ? 'theme-transition' : ''}`}
       style={{
         background: `linear-gradient(135deg, var(--bg-primary), var(--bg-secondary), var(--bg-tertiary))`,
-        fontFamily: "'DM Sans', sans-serif",
+        fontFamily: "'DM Sans Variable', 'DM Sans', sans-serif",
         ...Object.fromEntries(
           Object.entries(themes[theme]).map(([k, v]) => [k, v])
         ),
@@ -161,7 +161,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                 className="text-sm font-medium tracking-widest uppercase"
                 style={{
                   color: 'var(--text-body)',
-                  fontFamily: "'JetBrains Mono', monospace",
+                  fontFamily: "'JetBrains Mono Variable', 'JetBrains Mono', monospace",
                 }}
               >
                 ASVOTECH
@@ -201,7 +201,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
               <span
                 className="text-sm"
                 style={{
-                  fontFamily: "'JetBrains Mono', monospace",
+                  fontFamily: "'JetBrains Mono Variable', 'JetBrains Mono', monospace",
                   color: 'var(--text-muted)',
                 }}
               >
@@ -226,7 +226,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                       className="text-xs font-semibold"
                       style={{
                         color: 'var(--text-heading)',
-                        fontFamily: "'JetBrains Mono', monospace",
+                        fontFamily: "'JetBrains Mono Variable', 'JetBrains Mono', monospace",
                       }}
                     >
                       {stat.label}
@@ -252,7 +252,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                     background: 'var(--pill-bg)',
                     border: '1px solid var(--pill-border)',
                     color: 'var(--pill-text)',
-                    fontFamily: "'JetBrains Mono', monospace",
+                    fontFamily: "'JetBrains Mono Variable', 'JetBrains Mono', monospace",
                   }}
                 >
                   {pill}
@@ -326,7 +326,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                   className="text-2xl font-bold text-center mb-1"
                   style={{
                     color: 'var(--text-heading)',
-                    fontFamily: "'JetBrains Mono', monospace",
+                    fontFamily: "'JetBrains Mono Variable', 'JetBrains Mono', monospace",
                   }}
                 >
                   ASVO-QMS
@@ -374,7 +374,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                     className="text-[11px] tracking-widest uppercase"
                     style={{
                       color: 'var(--text-muted)',
-                      fontFamily: "'JetBrains Mono', monospace",
+                      fontFamily: "'JetBrains Mono Variable', 'JetBrains Mono', monospace",
                     }}
                   >
                     SSO
@@ -403,7 +403,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                   className="flex items-center justify-center gap-4 text-[11px]"
                   style={{
                     color: 'var(--text-muted)',
-                    fontFamily: "'JetBrains Mono', monospace",
+                    fontFamily: "'JetBrains Mono Variable', 'JetBrains Mono', monospace",
                   }}
                 >
                   <span className="flex items-center gap-1">
@@ -431,7 +431,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
           borderTop: '1px solid var(--footer-border)',
           background: 'var(--footer-bg)',
           color: 'var(--text-muted)',
-          fontFamily: "'JetBrains Mono', monospace",
+          fontFamily: "'JetBrains Mono Variable', 'JetBrains Mono', monospace",
         }}
       >
         <span>© 2025 ASVOTECH · v2.1.0</span>

@@ -38,8 +38,8 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'SF Pro Display', '-apple-system', 'sans-serif'],
-        mono: ['JetBrains Mono', 'SF Mono', 'Fira Code', 'monospace'],
+        sans: ['Inter Variable', 'Inter', 'SF Pro Display', '-apple-system', 'sans-serif'],
+        mono: ['JetBrains Mono Variable', 'JetBrains Mono', 'SF Mono', 'Fira Code', 'monospace'],
       },
       animation: {
         'fade-in': 'fadeIn 0.4s ease-out forwards',
