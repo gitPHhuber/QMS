@@ -22,6 +22,9 @@ import {
   Circle,
   Activity,
 } from "lucide-react";
+
+import ProcessMap from "../../components/qms/ProcessMap";
+
 import {
   LineChart,
   Line,
@@ -33,6 +36,7 @@ import {
   Legend,
 } from "recharts";
 import TabBar from "../../components/qms/TabBar";
+
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -962,6 +966,11 @@ export const QmsDashboardPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* ---------------------------------------------------------- */}
+      {/*  Process Map                                                */}
+      {/* ---------------------------------------------------------- */}
+      <ProcessMap />
     </div>
   );
 };

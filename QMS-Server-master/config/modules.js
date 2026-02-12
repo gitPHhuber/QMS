@@ -31,6 +31,7 @@ const MODULE_CATALOG = {
   'qms.training':    { name: 'Обучение',                    group: 'qms', depends: [] },
   'qms.equipment':   { name: 'Оборудование',               group: 'qms', depends: [] },
   'qms.review':      { name: 'Анализ руководства',         group: 'qms', depends: [] },
+  'qms.product':     { name: 'Реестр изделий',             group: 'qms', depends: [] },
   'qms.pms':         { name: 'Пострег. мониторинг',        group: 'qms', depends: ['qms.complaints', 'qms.nc'] },
   'qms.dashboard':   { name: 'Дашборд QMS',                group: 'qms', depends: [] },
 
@@ -92,7 +93,7 @@ const TIER_PRESETS = {
   pro: [
     'qms.dms', 'qms.changes', 'qms.nc', 'qms.capa', 'qms.complaints',
     'qms.risk', 'qms.supplier', 'qms.audit', 'qms.training',
-    'qms.equipment', 'qms.review', 'qms.dashboard',
+    'qms.equipment', 'qms.review', 'qms.product', 'qms.dashboard',
     'core.esign', 'core.notifications',
     'wms.warehouse', 'wms.movements', 'wms.analytics',
     'wms.inventory', 'wms.labels', 'wms.alerts',
@@ -104,7 +105,7 @@ const TIER_PRESETS = {
     'qms.dms', 'qms.changes', 'qms.nc', 'qms.capa', 'qms.complaints',
     'qms.risk', 'qms.design', 'qms.validation',
     'qms.supplier', 'qms.audit', 'qms.training',
-    'qms.equipment', 'qms.review', 'qms.pms', 'qms.dashboard',
+    'qms.equipment', 'qms.review', 'qms.product', 'qms.pms', 'qms.dashboard',
     'core.esign', 'core.notifications',
     'wms.warehouse', 'wms.movements', 'wms.analytics',
     'wms.inventory', 'wms.labels', 'wms.alerts', 'wms.traceability',

@@ -70,6 +70,15 @@ const AuditFinding = sequelize.define("audit_finding", {
   closedBy: { type: DataTypes.INTEGER, allowNull: true },
   closedAt: { type: DataTypes.DATE, allowNull: true },
   closureNotes: { type: DataTypes.TEXT, allowNull: true },
+
+  // Follow-up fields (Module 16)
+  correctiveAction: { type: DataTypes.TEXT, comment: "Описание корректирующего действия" },
+  verificationNotes: { type: DataTypes.TEXT, comment: "Заметки по верификации" },
+  followUpStatus: {
+    type: DataTypes.ENUM("OPEN", "IN_PROGRESS", "CLOSED", "OVERDUE", "ESCALATED"),
+    defaultValue: "OPEN",
+    comment: "Статус follow-up",
+  },
 });
 
 // Ассоциации
