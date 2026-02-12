@@ -34,6 +34,19 @@ const SEVERITY_LABELS = {
   5: "Катастрофическое (смерть пациента)",
 };
 
+
+const LEVEL_RANK = {
+  LOW: 1,
+  MEDIUM: 2,
+  HIGH: 3,
+  CRITICAL: 4,
+};
+
+function isIncreased(previousClass, nextClass) {
+  if (!previousClass || !nextClass) return false;
+  return (LEVEL_RANK[nextClass] || 0) > (LEVEL_RANK[previousClass] || 0);
+}
+
 class RiskMatrixService {
   /**
    * Рассчитать уровень и класс риска
@@ -109,7 +122,8 @@ class RiskMatrixService {
   /**
    * Автоматически пересчитать и обновить запись в реестре
    */
-  static async recalculateRisk(riskRecord, { probability, severity, isResidual = false }) {
+  static async recalculateRisk(riskRecord, { probability, severity, isResidual = false, actorUserId = null, source = "matrix_recalculate" }) {
+    const previousClass = isResidual ? riskRecord.residualRiskClass : riskRecord.initialRiskClass;
     const { level, riskClass } = this.calculate(probability, severity);
 
     if (isResidual) {
@@ -125,7 +139,19 @@ class RiskMatrixService {
     }
 
     await riskRecord.save();
-    return { level, riskClass };
+
+    if (isIncreased(previousClass, riskClass) && (riskClass === "HIGH" || riskClass === "CRITICAL")) {
+      const RiskMonitoringService = require("./RiskMonitoringService");
+      await RiskMonitoringService.notifyLevelChanged({
+        risk: riskRecord,
+        previousClass,
+        nextClass: riskClass,
+        source,
+        actorUserId,
+      });
+    }
+
+    return { level, riskClass, previousClass };
   }
 }
 
