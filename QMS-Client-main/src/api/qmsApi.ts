@@ -162,7 +162,7 @@ export const auditApi = {
 
 export const documentsApi = {
   getAll: (params: Record<string, any>) =>
-    $authHost.get("/api/documents", { params }).then(r => r.data),
+    $authHost.get("/api/documents/", { params }).then(r => r.data),
 
   getOne: (id: number) =>
     $authHost.get(`/api/documents/${id}`).then(r => r.data),
