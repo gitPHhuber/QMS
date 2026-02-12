@@ -129,9 +129,13 @@ const update = async (req, res, next) => {
       if (req.body[field] !== undefined) updateData[field] = req.body[field];
     }
 
-    // Если обновляется оценка — пересчитываем
-    if (updateData.initialProbability && updateData.initialSeverity) {
-      const { level, riskClass } = RiskMatrixService.calculate(updateData.initialProbability, updateData.initialSeverity);
+    // Если обновляется хотя бы одно поле оценки — пересчитываем
+    const hasInitialProbability = updateData.initialProbability !== undefined;
+    const hasInitialSeverity = updateData.initialSeverity !== undefined;
+    if (hasInitialProbability || hasInitialSeverity) {
+      const effectiveProbability = hasInitialProbability ? updateData.initialProbability : risk.initialProbability;
+      const effectiveSeverity = hasInitialSeverity ? updateData.initialSeverity : risk.initialSeverity;
+      const { level, riskClass } = RiskMatrixService.calculate(effectiveProbability, effectiveSeverity);
       updateData.initialRiskLevel = level;
       updateData.initialRiskClass = riskClass;
     }
