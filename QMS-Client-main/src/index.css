@@ -20,6 +20,12 @@
 @tailwind components;
 @tailwind utilities;
 
+html, body, #root {
+  background-color: #0b1120;
+  margin: 0;
+  padding: 0;
+}
+
 /* --- Custom dark scrollbar --- */
 ::-webkit-scrollbar {
   width: 6px;
