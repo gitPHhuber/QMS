@@ -31,22 +31,33 @@ module.exports = {
     }
 
     // 2. Расширяем ENUM для notification types (SLA-эскалация)
-    await queryInterface.sequelize.query(`
-      ALTER TYPE "enum_notifications_type"
-        ADD VALUE IF NOT EXISTS 'NC_OVERDUE';
+    const [enumRows] = await queryInterface.sequelize.query(`
+      SELECT 1
+      FROM pg_type t
+      JOIN pg_namespace n ON n.oid = t.typnamespace
+      WHERE t.typname = 'enum_notifications_type'
+        AND n.nspname = current_schema()
+      LIMIT 1;
     `);
-    await queryInterface.sequelize.query(`
-      ALTER TYPE "enum_notifications_type"
-        ADD VALUE IF NOT EXISTS 'NC_ESCALATED';
-    `);
-    await queryInterface.sequelize.query(`
-      ALTER TYPE "enum_notifications_type"
-        ADD VALUE IF NOT EXISTS 'CAPA_ESCALATED';
-    `);
-    await queryInterface.sequelize.query(`
-      ALTER TYPE "enum_notifications_type"
-        ADD VALUE IF NOT EXISTS 'CAPA_ACTION_OVERDUE';
-    `);
+
+    if (enumRows.length) {
+      await queryInterface.sequelize.query(`
+        ALTER TYPE "enum_notifications_type"
+          ADD VALUE IF NOT EXISTS 'NC_OVERDUE';
+      `);
+      await queryInterface.sequelize.query(`
+        ALTER TYPE "enum_notifications_type"
+          ADD VALUE IF NOT EXISTS 'NC_ESCALATED';
+      `);
+      await queryInterface.sequelize.query(`
+        ALTER TYPE "enum_notifications_type"
+          ADD VALUE IF NOT EXISTS 'CAPA_ESCALATED';
+      `);
+      await queryInterface.sequelize.query(`
+        ALTER TYPE "enum_notifications_type"
+          ADD VALUE IF NOT EXISTS 'CAPA_ACTION_OVERDUE';
+      `);
+    }
   },
 
   async down(queryInterface) {
