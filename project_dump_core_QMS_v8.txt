@@ -58,7 +58,10 @@ PROJECT CORE FILES OVERVIEW
 - QMS-Client-main/src/pages/Admin/Structure/StructurePage.tsx
 - QMS-Client-main/src/pages/Admin/Warehouse/WarehousePage.tsx
 - QMS-Client-main/src/pages/CAPA/CapaPage.tsx
+- QMS-Client-main/src/pages/Documents/CreateDocumentModal.tsx
+- QMS-Client-main/src/pages/Documents/DocumentDetailModal.tsx
 - QMS-Client-main/src/pages/Documents/DocumentsPage.tsx
+- QMS-Client-main/src/pages/Documents/Pagination.tsx
 - QMS-Client-main/src/pages/Login/Login.tsx
 - QMS-Client-main/src/pages/Login/LoginPage.css
 - QMS-Client-main/src/pages/Login/LoginPage.tsx
@@ -77,6 +80,7 @@ PROJECT CORE FILES OVERVIEW
 - QMS-Client-main/src/pages/Quality/SuppliersPage.tsx
 - QMS-Client-main/src/pages/Quality/TrainingPage.tsx
 - QMS-Client-main/src/pages/StartPage/StartPage.tsx
+- QMS-Client-main/src/pages/Tasks/ProjectDetailView.tsx
 - QMS-Client-main/src/pages/Tasks/ProjectsList.tsx
 - QMS-Client-main/src/pages/Tasks/TasksList.tsx
 - QMS-Client-main/src/pages/Tasks/TasksPage.tsx
@@ -687,6 +691,25 @@ FILE: QMS-Client-main/src/api/projectsApi.ts
 
 import { $authHost } from "./index";
 
+export interface ProjectTaskStats {
+    total: number;
+    byStatus: {
+        NEW: number;
+        IN_PROGRESS: number;
+        REVIEW: number;
+        DONE: number;
+        CLOSED: number;
+    };
+    overdue: number;
+    progressPercent: number;
+}
+
+export interface ProjectMember {
+    id: number;
+    name: string;
+    surname: string;
+}
+
 export interface ProjectModel {
     id: number;
     title: string;
@@ -694,6 +717,8 @@ export interface ProjectModel {
     status: string;
     createdAt: string;
     author?: { name: string; surname: string };
+    taskStats?: ProjectTaskStats;
+    members?: ProjectMember[];
 }
 
 export const fetchProjects = async () => {
@@ -701,14 +726,25 @@ export const fetchProjects = async () => {
     return data as ProjectModel[];
 };
 
+export const fetchProjectById = async (id: number) => {
+    const { data } = await $authHost.get(`api/projects/${id}`);
+    return data as ProjectModel;
+};
+
 export const createProject = async (title: string, description: string) => {
     const { data } = await $authHost.post("api/projects", { title, description });
+    return data;
+};
+
+export const updateProject = async (id: number, payload: { title?: string; description?: string; status?: string }) => {
+    const { data } = await $authHost.put(`api/projects/${id}`, payload);
     return data;
 };
 
 export const deleteProject = async (id: number) => {
     await $authHost.delete(`api/projects/${id}`);
 };
+
 ================================================================================
 FILE: QMS-Client-main/src/api/qmsApi.ts
 ================================================================================
@@ -1335,6 +1371,7 @@ export const fetchTasks = async (params?: {
   status?: string;
   search?: string;
   originType?: string;
+  projectId?: number;
 }) => {
   const { data } = await $authHost.get("api/tasks", { params });
   return data as TaskListResponse;
@@ -1926,9 +1963,7 @@ export const DateTimeDisplay = () => {
 FILE: QMS-Client-main/src/components/Header/Header.tsx
 ================================================================================
 
-
 import React, { useContext, Fragment, useState, useEffect, useRef } from "react";
-import Logo from "assets/images/logo.svg";
 import { NavLink, useLocation } from "react-router-dom";
 import { observer } from "mobx-react-lite";
 import { Context } from "src/main";
@@ -1938,14 +1973,12 @@ import { setSessionOnline } from "src/api/userApi";
 import { DateTimeDisplay } from "./DateTimeDisplay";
 import clsx from "clsx";
 
-
 import {
   Shield, ShieldCheck, Archive,
   ClipboardList, User, LogOut,
-  ChevronDown, FileText, AlertTriangle, ClipboardCheck, BarChart3, LayoutDashboard,
+  ChevronDown, FileText, AlertTriangle, ClipboardCheck, BarChart3,
   Truck, GraduationCap, Wrench,
 } from "lucide-react";
-
 
 import {
   ADMIN_ROUTE,
@@ -1964,7 +1997,6 @@ type NavItem = {
   children?: { label: string; to: string; icon?: React.ElementType }[];
 };
 
-
 export const HEADER_HEIGHT = 56;
 
 export const Header: React.FC = observer(() => {
@@ -1975,7 +2007,6 @@ export const Header: React.FC = observer(() => {
   if (!context) throw new Error("Context required");
   const { user, modules } = context;
 
-
   const [isVisible, setIsVisible] = useState(true);
   const [isAtTop, setIsAtTop] = useState(true);
   const lastScrollY = useRef(0);
@@ -1984,11 +2015,7 @@ export const Header: React.FC = observer(() => {
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-
-
       setIsAtTop(currentScrollY < 5);
-
-
       const scrollDiff = currentScrollY - lastScrollY.current;
 
       if (Math.abs(scrollDiff) < scrollThreshold) {
@@ -1996,10 +2023,8 @@ export const Header: React.FC = observer(() => {
       }
 
       if (scrollDiff > 0 && currentScrollY > HEADER_HEIGHT) {
-
         setIsVisible(false);
       } else {
-
         setIsVisible(true);
       }
 
@@ -2010,21 +2035,21 @@ export const Header: React.FC = observer(() => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-
   const logOut = async () => {
     try {
       const userId = Number(localStorage.getItem("userID"));
       const pcId = localStorage.getItem("pcID");
       const pcIdNum = pcId === "PERSONAL" ? null : Number(pcId);
       if (userId) await setSessionOnline(false, userId, pcIdNum);
-    } catch (error) { console.error(error); }
+    } catch (error) {
+      console.error(error);
+    }
 
     user.resetUser();
     localStorage.clear();
     sessionStorage.clear();
     await auth.signoutRedirect({ post_logout_redirect_uri: window.location.origin });
   };
-
 
   const navigation: NavItem[] = [
     {
@@ -2065,10 +2090,9 @@ export const Header: React.FC = observer(() => {
     },
   ];
 
-
   const visibleNav = navigation.filter(item => {
-      if (!item.permissions) return true;
-      return item.permissions.some(p => user.can(p));
+    if (!item.permissions) return true;
+    return item.permissions.some(p => user.can(p));
   });
 
   return (
@@ -2082,17 +2106,17 @@ export const Header: React.FC = observer(() => {
       )}
     >
       <div className="max-w-[1920px] mx-auto px-4 h-full flex justify-between items-center">
-
+        {}
         <div className="flex items-center gap-6 min-w-max">
           <NavLink to="/" className="flex items-center gap-2 group">
-            <img src={Logo} alt="Logo" className="h-7 w-auto group-hover:opacity-80 transition-opacity" />
-            <span className="text-lg font-bold text-asvo-accent tracking-tight leading-none">
+            <span className="text-lg font-bold text-asvo-accent tracking-tight leading-none group-hover:opacity-80 transition-opacity">
               ASVO-QMS
             </span>
           </NavLink>
           <div className="h-6 w-px bg-asvo-dark-3 hidden lg:block"></div>
         </div>
 
+        {}
         {auth.isAuthenticated && (
           <nav className="hidden lg:flex items-center gap-1">
             {visibleNav.map((item, idx) => (
@@ -2100,8 +2124,8 @@ export const Header: React.FC = observer(() => {
                 {item.children ? (
                   <Menu as="div" className="relative">
                     <Menu.Button className={({ open }) => clsx(
-                        "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all outline-none",
-                        open ? "bg-asvo-dark-2 text-asvo-accent" : "text-asvo-muted hover:bg-asvo-dark-2 hover:text-asvo-light"
+                      "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all outline-none",
+                      open ? "bg-asvo-dark-2 text-asvo-accent" : "text-asvo-muted hover:bg-asvo-dark-2 hover:text-asvo-light"
                     )}>
                       <item.icon size={16} />
                       <span>{item.label}</span>
@@ -2116,19 +2140,29 @@ export const Header: React.FC = observer(() => {
                       leaveFrom="transform opacity-100 scale-100 translate-y-0"
                       leaveTo="transform opacity-0 scale-95 -translate-y-2"
                     >
-                      <Menu.Items className="absolute left-0 mt-2 w-56 origin-top-left divide-y divide-asvo-dark-3/30 rounded-lg bg-asvo-dark-2 shadow-lg ring-1 ring-asvo-dark-3/50 focus:outline-none z-50">
-                        <div className="p-1">
+                      <Menu.Items className="absolute left-0 mt-2 w-56 origin-top-left rounded-lg bg-[#1e293b] border border-teal-500/30 shadow-2xl shadow-black/60 focus:outline-none z-50">
+                        <div className="p-1.5">
                           {item.children.map((sub, sIdx) => (
                             <Menu.Item key={sIdx}>
                               {({ active }) => (
                                 <NavLink
                                   to={sub.to}
                                   className={clsx(
-                                    "flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm",
-                                    active ? "bg-asvo-dark-3/50 text-asvo-accent font-medium" : "text-asvo-muted hover:bg-asvo-dark-3/30"
+                                    "flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors",
+                                    active
+                                      ? "bg-teal-500/10 text-teal-400 font-medium"
+                                      : "text-slate-200 hover:bg-slate-700/50 hover:text-white"
                                   )}
                                 >
-                                  {sub.icon && <sub.icon size={14} className={active ? "text-asvo-accent" : "text-asvo-muted"} />}
+                                  {sub.icon && (
+                                    <sub.icon
+                                      size={15}
+                                      className={clsx(
+                                        "shrink-0",
+                                        active ? "text-teal-400" : "text-slate-400"
+                                      )}
+                                    />
+                                  )}
                                   {sub.label}
                                 </NavLink>
                               )}
@@ -2142,10 +2176,10 @@ export const Header: React.FC = observer(() => {
                   <NavLink
                     to={item.to!}
                     className={({ isActive }) => clsx(
-                        "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all",
-                        isActive
-                          ? "bg-asvo-dark-2 text-asvo-accent font-bold"
-                          : "text-asvo-muted hover:bg-asvo-dark-2 hover:text-asvo-light"
+                      "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all",
+                      isActive
+                        ? "bg-asvo-dark-2 text-asvo-accent font-bold"
+                        : "text-asvo-muted hover:bg-asvo-dark-2 hover:text-asvo-light"
                     )}
                   >
                     <item.icon size={16} />
@@ -2157,6 +2191,7 @@ export const Header: React.FC = observer(() => {
           </nav>
         )}
 
+        {}
         <div className="flex items-center gap-4 min-w-max">
           {modules.config?.tier === 'dev-all' && (
             <span className="text-[10px] px-2 py-0.5 rounded-full bg-yellow-900/30 border border-yellow-700/50 text-yellow-400">
@@ -2164,68 +2199,68 @@ export const Header: React.FC = observer(() => {
             </span>
           )}
           <div className="hidden xl:block text-right">
-             <DateTimeDisplay />
+            <DateTimeDisplay />
           </div>
 
           {auth.isAuthenticated ? (
             <Menu as="div" className="relative ml-2">
-                <Menu.Button className="flex items-center gap-2 pl-2 pr-1 py-1 rounded-full hover:bg-asvo-dark-2 transition border border-transparent hover:border-asvo-dark-3 group outline-none">
-                    <div className="flex flex-col items-end leading-none mr-1">
-                        <span className="text-xs font-bold text-asvo-light">{user.user?.surname} {user.user?.name?.[0]}.</span>
-                        <span className="text-[10px] text-asvo-muted">{user.user?.role}</span>
-                    </div>
-                    <div className="h-8 w-8 rounded-full bg-asvo-dark-3 overflow-hidden ring-2 ring-asvo-dark-2 shadow-sm">
-                         {user.user?.img
-                            ? <img src={`${import.meta.env.VITE_API_URL}/${user.user.img}`} alt="" className="h-full w-full object-cover"/>
-                            : <div className="h-full w-full flex items-center justify-center text-asvo-accent font-bold text-xs">{user.user?.name?.[0]}</div>
-                         }
-                    </div>
-                </Menu.Button>
+              <Menu.Button className="flex items-center gap-2 pl-2 pr-1 py-1 rounded-full hover:bg-asvo-dark-2 transition border border-transparent hover:border-asvo-dark-3 group outline-none">
+                <div className="flex flex-col items-end leading-none mr-1">
+                  <span className="text-xs font-bold text-asvo-light">{user.user?.surname} {user.user?.name?.[0]}.</span>
+                  <span className="text-[10px] text-asvo-muted">{user.user?.role}</span>
+                </div>
+                <div className="h-8 w-8 rounded-full bg-asvo-dark-3 overflow-hidden ring-2 ring-asvo-dark-2 shadow-sm">
+                  {user.user?.img
+                    ? <img src={`${import.meta.env.VITE_API_URL}/${user.user.img}`} alt="" className="h-full w-full object-cover" />
+                    : <div className="h-full w-full flex items-center justify-center text-asvo-accent font-bold text-xs">{user.user?.name?.[0]}</div>
+                  }
+                </div>
+              </Menu.Button>
 
-                <Transition
-                  as={Fragment}
-                  enter="transition ease-out duration-100"
-                  enterFrom="transform opacity-0 scale-95"
-                  enterTo="transform opacity-100 scale-100"
-                  leave="transition ease-in duration-75"
-                  leaveFrom="transform opacity-100 scale-100"
-                  leaveTo="transform opacity-0 scale-95"
-                >
-                  <Menu.Items className="absolute right-0 mt-2 w-48 origin-top-right divide-y divide-asvo-dark-3/30 rounded-lg bg-asvo-dark-2 shadow-lg ring-1 ring-asvo-dark-3/50 focus:outline-none z-50">
-                    <div className="p-1">
-                      <Menu.Item>
-                        {({ active }) => (
-                          <NavLink
-                            to={PROFILE_ROUTE}
-                            className={clsx(
-                              "flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm",
-                              active ? "bg-asvo-dark-3/50 text-asvo-accent" : "text-asvo-muted"
-                            )}
-                          >
-                            <User size={14} />
-                            Профиль
-                          </NavLink>
-                        )}
-                      </Menu.Item>
-                    </div>
-                    <div className="p-1">
-                      <Menu.Item>
-                        {({ active }) => (
-                          <button
-                            onClick={logOut}
-                            className={clsx(
-                              "flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm",
-                              active ? "bg-red-900/30 text-red-400" : "text-asvo-muted"
-                            )}
-                          >
-                            <LogOut size={14} />
-                            Выйти
-                          </button>
-                        )}
-                      </Menu.Item>
-                    </div>
-                  </Menu.Items>
-                </Transition>
+              <Transition
+                as={Fragment}
+                enter="transition ease-out duration-100"
+                enterFrom="transform opacity-0 scale-95"
+                enterTo="transform opacity-100 scale-100"
+                leave="transition ease-in duration-75"
+                leaveFrom="transform opacity-100 scale-100"
+                leaveTo="transform opacity-0 scale-95"
+              >
+                <Menu.Items className="absolute right-0 mt-2 w-48 origin-top-right rounded-lg bg-[#1e293b] border border-slate-600/50 shadow-2xl shadow-black/60 focus:outline-none z-50">
+                  <div className="p-1">
+                    <Menu.Item>
+                      {({ active }) => (
+                        <NavLink
+                          to={PROFILE_ROUTE}
+                          className={clsx(
+                            "flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors",
+                            active ? "bg-teal-500/10 text-teal-400" : "text-slate-200"
+                          )}
+                        >
+                          <User size={14} />
+                          Профиль
+                        </NavLink>
+                      )}
+                    </Menu.Item>
+                  </div>
+                  <div className="border-t border-slate-600/30 p-1">
+                    <Menu.Item>
+                      {({ active }) => (
+                        <button
+                          onClick={logOut}
+                          className={clsx(
+                            "flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors",
+                            active ? "bg-red-900/30 text-red-400" : "text-slate-200"
+                          )}
+                        >
+                          <LogOut size={14} />
+                          Выйти
+                        </button>
+                      )}
+                    </Menu.Item>
+                  </div>
+                </Menu.Items>
+              </Transition>
             </Menu>
           ) : null}
         </div>
@@ -2233,7 +2268,6 @@ export const Header: React.FC = observer(() => {
     </div>
   );
 });
-
 ================================================================================
 FILE: QMS-Client-main/src/components/Modal/ConfirmModal.tsx
 ================================================================================
@@ -6983,6 +7017,720 @@ export const CapaPage: React.FC = () => {
 };
 
 ================================================================================
+FILE: QMS-Client-main/src/pages/Documents/CreateDocumentModal.tsx
+================================================================================
+
+
+
+
+
+import React, { useState } from "react";
+import { FileText } from "lucide-react";
+
+import { Modal } from "../../components/Modal/Modal";
+import { documentsApi } from "../../api/qmsApi";
+import type { DocType } from "../../api/qmsApi";
+import ActionBtn from "../../components/qms/ActionBtn";
+
+
+
+const DOC_TYPES: Array<{ value: DocType; label: string }> = [
+  { value: "POLICY",           label: "Политика (ПК)" },
+  { value: "MANUAL",           label: "Руководство (РК)" },
+  { value: "PROCEDURE",        label: "Процедура (СТО)" },
+  { value: "WORK_INSTRUCTION", label: "Рабочая инструкция (РИ)" },
+  { value: "FORM",             label: "Форма (Ф)" },
+  { value: "RECORD",           label: "Запись (ЗП)" },
+  { value: "SPECIFICATION",    label: "Спецификация (СП)" },
+  { value: "PLAN",             label: "План (ПЛ)" },
+  { value: "EXTERNAL",         label: "Внешний документ (ВД)" },
+  { value: "OTHER",            label: "Другое (ДОК)" },
+];
+
+const ISO_SECTIONS = [
+  "4.1", "4.2.3", "4.2.4", "4.2.5",
+  "5.1", "5.2", "5.3", "5.4", "5.5", "5.6",
+  "6.1", "6.2", "6.3", "6.4",
+  "7.1", "7.2", "7.3", "7.4", "7.5", "7.6",
+  "8.1", "8.2", "8.3", "8.4", "8.5",
+];
+
+
+
+interface CreateDocumentModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onCreated: () => void;
+}
+
+
+
+const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
+  isOpen,
+  onClose,
+  onCreated,
+}) => {
+  const [title, setTitle] = useState("");
+  const [type, setType] = useState<DocType>("PROCEDURE");
+  const [category, setCategory] = useState("");
+  const [description, setDescription] = useState("");
+  const [isoSection, setIsoSection] = useState("");
+  const [reviewCycleMonths, setReviewCycleMonths] = useState(12);
+
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const resetForm = () => {
+    setTitle("");
+    setType("PROCEDURE");
+    setCategory("");
+    setDescription("");
+    setIsoSection("");
+    setReviewCycleMonths(12);
+    setFormError(null);
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
+
+  const handleSubmit = async () => {
+    
+    if (!title.trim()) {
+      setFormError("Укажите название документа");
+      return;
+    }
+    if (title.trim().length < 3) {
+      setFormError("Название должно содержать минимум 3 символа");
+      return;
+    }
+
+    setSubmitting(true);
+    setFormError(null);
+
+    try {
+      await documentsApi.create({
+        title: title.trim(),
+        type,
+        category: category.trim() || undefined,
+        description: description.trim() || undefined,
+        isoSection: isoSection || undefined,
+      });
+      resetForm();
+      onCreated();
+      onClose();
+    } catch (e: any) {
+      setFormError(
+        e.response?.data?.message || e.message || "Ошибка при создании документа"
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const inputCls =
+    "w-full px-3 py-2 bg-asvo-surface-2 border border-asvo-border rounded-lg text-[13px] text-asvo-text placeholder:text-asvo-text-dim focus:border-asvo-accent/50 focus:outline-none transition-colors";
+  const labelCls = "block text-[13px] text-asvo-text-mid font-medium mb-1.5";
+
+  return (
+    <Modal isOpen={isOpen} onClose={handleClose} title="Создать документ" size="xl">
+      <div className="space-y-4">
+        {}
+        <div>
+          <label className={labelCls}>
+            Название документа <span className="text-red-400">*</span>
+          </label>
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Например: Руководство по качеству"
+            className={inputCls}
+            autoFocus
+          />
+        </div>
+
+        {}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className={labelCls}>
+              Тип документа <span className="text-red-400">*</span>
+            </label>
+            <select
+              value={type}
+              onChange={(e) => setType(e.target.value as DocType)}
+              className={inputCls}
+            >
+              {DOC_TYPES.map((t) => (
+                <option key={t.value} value={t.value}>
+                  {t.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className={labelCls}>Раздел ISO 13485</label>
+            <select
+              value={isoSection}
+              onChange={(e) => setIsoSection(e.target.value)}
+              className={inputCls}
+            >
+              <option value="">— Не указан —</option>
+              {ISO_SECTIONS.map((s) => (
+                <option key={s} value={s}>
+                  §{s}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className={labelCls}>Категория</label>
+            <input
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              placeholder="Например: Производство"
+              className={inputCls}
+            />
+          </div>
+
+          <div>
+            <label className={labelCls}>Цикл пересмотра (мес.)</label>
+            <input
+              type="number"
+              min={1}
+              max={60}
+              value={reviewCycleMonths}
+              onChange={(e) => setReviewCycleMonths(Number(e.target.value) || 12)}
+              className={inputCls}
+            />
+          </div>
+        </div>
+
+        {}
+        <div>
+          <label className={labelCls}>Описание</label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Краткое описание содержания и назначения документа..."
+            rows={3}
+            className={`${inputCls} resize-none`}
+          />
+        </div>
+
+        {}
+        <div className="bg-asvo-accent/5 border border-asvo-accent/20 rounded-lg p-3">
+          <p className="text-[11px] text-asvo-text-dim leading-relaxed">
+            <FileText size={12} className="inline mr-1 text-asvo-accent" />
+            Документу будет автоматически присвоен код по шаблону (например, СТО-СМК-001) и создана
+            первая версия в статусе «Черновик». После загрузки файла вы сможете отправить документ
+            на согласование.
+          </p>
+        </div>
+
+        {}
+        {formError && (
+          <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
+            <span className="text-red-400 text-[12px]">{formError}</span>
+          </div>
+        )}
+
+        {}
+        <div className="flex items-center justify-end gap-2 pt-2 border-t border-asvo-border">
+          <ActionBtn variant="secondary" onClick={handleClose} disabled={submitting}>
+            Отмена
+          </ActionBtn>
+          <ActionBtn
+            variant="primary"
+            icon={<FileText size={14} />}
+            onClick={handleSubmit}
+            disabled={submitting}
+          >
+            {submitting ? "Создание..." : "Создать документ"}
+          </ActionBtn>
+        </div>
+      </div>
+    </Modal>
+  );
+};
+
+export default CreateDocumentModal;
+================================================================================
+FILE: QMS-Client-main/src/pages/Documents/DocumentDetailModal.tsx
+================================================================================
+
+
+
+
+
+
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  FileText, CheckCircle, Clock, AlertTriangle, Download,
+  Send, Play, Plus, UserCheck, X, Check, RotateCcw,
+  Upload, Users, Eye,
+} from "lucide-react";
+
+import { Modal } from "../../components/Modal/Modal";
+import { documentsApi } from "../../api/qmsApi";
+import ActionBtn from "../../components/qms/ActionBtn";
+import Badge from "../../components/qms/Badge";
+import StatusDot from "../../components/qms/StatusDot";
+import { TYPE_LABELS, TYPE_COLORS, STATUS_LABELS } from "./DocumentsPage";
+
+
+
+interface DocumentDetailModalProps {
+  docId: number;
+  isOpen: boolean;
+  onClose: () => void;
+  onAction: () => void; 
+}
+
+
+const STATUS_DOT: Record<string, "accent" | "blue" | "amber" | "grey" | "red"> = {
+  DRAFT: "grey",
+  REVIEW: "blue",
+  APPROVED: "accent",
+  EFFECTIVE: "accent",
+  REVISION: "amber",
+  OBSOLETE: "red",
+  CANCELLED: "red",
+  SUPERSEDED: "grey",
+  REJECTED: "red",
+};
+
+const VERSION_STATUS_LABELS: Record<string, string> = {
+  DRAFT: "Черновик",
+  REVIEW: "Согласование",
+  APPROVED: "Утверждён",
+  EFFECTIVE: "Действующий",
+  SUPERSEDED: "Заменён",
+  REJECTED: "Отклонён",
+};
+
+const APPROVAL_STATUS: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
+  PENDING:  { label: "Ожидает",    color: "#E8A830", icon: <Clock size={14} /> },
+  APPROVED: { label: "Одобрено",   color: "#2DD4A8", icon: <Check size={14} /> },
+  REJECTED: { label: "Отклонено",  color: "#F06060", icon: <X size={14} /> },
+  RETURNED: { label: "Возвращено", color: "#E87040", icon: <RotateCcw size={14} /> },
+};
+
+
+
+const DocumentDetailModal: React.FC<DocumentDetailModalProps> = ({
+  docId,
+  isOpen,
+  onClose,
+  onAction,
+}) => {
+  const [doc, setDoc] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [activeVersionTab, setActiveVersionTab] = useState<number | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  
+  const fetchDetail = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const d = await documentsApi.getOne(docId);
+      setDoc(d);
+      
+      if (d.versions?.length > 0) {
+        setActiveVersionTab(d.versions[0].id);
+      }
+    } catch (e: any) {
+      setError(e.response?.data?.message || e.message || "Ошибка загрузки");
+    } finally {
+      setLoading(false);
+    }
+  }, [docId]);
+
+  useEffect(() => {
+    if (isOpen) fetchDetail();
+  }, [isOpen, fetchDetail]);
+
+  
+  const doAction = async (action: () => Promise<any>) => {
+    setActionLoading(true);
+    setActionError(null);
+    try {
+      await action();
+      await fetchDetail();
+      onAction();
+    } catch (e: any) {
+      setActionError(e.response?.data?.message || e.message || "Ошибка");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleMakeEffective = (versionId: number) => {
+    doAction(() => documentsApi.makeEffective(versionId));
+  };
+
+  const handleCreateVersion = () => {
+    doAction(() =>
+      documentsApi.createVersion(docId, {
+        changeDescription: "Новая версия",
+      })
+    );
+  };
+
+  const handleDecision = (approvalId: number, decision: string) => {
+    const comment = decision === "REJECTED" || decision === "RETURNED"
+      ? prompt("Укажите причину:") || ""
+      : "";
+    doAction(() => documentsApi.decide(approvalId, { decision, comment }));
+  };
+
+  
+  const activeVersion = doc?.versions?.find((v: any) => v.id === activeVersionTab);
+
+  const formatDate = (d: string | null) => {
+    if (!d) return "—";
+    return new Date(d).toLocaleDateString("ru-RU", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  };
+
+  const formatDateTime = (d: string | null) => {
+    if (!d) return "—";
+    return new Date(d).toLocaleString("ru-RU", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} size="3xl">
+      {}
+      {loading && (
+        <div className="flex items-center justify-center py-20">
+          <div className="w-8 h-8 border-2 border-asvo-accent/30 border-t-asvo-accent rounded-full animate-spin" />
+        </div>
+      )}
+
+      {}
+      {error && (
+        <div className="text-center py-10">
+          <AlertTriangle className="mx-auto text-red-400 mb-2" size={32} />
+          <p className="text-red-400 text-[13px]">{error}</p>
+          <ActionBtn variant="secondary" onClick={fetchDetail} className="mt-3">
+            Повторить
+          </ActionBtn>
+        </div>
+      )}
+
+      {}
+      {!loading && !error && doc && (
+        <div className="space-y-5">
+          {}
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="font-mono text-asvo-accent text-[14px] font-bold">
+                  {doc.code}
+                </span>
+                <Badge
+                  color={TYPE_COLORS[doc.type] || "#3A4E62"}
+                  bg={`${TYPE_COLORS[doc.type] || "#3A4E62"}22`}
+                >
+                  {TYPE_LABELS[doc.type] || doc.type}
+                </Badge>
+                <span className="flex items-center gap-1.5">
+                  <StatusDot color={STATUS_DOT[doc.status] || "grey"} />
+                  <span className="text-asvo-text text-[13px]">
+                    {STATUS_LABELS[doc.status] || doc.status}
+                  </span>
+                </span>
+              </div>
+              <h2 className="text-lg font-bold text-asvo-text truncate">{doc.title}</h2>
+              {doc.description && (
+                <p className="text-[12px] text-asvo-text-dim mt-1 line-clamp-2">{doc.description}</p>
+              )}
+            </div>
+          </div>
+
+          {}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[
+              { label: "Владелец", value: doc.owner ? `${doc.owner.surname} ${doc.owner.name}` : "—" },
+              { label: "Раздел ISO", value: doc.isoSection ? `§${doc.isoSection}` : "—" },
+              { label: "Цикл пересмотра", value: `${doc.reviewCycleMonths || 12} мес.` },
+              {
+                label: "Пересмотр до",
+                value: formatDate(doc.nextReviewDate),
+                isOverdue: doc.nextReviewDate && new Date(doc.nextReviewDate) < new Date(),
+              },
+            ].map((m) => (
+              <div key={m.label} className="bg-asvo-surface-2 border border-asvo-border rounded-lg px-3 py-2">
+                <div className="text-[10px] text-asvo-text-dim uppercase tracking-wide">{m.label}</div>
+                <div className={`text-[13px] font-medium mt-0.5 ${
+                  (m as any).isOverdue ? "text-red-400" : "text-asvo-text"
+                }`}>
+                  {m.value}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {}
+          <div className="flex items-center gap-2 flex-wrap">
+            {doc.status === "EFFECTIVE" && (
+              <ActionBtn variant="primary" icon={<Plus size={14} />} onClick={handleCreateVersion} disabled={actionLoading}>
+                Новая версия
+              </ActionBtn>
+            )}
+            {activeVersion?.status === "APPROVED" && (
+              <ActionBtn
+                variant="primary"
+                icon={<Play size={14} />}
+                onClick={() => handleMakeEffective(activeVersion.id)}
+                disabled={actionLoading}
+              >
+                Ввести в действие
+              </ActionBtn>
+            )}
+            {actionError && (
+              <span className="text-red-400 text-[12px]">{actionError}</span>
+            )}
+          </div>
+
+          {}
+          {doc.versions?.length > 0 && (
+            <div>
+              <h3 className="text-[13px] font-semibold text-asvo-text mb-2">Версии</h3>
+              <div className="flex gap-1 overflow-x-auto pb-1">
+                {doc.versions.map((v: any) => {
+                  const isActive = v.id === activeVersionTab;
+                  const isCurrent = doc.currentVersionId === v.id;
+                  return (
+                    <button
+                      key={v.id}
+                      onClick={() => setActiveVersionTab(v.id)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors whitespace-nowrap ${
+                        isActive
+                          ? "bg-asvo-accent/15 text-asvo-accent border border-asvo-accent/30"
+                          : "bg-asvo-surface-2 text-asvo-text-mid border border-asvo-border hover:border-asvo-accent/20"
+                      }`}
+                    >
+                      <span>v{v.version}</span>
+                      <StatusDot color={STATUS_DOT[v.status] || "grey"} />
+                      <span className="text-[10px]">
+                        {VERSION_STATUS_LABELS[v.status] || v.status}
+                      </span>
+                      {isCurrent && (
+                        <span className="text-[9px] bg-asvo-accent/20 text-asvo-accent rounded px-1">
+                          текущая
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {}
+          {activeVersion && (
+            <div className="bg-asvo-surface-2 border border-asvo-border rounded-xl p-4 space-y-4">
+              {}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-[12px]">
+                <div>
+                  <span className="text-asvo-text-dim">Создана:</span>
+                  <span className="text-asvo-text ml-1">{formatDateTime(activeVersion.createdAt)}</span>
+                </div>
+                <div>
+                  <span className="text-asvo-text-dim">Автор:</span>
+                  <span className="text-asvo-text ml-1">
+                    {activeVersion.createdBy
+                      ? `${activeVersion.createdBy.surname} ${activeVersion.createdBy.name}`
+                      : "—"}
+                  </span>
+                </div>
+                {activeVersion.effectiveAt && (
+                  <div>
+                    <span className="text-asvo-text-dim">Введена в действие:</span>
+                    <span className="text-asvo-text ml-1">{formatDateTime(activeVersion.effectiveAt)}</span>
+                  </div>
+                )}
+                {activeVersion.approvedBy && (
+                  <div>
+                    <span className="text-asvo-text-dim">Утвердил:</span>
+                    <span className="text-asvo-text ml-1">
+                      {activeVersion.approvedBy.surname} {activeVersion.approvedBy.name}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {}
+              {activeVersion.changeDescription && (
+                <div className="text-[12px]">
+                  <span className="text-asvo-text-dim">Описание изменений:</span>
+                  <p className="text-asvo-text mt-0.5">{activeVersion.changeDescription}</p>
+                </div>
+              )}
+
+              {}
+              {activeVersion.fileName && (
+                <div className="flex items-center gap-2 bg-asvo-surface rounded-lg px-3 py-2">
+                  <FileText size={14} className="text-asvo-accent" />
+                  <span className="text-[12px] text-asvo-text flex-1">{activeVersion.fileName}</span>
+                  <span className="text-[10px] text-asvo-text-dim">
+                    {activeVersion.fileSize
+                      ? `${(activeVersion.fileSize / 1024).toFixed(0)} КБ`
+                      : ""}
+                  </span>
+                </div>
+              )}
+
+              {}
+              {activeVersion.approvals?.length > 0 && (
+                <div>
+                  <h4 className="text-[12px] font-semibold text-asvo-text-mid mb-2 flex items-center gap-1.5">
+                    <UserCheck size={14} />
+                    Цепочка согласования
+                  </h4>
+                  <div className="space-y-2">
+                    {activeVersion.approvals
+                      .sort((a: any, b: any) => a.step - b.step)
+                      .map((a: any) => {
+                        const st = APPROVAL_STATUS[a.decision] || APPROVAL_STATUS.PENDING;
+                        return (
+                          <div
+                            key={a.id}
+                            className="flex items-center gap-3 bg-asvo-surface rounded-lg px-3 py-2"
+                          >
+                            {}
+                            <div
+                              className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold"
+                              style={{
+                                background: `${st.color}22`,
+                                color: st.color,
+                              }}
+                            >
+                              {a.step}
+                            </div>
+
+                            {}
+                            <div className="flex-1 min-w-0">
+                              <div className="text-[12px] text-asvo-text">
+                                {a.assignedTo
+                                  ? `${a.assignedTo.surname} ${a.assignedTo.name}`
+                                  : `Пользователь #${a.assignedToId}`}
+                              </div>
+                              <div className="text-[10px] text-asvo-text-dim">
+                                {a.role === "REVIEWER" ? "Рецензент" : a.role === "APPROVER" ? "Утверждающий" : "Ответственный по качеству"}
+                              </div>
+                            </div>
+
+                            {}
+                            <div className="flex items-center gap-1" style={{ color: st.color }}>
+                              {st.icon}
+                              <span className="text-[11px] font-medium">{st.label}</span>
+                            </div>
+
+                            {}
+                            {a.decidedAt && (
+                              <span className="text-[10px] text-asvo-text-dim">
+                                {formatDateTime(a.decidedAt)}
+                              </span>
+                            )}
+
+                            {}
+                            {a.decision === "PENDING" && (
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => handleDecision(a.id, "APPROVED")}
+                                  disabled={actionLoading}
+                                  className="px-2 py-1 rounded bg-[#2DD4A8]/15 text-[#2DD4A8] text-[10px] font-medium hover:bg-[#2DD4A8]/25 transition-colors disabled:opacity-50"
+                                >
+                                  Одобрить
+                                </button>
+                                <button
+                                  onClick={() => handleDecision(a.id, "RETURNED")}
+                                  disabled={actionLoading}
+                                  className="px-2 py-1 rounded bg-[#E87040]/15 text-[#E87040] text-[10px] font-medium hover:bg-[#E87040]/25 transition-colors disabled:opacity-50"
+                                >
+                                  Вернуть
+                                </button>
+                                <button
+                                  onClick={() => handleDecision(a.id, "REJECTED")}
+                                  disabled={actionLoading}
+                                  className="px-2 py-1 rounded bg-[#F06060]/15 text-[#F06060] text-[10px] font-medium hover:bg-[#F06060]/25 transition-colors disabled:opacity-50"
+                                >
+                                  Отклонить
+                                </button>
+                              </div>
+                            )}
+
+                            {}
+                            {a.comment && (
+                              <span className="text-[10px] text-asvo-text-dim italic max-w-[150px] truncate">
+                                «{a.comment}»
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              )}
+
+              {}
+              {activeVersion.distributions?.length > 0 && (
+                <div>
+                  <h4 className="text-[12px] font-semibold text-asvo-text-mid mb-2 flex items-center gap-1.5">
+                    <Users size={14} />
+                    Рассылка и ознакомление
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {activeVersion.distributions.map((d: any) => (
+                      <div
+                        key={d.id}
+                        className="flex items-center gap-2 bg-asvo-surface rounded-lg px-3 py-2"
+                      >
+                        <div className="flex-1 text-[12px] text-asvo-text">
+                          {d.user ? `${d.user.surname} ${d.user.name}` : `#${d.userId}`}
+                        </div>
+                        {d.acknowledged ? (
+                          <span className="flex items-center gap-1 text-[10px] text-[#2DD4A8]">
+                            <Eye size={12} />
+                            {formatDateTime(d.acknowledgedAt)}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-[#E8A830]">Не ознакомлен</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </Modal>
+  );
+};
+
+export default DocumentDetailModal;
+================================================================================
 FILE: QMS-Client-main/src/pages/Documents/DocumentsPage.tsx
 ================================================================================
 
@@ -6992,281 +7740,348 @@ FILE: QMS-Client-main/src/pages/Documents/DocumentsPage.tsx
 
 
 
-import React, { useState } from "react";
-import { FileText, Plus, Search, Upload, ChevronRight } from "lucide-react";
+
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  FileText, Plus, Search, Upload, ChevronRight,
+  CheckCircle, Clock, AlertTriangle, RefreshCw,
+} from "lucide-react";
+
+import { documentsApi } from "../../api/qmsApi";
+import type { DocumentShort, DocumentStats, DocumentApprovalItem } from "../../api/qmsApi";
 
 import Badge from "../../components/qms/Badge";
 import StatusDot from "../../components/qms/StatusDot";
 import TabBar from "../../components/qms/TabBar";
 import DataTable from "../../components/qms/DataTable";
 import ActionBtn from "../../components/qms/ActionBtn";
+import KpiRow from "../../components/qms/KpiRow";
+
+import CreateDocumentModal from "./CreateDocumentModal";
+import DocumentDetailModal from "./DocumentDetailModal";
+import Pagination from "./Pagination";
 
 
 
-interface DocRow {
-  [key: string]: unknown;
-  id: string;
-  title: string;
-  type: string;
-  version: string;
-  status: string;
-  owner: string;
-  reviewDate: string;
-}
-
-type StatusKey = "Действующий" | "Согласование" | "Пересмотр" | "Черновик";
-type TypeKey =
-  | "Руководство"
-  | "Процедура"
-  | "Инструкция"
-  | "Форма"
-  | "План"
-  | "Спецификация"
-  | "Внешний";
-
-
-
-const STATUS_DOT: Record<StatusKey, "accent" | "blue" | "amber" | "grey"> = {
-  "Действующий": "accent",
-  "Согласование": "blue",
-  "Пересмотр": "amber",
-  "Черновик": "grey",
-};
-
-const TYPE_BADGE_COLOR: Record<TypeKey, string> = {
-  "Руководство": "#4A90E8",
-  "Процедура": "#2DD4A8",
-  "Инструкция": "#A06AE8",
-  "Форма": "#E8A830",
-  "План": "#4A90E8",
-  "Спецификация": "#E87040",
-  "Внешний": "#3A4E62",
-};
-
-
-
-const DOCUMENTS: DocRow[] = [
-  {
-    id: "DOC-001",
-    title: "Руководство по качеству",
-    type: "Руководство",
-    version: "v3.2",
-    status: "Действующий",
-    owner: "Холтобин А.",
-    reviewDate: "15.06.2026",
-  },
-  {
-    id: "DOC-015",
-    title: "СТО-015 Управление NC",
-    type: "Процедура",
-    version: "v2.1",
-    status: "Действующий",
-    owner: "Костюков И.",
-    reviewDate: "20.03.2026",
-  },
-  {
-    id: "DOC-023",
-    title: "RI-023 Пайка SMD",
-    type: "Инструкция",
-    version: "v1.4",
-    status: "Действующий",
-    owner: "Омельченко А.",
-    reviewDate: "10.04.2026",
-  },
-  {
-    id: "DOC-045",
-    title: "СТО-045 Калибровка",
-    type: "Процедура",
-    version: "v2.0",
-    status: "Пересмотр",
-    owner: "Яровой Е.",
-    reviewDate: "01.02.2026",
-  },
-  {
-    id: "DOC-067",
-    title: "Форма протокола NC",
-    type: "Форма",
-    version: "v1.2",
-    status: "Действующий",
-    owner: "Костюков И.",
-    reviewDate: "30.07.2026",
-  },
-  {
-    id: "DOC-089",
-    title: "План аудитов 2026",
-    type: "План",
-    version: "v1.0",
-    status: "Согласование",
-    owner: "Холтобин А.",
-    reviewDate: "\u2014",
-  },
-  {
-    id: "DOC-102",
-    title: "Спецификация DEXA-200",
-    type: "Спецификация",
-    version: "v1.1",
-    status: "Черновик",
-    owner: "Чирков И.",
-    reviewDate: "\u2014",
-  },
-  {
-    id: "DOC-115",
-    title: "IEC 62368-1:2023",
-    type: "Внешний",
-    version: "\u2014",
-    status: "Действующий",
-    owner: "\u2014",
-    reviewDate: "\u2014",
-  },
-];
-
-
+const LIMIT = 20;
 
 const TABS = [
-  { key: "all", label: "Все" },
-  { key: "policy", label: "Политики" },
-  { key: "procedure", label: "Процедуры" },
+  { key: "all",         label: "Все" },
+  { key: "policy",      label: "Политики" },
+  { key: "manual",      label: "Руководства" },
+  { key: "procedure",   label: "Процедуры" },
   { key: "instruction", label: "Инструкции" },
-  { key: "form", label: "Формы" },
-  { key: "record", label: "Записи" },
-  { key: "external", label: "Внешние" },
+  { key: "form",        label: "Формы" },
+  { key: "record",      label: "Записи" },
+  { key: "plan",        label: "Планы" },
+  { key: "external",    label: "Внешние" },
 ];
 
-const TAB_TYPE_MAP: Record<string, string | null> = {
-  all: null,
-  policy: "Руководство",
-  procedure: "Процедура",
-  instruction: "Инструкция",
-  form: "Форма",
-  record: "План",
-  external: "Внешний",
+const TAB_TO_TYPE: Record<string, string | undefined> = {
+  all:         undefined,
+  policy:      "POLICY",
+  manual:      "MANUAL",
+  procedure:   "PROCEDURE",
+  instruction: "WORK_INSTRUCTION",
+  form:        "FORM",
+  record:      "RECORD",
+  plan:        "PLAN",
+  external:    "EXTERNAL",
 };
 
+export const TYPE_LABELS: Record<string, string> = {
+  POLICY:           "Политика",
+  MANUAL:           "Руководство",
+  PROCEDURE:        "Процедура",
+  WORK_INSTRUCTION: "Инструкция",
+  FORM:             "Форма",
+  RECORD:           "Запись",
+  SPECIFICATION:    "Спецификация",
+  PLAN:             "План",
+  EXTERNAL:         "Внешний",
+  OTHER:            "Другое",
+};
 
+export const TYPE_COLORS: Record<string, string> = {
+  POLICY:           "#4A90E8",
+  MANUAL:           "#4A90E8",
+  PROCEDURE:        "#2DD4A8",
+  WORK_INSTRUCTION: "#A06AE8",
+  FORM:             "#E8A830",
+  RECORD:           "#E87040",
+  SPECIFICATION:    "#E87040",
+  PLAN:             "#4A90E8",
+  EXTERNAL:         "#3A4E62",
+  OTHER:            "#3A4E62",
+};
 
-const WORKFLOW_STEPS = [
-  "Черновик",
-  "Согласование",
-  "Утверждение",
-  "Действующий",
-  "Пересмотр",
-];
-const ACTIVE_STEP = 3; 
+export const STATUS_LABELS: Record<string, string> = {
+  DRAFT:     "Черновик",
+  REVIEW:    "Согласование",
+  APPROVED:  "Утверждён",
+  EFFECTIVE: "Действующий",
+  REVISION:  "Пересмотр",
+  OBSOLETE:  "Устарел",
+  CANCELLED: "Отменён",
+};
 
-
-
-const STATS = [
-  { label: "Всего документов", value: 247, color: "#4A90E8" },
-  { label: "Действующих", value: 189, color: "#2DD4A8" },
-  { label: "На согласовании", value: 12, color: "#E8A830" },
-  { label: "Просрочен пересмотр", value: 5, color: "#F06060" },
-];
-
-
-
-const columns = [
-  {
-    key: "id",
-    label: "ID",
-    width: "100px",
-    render: (row: DocRow) => (
-      <span className="font-mono text-[12px] font-bold text-asvo-accent">
-        {row.id}
-      </span>
-    ),
-  },
-  {
-    key: "title",
-    label: "Название",
-    render: (row: DocRow) => (
-      <span className="font-medium text-asvo-text">{row.title}</span>
-    ),
-  },
-  {
-    key: "type",
-    label: "Тип",
-    width: "130px",
-    render: (row: DocRow) => {
-      const badgeColor = TYPE_BADGE_COLOR[row.type as TypeKey] ?? "#3A4E62";
-      return (
-        <Badge color={badgeColor} bg={`${badgeColor}22`}>
-          {row.type}
-        </Badge>
-      );
-    },
-  },
-  {
-    key: "version",
-    label: "Версия",
-    width: "80px",
-    render: (row: DocRow) => (
-      <span className="font-mono text-[12px] text-asvo-text-mid">
-        {row.version}
-      </span>
-    ),
-  },
-  {
-    key: "status",
-    label: "Статус",
-    width: "140px",
-    render: (row: DocRow) => {
-      const dotColor = STATUS_DOT[row.status as StatusKey] ?? "grey";
-      return (
-        <span className="flex items-center gap-2">
-          <StatusDot color={dotColor} />
-          <span className="text-asvo-text text-[13px]">{row.status}</span>
-        </span>
-      );
-    },
-  },
-  {
-    key: "owner",
-    label: "Владелец",
-    width: "130px",
-    render: (row: DocRow) => (
-      <span className="text-asvo-text-mid text-[12px]">{row.owner}</span>
-    ),
-  },
-  {
-    key: "reviewDate",
-    label: "Пересмотр",
-    width: "110px",
-    render: (row: DocRow) => (
-      <span className="text-asvo-text-mid text-[12px]">{row.reviewDate}</span>
-    ),
-  },
-  {
-    key: "actions",
-    label: "Действия",
-    width: "50px",
-    align: "center" as const,
-    render: () => (
-      <ChevronRight size={14} className="text-asvo-text-dim mx-auto" />
-    ),
-  },
-];
-
-
+const STATUS_DOT_MAP: Record<string, "accent" | "blue" | "amber" | "grey" | "red"> = {
+  DRAFT:     "grey",
+  REVIEW:    "blue",
+  APPROVED:  "accent",
+  EFFECTIVE: "accent",
+  REVISION:  "amber",
+  OBSOLETE:  "red",
+  CANCELLED: "red",
+};
 
 
 
 export const DocumentsPage: React.FC = () => {
+  
+  const [documents, setDocuments] = useState<DocumentShort[]>([]);
+  const [stats, setStats] = useState<DocumentStats | null>(null);
+  const [pendingApprovals, setPendingApprovals] = useState<DocumentApprovalItem[]>([]);
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+
   const [search, setSearch] = useState("");
+  const [searchDebounced, setSearchDebounced] = useState("");
   const [activeTab, setActiveTab] = useState("all");
 
-  
-  const typeFilter = TAB_TYPE_MAP[activeTab] ?? null;
-  const filtered = DOCUMENTS.filter((doc) => {
-    if (typeFilter && doc.type !== typeFilter) return false;
-    if (
-      search &&
-      !doc.id.toLowerCase().includes(search.toLowerCase()) &&
-      !doc.title.toLowerCase().includes(search.toLowerCase())
-    )
-      return false;
-    return true;
-  });
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [detailDocId, setDetailDocId] = useState<number | null>(null);
 
+  
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchDebounced(search);
+      setPage(1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  
+  useEffect(() => {
+    setPage(1);
+  }, [activeTab]);
+
+  
+  const fetchDocuments = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const params: Record<string, unknown> = {
+        page,
+        limit: LIMIT,
+      };
+
+      const typeVal = TAB_TO_TYPE[activeTab];
+      if (typeVal) params.type = typeVal;
+      if (searchDebounced.trim()) params.search = searchDebounced.trim();
+
+      const result = await documentsApi.getAll(params);
+      setDocuments(result.rows);
+      setTotalCount(result.count);
+      setTotalPages(Math.ceil(result.count / LIMIT));
+    } catch (e: any) {
+      setError(e.response?.data?.message || e.message || "Ошибка загрузки документов");
+    } finally {
+      setLoading(false);
+    }
+  }, [page, activeTab, searchDebounced]);
+
+  useEffect(() => {
+    fetchDocuments();
+  }, [fetchDocuments]);
+
+  
+  const fetchStats = useCallback(async () => {
+    try {
+      const s = await documentsApi.getStats();
+      setStats(s);
+    } catch (e) {
+      console.error("Stats fetch error:", e);
+    }
+  }, []);
+
+  
+  const fetchPending = useCallback(async () => {
+    try {
+      const p = await documentsApi.getPending();
+      setPendingApprovals(p);
+    } catch (e) {
+      console.error("Pending fetch error:", e);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchStats();
+    fetchPending();
+  }, [fetchStats, fetchPending]);
+
+  
+  const openDetail = (id: number) => setDetailDocId(id);
+
+  const handleCreated = () => {
+    fetchDocuments();
+    fetchStats();
+  };
+
+  const handleDetailAction = () => {
+    
+    fetchDocuments();
+    fetchStats();
+    fetchPending();
+  };
+
+  
+  const kpiItems = stats
+    ? [
+        {
+          label: "Всего документов",
+          value: stats.byStatus.reduce((sum, s) => sum + Number(s.count), 0),
+          color: "#4A90E8",
+          icon: <FileText size={18} />,
+        },
+        {
+          label: "Действующих",
+          value: Number(stats.byStatus.find((s) => s.status === "EFFECTIVE")?.count || 0),
+          color: "#2DD4A8",
+          icon: <CheckCircle size={18} />,
+        },
+        {
+          label: "На согласовании",
+          value: stats.pendingApprovalsCount,
+          color: "#E8A830",
+          icon: <Clock size={18} />,
+        },
+        {
+          label: "Просрочен пересмотр",
+          value: stats.overdueCount,
+          color: "#F06060",
+          icon: <AlertTriangle size={18} />,
+        },
+      ]
+    : [];
+
+  
+  const columns = [
+    {
+      key: "code",
+      label: "Код",
+      width: "120px",
+      render: (row: DocumentShort) => (
+        <span
+          className="font-mono text-[12px] font-bold text-asvo-accent cursor-pointer hover:underline"
+          onClick={() => openDetail(row.id)}
+        >
+          {row.code}
+        </span>
+      ),
+    },
+    {
+      key: "title",
+      label: "Название",
+      render: (row: DocumentShort) => (
+        <span
+          className="font-medium text-asvo-text cursor-pointer hover:text-asvo-accent transition-colors"
+          onClick={() => openDetail(row.id)}
+        >
+          {row.title}
+        </span>
+      ),
+    },
+    {
+      key: "type",
+      label: "Тип",
+      width: "140px",
+      render: (row: DocumentShort) => {
+        const color = TYPE_COLORS[row.type] || "#3A4E62";
+        return (
+          <Badge color={color} bg={`${color}22`}>
+            {TYPE_LABELS[row.type] || row.type}
+          </Badge>
+        );
+      },
+    },
+    {
+      key: "version",
+      label: "Версия",
+      width: "80px",
+      render: (row: DocumentShort) => (
+        <span className="font-mono text-[12px] text-asvo-text-mid">
+          {row.currentVersion ? `v${row.currentVersion.version}` : "—"}
+        </span>
+      ),
+    },
+    {
+      key: "status",
+      label: "Статус",
+      width: "140px",
+      render: (row: DocumentShort) => {
+        const dotColor = STATUS_DOT_MAP[row.status] || "grey";
+        return (
+          <span className="flex items-center gap-2">
+            <StatusDot color={dotColor} />
+            <span className="text-asvo-text text-[13px]">
+              {STATUS_LABELS[row.status] || row.status}
+            </span>
+          </span>
+        );
+      },
+    },
+    {
+      key: "owner",
+      label: "Владелец",
+      width: "140px",
+      render: (row: DocumentShort) => (
+        <span className="text-asvo-text-mid text-[12px]">
+          {row.owner
+            ? `${row.owner.surname} ${row.owner.name.charAt(0)}.`
+            : "—"}
+        </span>
+      ),
+    },
+    {
+      key: "nextReviewDate",
+      label: "Пересмотр",
+      width: "110px",
+      render: (row: DocumentShort) => {
+        if (!row.nextReviewDate) return <span className="text-asvo-text-dim">—</span>;
+        const isOverdue = new Date(row.nextReviewDate) < new Date();
+        return (
+          <span
+            className={`text-[12px] ${
+              isOverdue ? "text-red-400 font-semibold" : "text-asvo-text-mid"
+            }`}
+          >
+            {new Date(row.nextReviewDate).toLocaleDateString("ru-RU")}
+          </span>
+        );
+      },
+    },
+    {
+      key: "actions",
+      label: "",
+      width: "50px",
+      align: "center" as const,
+      render: (row: DocumentShort) => (
+        <ChevronRight
+          size={14}
+          className="text-asvo-text-dim mx-auto cursor-pointer hover:text-asvo-accent transition-colors"
+          onClick={() => openDetail(row.id)}
+        />
+      ),
+    },
+  ];
+
+  
   return (
     <div className="px-6 py-6 max-w-[1600px] mx-auto space-y-6">
       {}
@@ -7276,24 +8091,62 @@ export const DocumentsPage: React.FC = () => {
             <FileText className="w-5 h-5 text-asvo-accent" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-asvo-text">
-              Документы СМК
-            </h1>
+            <h1 className="text-xl font-bold text-asvo-text">Документы СМК</h1>
             <p className="text-[12px] text-asvo-text-dim">
-              ISO 13485 &sect;4.2.4 &mdash; Управление документацией
+              ISO 13485 §4.2.4 — Управление документацией
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <ActionBtn variant="primary" icon={<Plus size={14} />}>
+          <ActionBtn variant="primary" icon={<Plus size={14} />} onClick={() => setCreateModalOpen(true)}>
             Создать документ
           </ActionBtn>
-          <ActionBtn variant="secondary" icon={<Upload size={14} />}>
-            Импорт
+          <ActionBtn variant="secondary" icon={<RefreshCw size={14} />} onClick={() => { fetchDocuments(); fetchStats(); }}>
+            Обновить
           </ActionBtn>
         </div>
       </div>
+
+      {}
+      {stats && <KpiRow items={kpiItems} />}
+
+      {}
+      {pendingApprovals.length > 0 && (
+        <div className="bg-[#E8A830]/10 border border-[#E8A830]/30 rounded-xl p-4">
+          <h3 className="text-[13px] font-semibold text-[#E8A830] mb-3 flex items-center gap-2">
+            <Clock size={16} />
+            Ожидают вашего согласования ({pendingApprovals.length})
+          </h3>
+          <div className="space-y-2">
+            {pendingApprovals.slice(0, 5).map((a) => (
+              <div
+                key={a.id}
+                className="flex items-center justify-between bg-asvo-surface-2 rounded-lg px-3 py-2"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="font-mono text-asvo-accent text-[12px] flex-shrink-0">
+                    {a.version.document.code}
+                  </span>
+                  <span className="text-asvo-text text-[13px] truncate">
+                    {a.version.document.title}
+                  </span>
+                  <Badge color="#A06AE8" bg="rgba(160,106,232,0.14)">
+                    v{a.version.version}
+                  </Badge>
+                </div>
+                <ActionBtn
+                  variant="primary"
+                  icon={<ChevronRight size={12} />}
+                  onClick={() => openDetail(a.version.document.id)}
+                >
+                  Рассмотреть
+                </ActionBtn>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {}
       <div className="flex items-center gap-4">
@@ -7314,97 +8167,244 @@ export const DocumentsPage: React.FC = () => {
       <TabBar tabs={TABS} active={activeTab} onChange={setActiveTab} />
 
       {}
-      <DataTable<DocRow>
-        columns={columns}
-        data={filtered}
-      />
+      {error && (
+        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 flex items-center gap-3">
+          <AlertTriangle className="text-red-400 flex-shrink-0" size={18} />
+          <span className="text-red-400 text-[13px] flex-1">{error}</span>
+          <ActionBtn variant="secondary" onClick={fetchDocuments}>
+            Повторить
+          </ActionBtn>
+        </div>
+      )}
 
       {}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {}
-        <div className="bg-asvo-surface-2 border border-asvo-border rounded-xl p-5">
-          <h3 className="text-[13px] font-semibold text-asvo-text mb-4">
-            Процесс согласования документа
-          </h3>
-          <div className="flex items-center justify-between px-2">
-            {WORKFLOW_STEPS.map((step, i) => {
-              const isCompleted = i < ACTIVE_STEP;
-              const isActive = i === ACTIVE_STEP;
-              const isFuture = i > ACTIVE_STEP;
+      {loading && !error && (
+        <div className="flex items-center justify-center py-20">
+          <div className="w-8 h-8 border-2 border-asvo-accent/30 border-t-asvo-accent rounded-full animate-spin" />
+        </div>
+      )}
 
-              return (
-                <React.Fragment key={step}>
-                  <div className="flex flex-col items-center gap-1.5">
-                    <div
-                      className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold transition-all ${
-                        isActive
-                          ? "bg-asvo-accent text-asvo-bg shadow-[0_0_10px_rgba(45,212,168,0.35)]"
-                          : isCompleted
-                          ? "border-2 border-asvo-accent text-asvo-accent bg-transparent"
-                          : "border-2 border-asvo-border text-asvo-text-dim bg-transparent"
-                      }`}
-                    >
-                      {isCompleted ? "\u2713" : i + 1}
-                    </div>
-                    <span
-                      className={`text-[10px] whitespace-nowrap ${
-                        isActive
-                          ? "text-asvo-accent font-semibold"
-                          : isCompleted
-                          ? "text-asvo-accent"
-                          : isFuture
-                          ? "text-asvo-text-dim"
-                          : "text-asvo-text-mid"
-                      }`}
-                    >
-                      {step}
-                    </span>
-                  </div>
-                  {i < WORKFLOW_STEPS.length - 1 && (
-                    <div
-                      className={`flex-1 h-[2px] mx-1.5 rounded ${
-                        i < ACTIVE_STEP
-                          ? "bg-asvo-accent"
-                          : "bg-asvo-border"
-                      }`}
-                    />
-                  )}
-                </React.Fragment>
-              );
-            })}
-          </div>
-          <p className="text-[11px] text-asvo-text-dim mt-4">
-            Документ DOC-089 &laquo;План аудитов 2026&raquo; ожидает
-            согласования от руководителя отдела качества
+      {}
+      {!loading && !error && documents.length === 0 && (
+        <div className="text-center py-16">
+          <FileText className="mx-auto text-asvo-text-dim mb-3" size={48} />
+          <p className="text-asvo-text-mid text-[14px]">Документы не найдены</p>
+          <p className="text-asvo-text-dim text-[12px] mt-1">
+            Создайте первый документ или измените фильтры
           </p>
         </div>
+      )}
 
-        {}
-        <div className="bg-asvo-surface-2 border border-asvo-border rounded-xl p-5">
-          <h3 className="text-[13px] font-semibold text-asvo-text mb-4">
-            Статистика
-          </h3>
-          <div className="grid grid-cols-2 gap-4">
-            {STATS.map((stat) => (
-              <div key={stat.label} className="text-center">
-                <div
-                  className="text-2xl font-bold leading-none"
-                  style={{ color: stat.color }}
-                >
-                  {stat.value}
-                </div>
-                <div className="text-[11px] text-asvo-text-dim mt-1.5">
-                  {stat.label}
-                </div>
-              </div>
-            ))}
+      {}
+      {!loading && !error && documents.length > 0 && (
+        <>
+          <DataTable<DocumentShort>
+            columns={columns}
+            data={documents}
+          />
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            totalCount={totalCount}
+            limit={LIMIT}
+            onChange={setPage}
+          />
+        </>
+      )}
+
+      {}
+      {stats && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {}
+          <div className="bg-asvo-surface-2 border border-asvo-border rounded-xl p-5">
+            <h3 className="text-[13px] font-semibold text-asvo-text mb-4">
+              По типам документов
+            </h3>
+            <div className="space-y-2">
+              {stats.byType
+                .sort((a, b) => Number(b.count) - Number(a.count))
+                .map((t) => {
+                  const total = stats.byType.reduce((s, x) => s + Number(x.count), 0);
+                  const pct = total > 0 ? (Number(t.count) / total) * 100 : 0;
+                  const color = TYPE_COLORS[t.type] || "#3A4E62";
+                  return (
+                    <div key={t.type} className="flex items-center gap-3">
+                      <span className="text-[12px] text-asvo-text-mid w-24 truncate">
+                        {TYPE_LABELS[t.type] || t.type}
+                      </span>
+                      <div className="flex-1 h-2 bg-asvo-surface rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all"
+                          style={{ width: `${pct}%`, background: color }}
+                        />
+                      </div>
+                      <span className="text-[12px] font-mono w-8 text-right" style={{ color }}>
+                        {t.count}
+                      </span>
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+
+          {}
+          <div className="bg-asvo-surface-2 border border-asvo-border rounded-xl p-5">
+            <h3 className="text-[13px] font-semibold text-asvo-text mb-4">
+              По статусам
+            </h3>
+            <div className="grid grid-cols-2 gap-3">
+              {stats.byStatus.map((s) => {
+                const dotColor = STATUS_DOT_MAP[s.status] || "grey";
+                return (
+                  <div
+                    key={s.status}
+                    className="flex items-center gap-2 bg-asvo-surface rounded-lg px-3 py-2"
+                  >
+                    <StatusDot color={dotColor} />
+                    <span className="text-[12px] text-asvo-text-mid flex-1">
+                      {STATUS_LABELS[s.status] || s.status}
+                    </span>
+                    <span className="text-[14px] font-bold text-asvo-text">{s.count}</span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
+      )}
+
+      {}
+      <CreateDocumentModal
+        isOpen={createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
+        onCreated={handleCreated}
+      />
+
+      {detailDocId !== null && (
+        <DocumentDetailModal
+          docId={detailDocId}
+          isOpen={true}
+          onClose={() => setDetailDocId(null)}
+          onAction={handleDetailAction}
+        />
+      )}
+    </div>
+  );
+};
+================================================================================
+FILE: QMS-Client-main/src/pages/Documents/Pagination.tsx
+================================================================================
+
+
+
+
+
+
+import React from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
+interface PaginationProps {
+  page: number;
+  totalPages: number;
+  totalCount: number;
+  limit: number;
+  onChange: (page: number) => void;
+}
+
+const Pagination: React.FC<PaginationProps> = ({
+  page,
+  totalPages,
+  totalCount,
+  limit,
+  onChange,
+}) => {
+  if (totalPages <= 1) return null;
+
+  const from = (page - 1) * limit + 1;
+  const to = Math.min(page * limit, totalCount);
+
+  
+  const getPageNumbers = (): (number | "...")[] => {
+    const pages: (number | "...")[] = [];
+    const maxVisible = 5;
+
+    if (totalPages <= maxVisible + 2) {
+      
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      
+      pages.push(1);
+
+      if (page > 3) pages.push("...");
+
+      
+      const start = Math.max(2, page - 1);
+      const end = Math.min(totalPages - 1, page + 1);
+      for (let i = start; i <= end; i++) pages.push(i);
+
+      if (page < totalPages - 2) pages.push("...");
+
+      
+      pages.push(totalPages);
+    }
+
+    return pages;
+  };
+
+  const btnCls =
+    "px-2.5 py-1.5 text-[12px] rounded-lg border transition-colors disabled:opacity-30 disabled:cursor-not-allowed";
+  const normalCls = `${btnCls} bg-asvo-surface-2 border-asvo-border text-asvo-text-mid hover:border-asvo-accent/40 hover:text-asvo-text`;
+  const activeCls = `${btnCls} bg-asvo-accent/15 border-asvo-accent/40 text-asvo-accent font-semibold`;
+
+  return (
+    <div className="flex items-center justify-between mt-4 px-1">
+      <span className="text-[12px] text-asvo-text-dim">
+        {from}–{to} из {totalCount}
+      </span>
+
+      <div className="flex items-center gap-1">
+        {}
+        <button
+          disabled={page <= 1}
+          onClick={() => onChange(page - 1)}
+          className={normalCls}
+          title="Назад"
+        >
+          <ChevronLeft size={14} />
+        </button>
+
+        {}
+        {getPageNumbers().map((p, i) =>
+          p === "..." ? (
+            <span key={`dots-${i}`} className="px-1.5 text-asvo-text-dim text-[12px]">
+              …
+            </span>
+          ) : (
+            <button
+              key={p}
+              onClick={() => onChange(p)}
+              className={p === page ? activeCls : normalCls}
+            >
+              {p}
+            </button>
+          )
+        )}
+
+        {}
+        <button
+          disabled={page >= totalPages}
+          onClick={() => onChange(page + 1)}
+          className={normalCls}
+          title="Далее"
+        >
+          <ChevronRight size={14} />
+        </button>
       </div>
     </div>
   );
 };
 
+export default Pagination;
 ================================================================================
 FILE: QMS-Client-main/src/pages/Login/Login.tsx
 ================================================================================
@@ -12634,11 +13634,319 @@ export const StartPage: React.FC = observer(() => {
 });
 
 ================================================================================
-FILE: QMS-Client-main/src/pages/Tasks/ProjectsList.tsx
+FILE: QMS-Client-main/src/pages/Tasks/ProjectDetailView.tsx
 ================================================================================
 
 import React, { useEffect, useState } from "react";
-import { Plus, Trash2, FolderOpen } from "lucide-react";
+import {
+  ArrowLeft,
+  FolderOpen,
+  ClipboardList,
+  Clock,
+  CheckCircle2,
+  AlertTriangle,
+  Save,
+  X,
+  Edit3,
+  Users,
+} from "lucide-react";
+import {
+  fetchProjectById,
+  updateProject,
+  ProjectModel,
+} from "src/api/projectsApi";
+import Avatar from "src/components/qms/Avatar";
+import TasksList from "./TasksList";
+
+const AVATAR_COLORS = ["accent", "blue", "purple", "amber", "red", "green", "orange"] as const;
+
+const STATUS_SEGMENTS: { key: string; label: string; color: string }[] = [
+  { key: "NEW",         label: "Новые",       color: "#4A90E8" },
+  { key: "IN_PROGRESS", label: "В работе",    color: "#E8A830" },
+  { key: "REVIEW",      label: "Проверка",    color: "#A06AE8" },
+  { key: "DONE",        label: "Готово",       color: "#2DD4A8" },
+  { key: "CLOSED",      label: "Закрыто",     color: "#3A4E62" },
+];
+
+interface ProjectDetailViewProps {
+  projectId: number;
+  onBack: () => void;
+}
+
+const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({ projectId, onBack }) => {
+  const [project, setProject] = useState<ProjectModel | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({ title: "", description: "" });
+
+  const load = async () => {
+    const data = await fetchProjectById(projectId);
+    setProject(data);
+  };
+
+  useEffect(() => {
+    load();
+  }, [projectId]);
+
+  const startEditing = () => {
+    if (!project) return;
+    setEditForm({ title: project.title, description: project.description || "" });
+    setIsEditing(true);
+  };
+
+  const saveEditing = async () => {
+    if (!project) return;
+    await updateProject(project.id, editForm);
+    setIsEditing(false);
+    load();
+  };
+
+  if (!project) {
+    return (
+      <div className="flex items-center justify-center py-20 text-asvo-text-dim">
+        <Clock className="animate-spin mr-2" size={16} /> Загрузка...
+      </div>
+    );
+  }
+
+  const stats = project.taskStats;
+  const members = project.members || [];
+  const byStatus = stats?.byStatus ?? { NEW: 0, IN_PROGRESS: 0, REVIEW: 0, DONE: 0, CLOSED: 0 };
+  const total = stats?.total ?? 0;
+  const overdue = stats?.overdue ?? 0;
+  const progressPercent = stats?.progressPercent ?? 0;
+  const inProgress = byStatus.IN_PROGRESS + byStatus.REVIEW;
+  const done = byStatus.DONE + byStatus.CLOSED;
+
+  return (
+    <div className="animate-fade-in space-y-5">
+      {}
+      <div className="flex items-start gap-4">
+        <button
+          onClick={onBack}
+          className="mt-1 p-2 bg-asvo-surface border border-asvo-border rounded-xl text-asvo-text-mid hover:text-asvo-text hover:border-asvo-border-lt transition-all"
+        >
+          <ArrowLeft size={18} />
+        </button>
+
+        <div className="p-3 bg-asvo-accent/10 text-asvo-accent rounded-xl border border-asvo-accent/15">
+          <FolderOpen size={24} />
+        </div>
+
+        <div className="flex-1 min-w-0">
+          {isEditing ? (
+            <div className="space-y-2">
+              <input
+                value={editForm.title}
+                onChange={e => setEditForm({ ...editForm, title: e.target.value })}
+                className="w-full px-3 py-1.5 bg-asvo-card border border-asvo-border rounded-lg text-base font-bold text-asvo-text focus:border-asvo-accent/50 focus:outline-none"
+              />
+              <textarea
+                value={editForm.description}
+                onChange={e => setEditForm({ ...editForm, description: e.target.value })}
+                className="w-full px-3 py-1.5 bg-asvo-card border border-asvo-border rounded-lg text-sm text-asvo-text-mid focus:border-asvo-accent/50 focus:outline-none resize-none"
+                rows={2}
+              />
+            </div>
+          ) : (
+            <>
+              <h2 className="text-xl font-bold text-asvo-text truncate">{project.title}</h2>
+              <p className="text-sm text-asvo-text-mid mt-0.5 line-clamp-2">
+                {project.description || "Нет описания"}
+              </p>
+            </>
+          )}
+          <div className="flex items-center gap-3 mt-2 text-[11px] text-asvo-text-dim">
+            <span>Автор: {project.author?.surname} {project.author?.name}</span>
+            <span>{new Date(project.createdAt).toLocaleDateString("ru")}</span>
+            <span className="px-2 py-0.5 rounded-full bg-asvo-accent/10 text-asvo-accent font-semibold text-[10px]">
+              {project.status}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1.5 shrink-0">
+          {isEditing ? (
+            <>
+              <button
+                onClick={saveEditing}
+                className="p-2 bg-asvo-accent/15 text-asvo-accent rounded-lg hover:bg-asvo-accent/25 transition"
+              >
+                <Save size={16} />
+              </button>
+              <button
+                onClick={() => setIsEditing(false)}
+                className="p-2 bg-asvo-card text-asvo-text-mid rounded-lg hover:bg-asvo-card-hover transition"
+              >
+                <X size={16} />
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={startEditing}
+              className="p-2 bg-asvo-accent/15 text-asvo-accent rounded-lg hover:bg-asvo-accent/25 transition"
+            >
+              <Edit3 size={16} />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <KpiCard
+          icon={<ClipboardList size={18} className="text-[#4A90E8]" />}
+          label="Всего задач"
+          value={total}
+          color="#4A90E8"
+        />
+        <KpiCard
+          icon={<Clock size={18} className="text-[#E8A830]" />}
+          label="В работе"
+          value={inProgress}
+          color="#E8A830"
+        />
+        <KpiCard
+          icon={<CheckCircle2 size={18} className="text-[#2DD4A8]" />}
+          label="Выполнено"
+          value={done}
+          color="#2DD4A8"
+        />
+        <KpiCard
+          icon={<AlertTriangle size={18} className="text-[#F06060]" />}
+          label="Просрочено"
+          value={overdue}
+          color="#F06060"
+        />
+      </div>
+
+      {}
+      {total > 0 && (
+        <div className="bg-asvo-surface border border-asvo-border rounded-xl p-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[10px] text-asvo-text-dim font-bold uppercase tracking-wide">
+              Прогресс по статусам
+            </span>
+            <span className="text-xs text-asvo-text-mid font-mono">
+              {progressPercent}% завершено
+            </span>
+          </div>
+
+          {}
+          <div className="flex h-3 rounded-full overflow-hidden bg-asvo-bg">
+            {STATUS_SEGMENTS.map(seg => {
+              const count = byStatus[seg.key as keyof typeof byStatus] ?? 0;
+              const pct = total > 0 ? (count / total) * 100 : 0;
+              if (pct === 0) return null;
+              return (
+                <div
+                  key={seg.key}
+                  className="h-full transition-all duration-500"
+                  style={{ width: `${pct}%`, backgroundColor: seg.color }}
+                  title={`${seg.label}: ${count}`}
+                />
+              );
+            })}
+          </div>
+
+          {}
+          <div className="flex flex-wrap gap-4 mt-3">
+            {STATUS_SEGMENTS.map(seg => {
+              const count = byStatus[seg.key as keyof typeof byStatus] ?? 0;
+              return (
+                <div key={seg.key} className="flex items-center gap-1.5 text-[11px]">
+                  <span
+                    className="w-2.5 h-2.5 rounded-full"
+                    style={{ backgroundColor: seg.color }}
+                  />
+                  <span className="text-asvo-text-mid">{seg.label}</span>
+                  <span className="text-asvo-text font-semibold">{count}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {}
+      {members.length > 0 && (
+        <div className="bg-asvo-surface border border-asvo-border rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Users size={14} className="text-asvo-accent" />
+            <span className="text-[10px] text-asvo-text-dim font-bold uppercase tracking-wide">
+              Участники ({members.length})
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            {members.map((m, i) => (
+              <div key={m.id} className="flex items-center gap-2 bg-asvo-card border border-asvo-border rounded-lg px-3 py-1.5">
+                <Avatar
+                  name={`${m.name} ${m.surname}`}
+                  size="sm"
+                  color={AVATAR_COLORS[i % AVATAR_COLORS.length]}
+                />
+                <span className="text-xs text-asvo-text">{m.surname} {m.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {}
+      <div>
+        <div className="flex items-center gap-2 mb-3">
+          <ClipboardList size={14} className="text-asvo-accent" />
+          <span className="text-[10px] text-asvo-text-dim font-bold uppercase tracking-wide">
+            Задачи проекта
+          </span>
+        </div>
+        <TasksList projectId={projectId} />
+      </div>
+    </div>
+  );
+};
+
+
+
+function KpiCard({
+  icon,
+  label,
+  value,
+  color,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: number;
+  color: string;
+}) {
+  return (
+    <div className="bg-asvo-surface border border-asvo-border rounded-xl p-4 flex items-center gap-3">
+      <div
+        className="w-10 h-10 rounded-xl flex items-center justify-center border"
+        style={{
+          backgroundColor: `${color}10`,
+          borderColor: `${color}20`,
+        }}
+      >
+        {icon}
+      </div>
+      <div>
+        <div className="text-xl font-bold text-asvo-text">{value}</div>
+        <div className="text-[10px] text-asvo-text-dim uppercase font-semibold tracking-wide">
+          {label}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default ProjectDetailView;
+
+================================================================================
+FILE: QMS-Client-main/src/pages/Tasks/ProjectsList.tsx
+================================================================================
+
+import React, { useEffect, useState, useMemo } from "react";
+import { Plus, Trash2, FolderOpen, Search, AlertTriangle } from "lucide-react";
 import {
   fetchProjects,
   createProject,
@@ -12646,11 +13954,28 @@ import {
   ProjectModel,
 } from "src/api/projectsApi";
 import { Modal } from "src/components/Modal/Modal";
+import ProgressBar from "src/components/qms/ProgressBar";
+import Avatar from "src/components/qms/Avatar";
 
-const ProjectsList: React.FC = () => {
+const AVATAR_COLORS = ["accent", "blue", "purple", "amber", "red", "green", "orange"] as const;
+
+const STATUS_CHIPS: { key: string; label: string; color: string }[] = [
+  { key: "NEW",         label: "Новые",       color: "#4A90E8" },
+  { key: "IN_PROGRESS", label: "В работе",    color: "#E8A830" },
+  { key: "REVIEW",      label: "Проверка",    color: "#A06AE8" },
+  { key: "DONE",        label: "Готово",       color: "#2DD4A8" },
+  { key: "CLOSED",      label: "Закрыто",     color: "#3A4E62" },
+];
+
+interface ProjectsListProps {
+  onSelectProject: (project: ProjectModel) => void;
+}
+
+const ProjectsList: React.FC<ProjectsListProps> = ({ onSelectProject }) => {
   const [projects, setProjects] = useState<ProjectModel[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form, setForm] = useState({ title: "", description: "" });
+  const [search, setSearch] = useState("");
 
   const load = async () => {
     const data = await fetchProjects();
@@ -12669,79 +13994,190 @@ const ProjectsList: React.FC = () => {
     load();
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (e: React.MouseEvent, id: number) => {
+    e.stopPropagation();
     if (window.confirm("Удалить проект?")) {
       await deleteProject(id);
       load();
     }
   };
 
+  const filtered = useMemo(() => {
+    if (!search.trim()) return projects;
+    const q = search.toLowerCase();
+    return projects.filter(
+      p =>
+        p.title.toLowerCase().includes(q) ||
+        p.description?.toLowerCase().includes(q)
+    );
+  }, [projects, search]);
+
   return (
     <div className="animate-fade-in">
-      <div className="flex justify-end mb-5">
+      {}
+      <div className="flex items-center gap-3 mb-5">
+        <div className="relative flex-1 max-w-xs">
+          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-asvo-text-dim" />
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Поиск проектов..."
+            className="w-full pl-8 pr-3 py-1.5 bg-transparent border border-asvo-border rounded-lg text-xs text-asvo-text placeholder:text-asvo-text-dim focus:bg-asvo-surface focus:border-asvo-border-lt focus:outline-none transition-all"
+          />
+        </div>
+        <span className="text-xs text-asvo-text-dim">
+          Всего: <b className="text-asvo-text">{projects.length}</b>
+        </span>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-500 hover:to-teal-400 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-all shadow-lg shadow-teal-500/20"
+          className="flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-br from-asvo-accent to-asvo-accent/80 text-asvo-bg font-bold rounded-lg text-xs transition-all shadow-[0_2px_12px_rgba(45,212,168,0.3)] hover:shadow-[0_4px_16px_rgba(45,212,168,0.4)] ml-auto"
         >
-          <Plus size={18} /> Новый проект
+          <Plus size={14} /> Новый проект
         </button>
       </div>
 
+      {}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {projects.map((p) => (
-          <div
-            key={p.id}
-            className="bg-slate-800/50 p-5 rounded-2xl border border-slate-700/40 hover:border-slate-600/60 hover:bg-slate-800/70 hover:shadow-lg hover:shadow-black/20 transition-all duration-200 relative group"
-          >
-            <div className="flex justify-between items-start mb-3">
-              <div className="p-2.5 bg-indigo-500/10 text-indigo-400 rounded-xl border border-indigo-500/15">
-                <FolderOpen size={22} />
-              </div>
-              <button
-                onClick={() => handleDelete(p.id)}
-                className="text-slate-600 hover:text-red-400 transition opacity-0 group-hover:opacity-100 p-1"
-              >
-                <Trash2 size={16} />
-              </button>
-            </div>
-            <h3 className="text-base font-bold text-slate-100 mb-1">
-              {p.title}
-            </h3>
-            <p className="text-sm text-slate-500 mb-4 line-clamp-2 h-10 leading-relaxed">
-              {p.description || "Нет описания"}
-            </p>
+        {filtered.map((p) => {
+          const stats = p.taskStats;
+          const members = p.members || [];
+          const progress = stats?.progressPercent ?? 0;
+          const byStatus = stats?.byStatus ?? { NEW: 0, IN_PROGRESS: 0, REVIEW: 0, DONE: 0, CLOSED: 0 };
+          const overdue = stats?.overdue ?? 0;
+          const total = stats?.total ?? 0;
 
-            <div className="flex justify-between items-center text-[11px] text-slate-500 border-t border-slate-700/40 pt-3">
-              <span>Создал: {p.author?.surname || "Admin"}</span>
-              <span>{new Date(p.createdAt).toLocaleDateString("ru")}</span>
+          return (
+            <div
+              key={p.id}
+              onClick={() => onSelectProject(p)}
+              className="bg-asvo-surface border border-asvo-border rounded-2xl p-5 hover:border-asvo-border-lt hover:bg-asvo-surface-2 hover:shadow-lg hover:shadow-black/20 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer relative group"
+            >
+              {}
+              <div className="flex justify-between items-start mb-3">
+                <div className="p-2.5 bg-asvo-accent/10 text-asvo-accent rounded-xl border border-asvo-accent/15">
+                  <FolderOpen size={22} />
+                </div>
+                <button
+                  onClick={(e) => handleDelete(e, p.id)}
+                  className="text-asvo-text-dim hover:text-[#F06060] transition opacity-0 group-hover:opacity-100 p-1"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+
+              {}
+              <h3 className="text-base font-bold text-asvo-text mb-1 line-clamp-1">
+                {p.title}
+              </h3>
+              <p className="text-sm text-asvo-text-dim mb-4 line-clamp-2 h-10 leading-relaxed">
+                {p.description || "Нет описания"}
+              </p>
+
+              {}
+              {total > 0 && (
+                <div className="mb-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] text-asvo-text-dim font-semibold uppercase tracking-wide">Прогресс</span>
+                    <span className="text-[10px] text-asvo-text-mid font-mono">{progress}%</span>
+                  </div>
+                  <ProgressBar value={progress} color={progress >= 100 ? "accent" : "blue"} />
+                </div>
+              )}
+
+              {}
+              {total > 0 && (
+                <div className="flex flex-wrap gap-1.5 mb-3">
+                  {STATUS_CHIPS.map(sc => {
+                    const count = byStatus[sc.key as keyof typeof byStatus] ?? 0;
+                    if (count === 0) return null;
+                    return (
+                      <span
+                        key={sc.key}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border"
+                        style={{
+                          borderColor: `${sc.color}30`,
+                          backgroundColor: `${sc.color}10`,
+                          color: sc.color,
+                        }}
+                      >
+                        <span
+                          className="w-1.5 h-1.5 rounded-full"
+                          style={{ backgroundColor: sc.color }}
+                        />
+                        {count}
+                      </span>
+                    );
+                  })}
+                  {overdue > 0 && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border border-[#F06060]/30 bg-[#F06060]/10 text-[#F06060]">
+                      <AlertTriangle size={9} />
+                      {overdue}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {}
+              <div className="flex items-center justify-between border-t border-asvo-border pt-3">
+                <div className="flex items-center -space-x-1.5">
+                  {members.slice(0, 4).map((m, i) => (
+                    <Avatar
+                      key={m.id}
+                      name={`${m.name} ${m.surname}`}
+                      size="sm"
+                      color={AVATAR_COLORS[i % AVATAR_COLORS.length]}
+                    />
+                  ))}
+                  {members.length > 4 && (
+                    <span className="ml-1.5 text-[10px] text-asvo-text-dim font-semibold">
+                      +{members.length - 4}
+                    </span>
+                  )}
+                  {members.length === 0 && (
+                    <span className="text-[10px] text-asvo-text-dim">Нет участников</span>
+                  )}
+                </div>
+                <span className="text-[11px] text-asvo-text-dim">
+                  {new Date(p.createdAt).toLocaleDateString("ru")}
+                </span>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
+      {}
+      {filtered.length === 0 && projects.length > 0 && (
+        <div className="text-center py-12 text-asvo-text-dim text-sm">
+          Проекты не найдены по запросу &laquo;{search}&raquo;
+        </div>
+      )}
+
+      {}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-        <div className="p-6 bg-slate-800 rounded-2xl">
-          <h2 className="text-lg font-bold text-slate-100 mb-5">
+        <div className="p-6 bg-asvo-surface rounded-2xl">
+          <h2 className="text-lg font-bold text-asvo-text mb-5">
             Создать проект
           </h2>
           <div className="space-y-3">
             <div>
-              <label className="block text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-1.5">
+              <label className="block text-[10px] text-asvo-text-dim uppercase font-bold tracking-wider mb-1.5">
                 Название
               </label>
               <input
-                className="w-full px-3 py-2.5 bg-slate-900/80 border border-slate-600/50 rounded-xl text-slate-200 text-sm placeholder:text-slate-500 focus:border-teal-500/50 focus:outline-none focus:ring-1 focus:ring-teal-500/20 transition"
+                className="w-full px-3 py-2.5 bg-asvo-bg border border-asvo-border rounded-xl text-asvo-text text-sm placeholder:text-asvo-text-dim focus:border-asvo-accent/50 focus:outline-none focus:ring-1 focus:ring-asvo-accent/20 transition"
                 placeholder="Напр. Дрон-разведчик"
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
               />
             </div>
             <div>
-              <label className="block text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-1.5">
+              <label className="block text-[10px] text-asvo-text-dim uppercase font-bold tracking-wider mb-1.5">
                 Описание
               </label>
               <textarea
-                className="w-full px-3 py-2.5 bg-slate-900/80 border border-slate-600/50 rounded-xl text-slate-200 text-sm placeholder:text-slate-500 focus:border-teal-500/50 focus:outline-none focus:ring-1 focus:ring-teal-500/20 transition resize-none"
+                className="w-full px-3 py-2.5 bg-asvo-bg border border-asvo-border rounded-xl text-asvo-text text-sm placeholder:text-asvo-text-dim focus:border-asvo-accent/50 focus:outline-none focus:ring-1 focus:ring-asvo-accent/20 transition resize-none"
                 placeholder="Что входит в проект..."
                 rows={3}
                 value={form.description}
@@ -12752,7 +14188,7 @@ const ProjectsList: React.FC = () => {
             </div>
             <button
               onClick={handleCreate}
-              className="w-full mt-2 py-3 bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-500 hover:to-teal-400 text-white font-semibold rounded-xl transition-all text-sm shadow-lg shadow-teal-500/20"
+              className="w-full mt-2 py-3 bg-gradient-to-r from-asvo-accent to-asvo-accent/80 hover:from-asvo-accent hover:to-asvo-accent text-asvo-bg font-bold rounded-xl transition-all text-sm shadow-[0_2px_12px_rgba(45,212,168,0.3)] hover:shadow-[0_4px_16px_rgba(45,212,168,0.4)]"
             >
               Создать
             </button>
@@ -12907,7 +14343,11 @@ const formatDate = (d: string) => {
 
 
 
-const TasksList: React.FC = () => {
+interface TasksListProps {
+  projectId?: number;
+}
+
+const TasksList: React.FC<TasksListProps> = ({ projectId }) => {
   const [tasks, setTasks] = useState<ExtendedTask[]>([]);
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState<userGetModel[]>([]);
@@ -12940,14 +14380,14 @@ const TasksList: React.FC = () => {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetchTasks({ page: 1, limit: 500 });
+      const res = await fetchTasks({ page: 1, limit: 500, ...(projectId ? { projectId } : {}) });
       setTasks(res.rows as unknown as ExtendedTask[]);
     } catch (e) {
       console.error(e);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [projectId]);
 
   useEffect(() => {
     loadData();
@@ -13668,9 +15108,24 @@ import {
 } from "lucide-react";
 import TasksList from "./TasksList";
 import ProjectsList from "./ProjectsList";
+import ProjectDetailView from "./ProjectDetailView";
+import { ProjectModel } from "src/api/projectsApi";
+
+type ActiveView = "TASKS" | "PROJECTS" | "PROJECT_DETAIL";
 
 const TasksPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<"TASKS" | "PROJECTS">("TASKS");
+  const [activeView, setActiveView] = useState<ActiveView>("TASKS");
+  const [selectedProject, setSelectedProject] = useState<ProjectModel | null>(null);
+
+  const handleSelectProject = (project: ProjectModel) => {
+    setSelectedProject(project);
+    setActiveView("PROJECT_DETAIL");
+  };
+
+  const handleBackFromProject = () => {
+    setActiveView("PROJECTS");
+    setSelectedProject(null);
+  };
 
   return (
     <div className="bg-asvo-bg min-h-screen animate-fade-in">
@@ -13693,37 +15148,47 @@ const TasksPage: React.FC = () => {
           </div>
 
           {}
-          <div className="flex bg-asvo-surface border border-asvo-border rounded-lg overflow-hidden ml-auto">
-            <button
-              onClick={() => setActiveTab("TASKS")}
-              className={`flex items-center gap-2 px-4 py-2 text-[13px] font-semibold transition-all ${
-                activeTab === "TASKS"
-                  ? "bg-asvo-accent text-asvo-bg"
-                  : "text-asvo-text-mid hover:text-asvo-text"
-              }`}
-            >
-              <Layout size={14} />
-              Канбан
-            </button>
-            <button
-              onClick={() => setActiveTab("PROJECTS")}
-              className={`flex items-center gap-2 px-4 py-2 text-[13px] font-semibold transition-all ${
-                activeTab === "PROJECTS"
-                  ? "bg-asvo-accent text-asvo-bg"
-                  : "text-asvo-text-mid hover:text-asvo-text"
-              }`}
-            >
-              <Briefcase size={14} />
-              Проекты
-            </button>
-          </div>
+          {activeView !== "PROJECT_DETAIL" && (
+            <div className="flex bg-asvo-surface border border-asvo-border rounded-lg overflow-hidden ml-auto">
+              <button
+                onClick={() => setActiveView("TASKS")}
+                className={`flex items-center gap-2 px-4 py-2 text-[13px] font-semibold transition-all ${
+                  activeView === "TASKS"
+                    ? "bg-asvo-accent text-asvo-bg"
+                    : "text-asvo-text-mid hover:text-asvo-text"
+                }`}
+              >
+                <Layout size={14} />
+                Канбан
+              </button>
+              <button
+                onClick={() => setActiveView("PROJECTS")}
+                className={`flex items-center gap-2 px-4 py-2 text-[13px] font-semibold transition-all ${
+                  activeView === "PROJECTS"
+                    ? "bg-asvo-accent text-asvo-bg"
+                    : "text-asvo-text-mid hover:text-asvo-text"
+                }`}
+              >
+                <Briefcase size={14} />
+                Проекты
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
       {}
       <div className="px-7 py-4">
-        {activeTab === "TASKS" && <TasksList />}
-        {activeTab === "PROJECTS" && <ProjectsList />}
+        {activeView === "TASKS" && <TasksList />}
+        {activeView === "PROJECTS" && (
+          <ProjectsList onSelectProject={handleSelectProject} />
+        )}
+        {activeView === "PROJECT_DETAIL" && selectedProject && (
+          <ProjectDetailView
+            projectId={selectedProject.id}
+            onBack={handleBackFromProject}
+          />
+        )}
       </div>
     </div>
   );
@@ -23806,7 +25271,9 @@ const app = express();
 app.use(express.json());
 
 const corsOptions = {
-  origin: "*",
+  origin: process.env.CORS_ORIGINS
+    ? process.env.CORS_ORIGINS.split(",").map((s) => s.trim())
+    : "http://localhost:3000",
   credentials: true,
   optionSuccessStatus: 200,
 };
@@ -26510,7 +27977,8 @@ module.exports = allModels;
 FILE: QMS-Server-master/modules/core/controllers/ProjectController.js
 ================================================================================
 
-const { Project, User } = require("../../../models/index");
+const { Op } = require("sequelize");
+const { Project, User, ProductionTask } = require("../../../models/index");
 const ApiError = require("../../../error/ApiError");
 
 class ProjectController {
@@ -26536,7 +28004,121 @@ class ProjectController {
         order: [["createdAt", "DESC"]],
         include: [{ model: User, as: "author", attributes: ["name", "surname"] }]
       });
-      return res.json(projects);
+
+      const result = [];
+
+      for (const project of projects) {
+        const tasks = await ProductionTask.findAll({
+          where: { projectId: project.id },
+          attributes: ["id", "status", "dueDate", "responsibleId"],
+          include: [
+            { model: User, as: "responsible", attributes: ["id", "name", "surname"] }
+          ]
+        });
+
+        const total = tasks.length;
+        const byStatus = { NEW: 0, IN_PROGRESS: 0, REVIEW: 0, DONE: 0, CLOSED: 0 };
+        for (const t of tasks) {
+          if (byStatus[t.status] !== undefined) byStatus[t.status]++;
+        }
+        const now = new Date();
+        const overdue = tasks.filter(
+          t => t.dueDate && new Date(t.dueDate) < now && t.status !== "DONE" && t.status !== "CLOSED"
+        ).length;
+        const doneAndClosed = byStatus.DONE + byStatus.CLOSED;
+        const progressPercent = total > 0 ? Math.round((doneAndClosed / total) * 100) : 0;
+
+        
+        const membersMap = {};
+        for (const t of tasks) {
+          if (t.responsible && !membersMap[t.responsible.id]) {
+            membersMap[t.responsible.id] = {
+              id: t.responsible.id,
+              name: t.responsible.name,
+              surname: t.responsible.surname
+            };
+          }
+        }
+        const members = Object.values(membersMap);
+
+        const plain = project.toJSON();
+        plain.taskStats = { total, byStatus, overdue, progressPercent };
+        plain.members = members;
+        result.push(plain);
+      }
+
+      return res.json(result);
+    } catch (e) {
+      next(ApiError.internal(e.message));
+    }
+  }
+
+  async getOne(req, res, next) {
+    try {
+      const { id } = req.params;
+      const project = await Project.findByPk(id, {
+        include: [{ model: User, as: "author", attributes: ["name", "surname"] }]
+      });
+
+      if (!project) return next(ApiError.notFound("Проект не найден"));
+
+      const tasks = await ProductionTask.findAll({
+        where: { projectId: id },
+        attributes: ["id", "status", "dueDate", "responsibleId"],
+        include: [
+          { model: User, as: "responsible", attributes: ["id", "name", "surname"] }
+        ]
+      });
+
+      const total = tasks.length;
+      const byStatus = { NEW: 0, IN_PROGRESS: 0, REVIEW: 0, DONE: 0, CLOSED: 0 };
+      for (const t of tasks) {
+        if (byStatus[t.status] !== undefined) byStatus[t.status]++;
+      }
+      const now = new Date();
+      const overdue = tasks.filter(
+        t => t.dueDate && new Date(t.dueDate) < now && t.status !== "DONE" && t.status !== "CLOSED"
+      ).length;
+      const doneAndClosed = byStatus.DONE + byStatus.CLOSED;
+      const progressPercent = total > 0 ? Math.round((doneAndClosed / total) * 100) : 0;
+
+      const membersMap = {};
+      for (const t of tasks) {
+        if (t.responsible && !membersMap[t.responsible.id]) {
+          membersMap[t.responsible.id] = {
+            id: t.responsible.id,
+            name: t.responsible.name,
+            surname: t.responsible.surname
+          };
+        }
+      }
+      const members = Object.values(membersMap);
+
+      const plain = project.toJSON();
+      plain.taskStats = { total, byStatus, overdue, progressPercent };
+      plain.members = members;
+
+      return res.json(plain);
+    } catch (e) {
+      next(ApiError.internal(e.message));
+    }
+  }
+
+  async update(req, res, next) {
+    try {
+      const { id } = req.params;
+      const { title, description, status } = req.body;
+
+      const project = await Project.findByPk(id);
+      if (!project) return next(ApiError.notFound("Проект не найден"));
+
+      await project.update({
+        title: title !== undefined ? title : project.title,
+        description: description !== undefined ? description : project.description,
+        status: status !== undefined ? status : project.status
+      });
+
+      return res.json(project);
     } catch (e) {
       next(ApiError.internal(e.message));
     }
@@ -26621,7 +28203,7 @@ class TaskController {
 
   async getTasks(req, res, next) {
     try {
-      let { page = 1, limit = 50, status, search, originType } = req.query;
+      let { page = 1, limit = 50, status, search, originType, projectId } = req.query;
       page = Number(page) || 1;
       limit = Number(limit) || 50;
       const offset = (page - 1) * limit;
@@ -26629,6 +28211,7 @@ class TaskController {
       const where = {};
       if (status) where.status = status;
       if (originType) where.originType = originType;
+      if (projectId) where.projectId = Number(projectId);
       if (search) {
         const s = String(search).trim();
         where[Op.or] = [
@@ -27739,13 +29322,20 @@ FILE: QMS-Server-master/modules/core/controllers/userController.js
 const ApiError = require("../../../error/ApiError");
 const { User, Session, Role } = require("../../../models/index");
 const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
 const uuid = require("uuid");
 const path = require("path");
 
+const SALT_ROUNDS = 10;
+
 const generateJWT = (id, login, role, name, surname, img) => {
+  const secret = process.env.SECRET_KEY;
+  if (!secret) {
+    throw new Error("SECRET_KEY is not defined in environment variables");
+  }
   return jwt.sign(
     { id, login, role, name, surname, img },
-    process.env.SECRET_KEY,
+    secret,
     {
       expiresIn: "5h",
     }
@@ -27774,6 +29364,7 @@ class UserController {
   async getUsers(req, res, next) {
     try {
       const usersAll = await User.findAll({
+        attributes: { exclude: ["password"] },
         order: [["name", "ASC"]],
       });
       return res.json(usersAll);
@@ -27792,6 +29383,7 @@ class UserController {
 
       const user = await User.findOne({
         where: { id },
+        attributes: { exclude: ["password"] },
       });
       return res.json(user);
     } catch (e) {
@@ -27814,7 +29406,7 @@ class UserController {
 
 
       if (password && password.trim() !== "") {
-        updateData.password = password;
+        updateData.password = await bcrypt.hash(password, SALT_ROUNDS);
       }
 
       await User.update(updateData, { where: { id } });
@@ -27835,7 +29427,12 @@ class UserController {
       checkAccess(req, id);
 
       const { img } = req.files;
-      let fileName = uuid.v4() + ".jpg";
+      const allowedMimeTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+      if (!allowedMimeTypes.includes(img.mimetype)) {
+        return next(ApiError.badRequest("Допустимые форматы: JPEG, PNG, WebP, GIF"));
+      }
+      const ext = path.extname(img.name) || ".jpg";
+      let fileName = uuid.v4() + ext;
       img.mv(path.resolve(__dirname, "..", "static", fileName));
 
       await User.update({ img: fileName }, { where: { id } });
@@ -27869,7 +29466,8 @@ class UserController {
         if (roleEntity) roleId = roleEntity.id;
       }
 
-      const user = await User.create({ login, password, roleId, name, surname });
+      const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+      const user = await User.create({ login, password: hashedPassword, roleId, name, surname });
       const token = generateJWT(
         user.id,
         user.login,
@@ -27899,8 +29497,21 @@ class UserController {
         return next(ApiError.internal("Такого пользователя нет"));
       }
 
-      if (currentUser.password != password) {
-        return next(ApiError.internal("неверный пароль"));
+      
+      
+      let isPasswordValid = false;
+      const isHashed = currentUser.password && currentUser.password.startsWith("$2");
+      if (isHashed) {
+        isPasswordValid = await bcrypt.compare(password, currentUser.password);
+      } else {
+        isPasswordValid = password === currentUser.password;
+        if (isPasswordValid) {
+          const hashed = await bcrypt.hash(password, SALT_ROUNDS);
+          await User.update({ password: hashed }, { where: { id: currentUser.id } });
+        }
+      }
+      if (!isPasswordValid) {
+        return next(ApiError.badRequest("неверный пароль"));
       }
 
       const isAciveSession = await Session.findAll({
@@ -28022,6 +29633,11 @@ const { auth } = require('express-oauth2-jwt-bearer');
 const AUTH_MODE = process.env.AUTH_MODE || 'keycloak';
 
 if (AUTH_MODE === 'dev-bypass') {
+  
+  if (process.env.NODE_ENV === 'production') {
+    console.error("FATAL: AUTH_MODE=dev-bypass запрещён в production. Остановка.");
+    process.exit(1);
+  }
   
   module.exports = (req, res, next) => {
     req.auth = {
@@ -28510,6 +30126,21 @@ router.get(
     "/",
     ...protect,
     controller.getAll
+);
+
+
+router.get(
+    "/:id",
+    ...protect,
+    controller.getOne
+);
+
+
+router.put(
+    "/:id",
+    ...protect,
+    checkAbility("recipe.manage"),
+    controller.update
 );
 
 
@@ -29917,20 +31548,21 @@ function computeChainHash(chainIndex, prevHash, dataHash) {
 
 
 async function getLastChainEntry(transaction) {
-  const [results] = await sequelize.query(
-    `SELECT "chainIndex", "currentHash" 
-     FROM audit_logs 
-     WHERE "chainIndex" IS NOT NULL 
-     ORDER BY "chainIndex" DESC 
+  
+  const rows = await sequelize.query(
+    `SELECT "chainIndex", "currentHash"
+     FROM audit_logs
+     WHERE "chainIndex" IS NOT NULL
+     ORDER BY "chainIndex" DESC
      LIMIT 1
      FOR UPDATE`,
     { transaction, type: sequelize.QueryTypes.SELECT }
   );
 
-  if (results) {
+  if (rows && rows.length > 0) {
     return {
-      chainIndex: Number(results.chainIndex),
-      currentHash: results.currentHash,
+      chainIndex: Number(rows[0].chainIndex),
+      currentHash: rows[0].currentHash,
     };
   }
 
@@ -29969,6 +31601,7 @@ async function logAudit({
   description,
   metadata,
   severity,
+  transaction: externalTransaction,
 }) {
   if (!action) {
     console.warn("[HashChainLogger] Попытка логирования без указания action");
@@ -29976,8 +31609,10 @@ async function logAudit({
   }
 
   
-  const transaction = await sequelize.transaction({
-    isolationLevel: "SERIALIZABLE", 
+  
+  const isExternalTransaction = !!externalTransaction;
+  const transaction = externalTransaction || await sequelize.transaction({
+    isolationLevel: "SERIALIZABLE",
   });
 
   try {
@@ -30052,10 +31687,15 @@ async function logAudit({
       { transaction }
     );
 
-    await transaction.commit();
+    
+    if (!isExternalTransaction) {
+      await transaction.commit();
+    }
     return record;
   } catch (error) {
-    await transaction.rollback();
+    if (!isExternalTransaction) {
+      await transaction.rollback();
+    }
     console.error("[HashChainLogger] Ошибка записи в журнал аудита:", error);
 
     
@@ -30170,17 +31810,20 @@ async function logExport(req, exportType, description, metadata = {}) {
 
 
 async function logDocumentCreate(req, doc, metadata = {}) {
+  const { transaction, ...restMeta } = metadata;
   return logAudit({
     req,
     action: AUDIT_ACTIONS.DOCUMENT_CREATE,
     entity: AUDIT_ENTITIES.DOCUMENT,
     entityId: doc.id,
     description: `Создан документ: ${doc.code} "${doc.title}"`,
-    metadata: { code: doc.code, type: doc.type, ...metadata },
+    metadata: { code: doc.code, type: doc.type, ...restMeta },
+    transaction,
   });
 }
 
 async function logDocumentApproval(req, doc, version, decision, metadata = {}) {
+  const { transaction, ...restMeta } = metadata;
   const action =
     decision === "APPROVED"
       ? AUDIT_ACTIONS.DOCUMENT_APPROVE
@@ -30197,12 +31840,14 @@ async function logDocumentApproval(req, doc, version, decision, metadata = {}) {
       versionId: version.id,
       versionNumber: version.version,
       decision,
-      ...metadata,
+      ...restMeta,
     },
+    transaction,
   });
 }
 
 async function logDocumentEffective(req, doc, version, metadata = {}) {
+  const { transaction, ...restMeta } = metadata;
   return logAudit({
     req,
     action: AUDIT_ACTIONS.DOCUMENT_MAKE_EFFECTIVE,
@@ -30212,8 +31857,9 @@ async function logDocumentEffective(req, doc, version, metadata = {}) {
     metadata: {
       documentId: doc.id,
       versionId: version.id,
-      ...metadata,
+      ...restMeta,
     },
+    transaction,
   });
 }
 
@@ -30697,10 +32343,19 @@ FILE: QMS-Server-master/modules/qms-dms/controllers/documentController.js
 
 
 
-
-
 const ApiError = require("../../../error/ApiError");
 const DocumentService = require("../services/DocumentService");
+
+
+const handleError = (e, next) => {
+  if (e instanceof ApiError) return next(e);
+  
+  if (e.message && !e.message.includes("Cannot") && !e.message.includes("SQLITE") && !e.message.includes("ECONNREFUSED")) {
+    return next(ApiError.badRequest(e.message));
+  }
+  console.error("DocumentController error:", e);
+  return next(ApiError.internal("Внутренняя ошибка сервера"));
+};
 
 class DocumentController {
   
@@ -30719,7 +32374,7 @@ class DocumentController {
       });
       return res.json(result);
     } catch (e) {
-      next(ApiError.badRequest(e.message));
+      handleError(e, next);
     }
   }
 
@@ -30729,7 +32384,7 @@ class DocumentController {
       if (!doc) return next(ApiError.notFound("Документ не найден"));
       return res.json(doc);
     } catch (e) {
-      next(ApiError.badRequest(e.message));
+      handleError(e, next);
     }
   }
 
@@ -30738,7 +32393,7 @@ class DocumentController {
       const stats = await DocumentService.getStats();
       return res.json(stats);
     } catch (e) {
-      next(ApiError.badRequest(e.message));
+      handleError(e, next);
     }
   }
 
@@ -30747,7 +32402,7 @@ class DocumentController {
       const approvals = await DocumentService.getPendingApprovals(req.user.id);
       return res.json(approvals);
     } catch (e) {
-      next(ApiError.badRequest(e.message));
+      handleError(e, next);
     }
   }
 
@@ -30756,7 +32411,7 @@ class DocumentController {
       const docs = await DocumentService.getOverdueReviews();
       return res.json(docs);
     } catch (e) {
-      next(ApiError.badRequest(e.message));
+      handleError(e, next);
     }
   }
 
@@ -30776,7 +32431,7 @@ class DocumentController {
 
       return res.status(201).json(result);
     } catch (e) {
-      next(ApiError.badRequest(e.message));
+      handleError(e, next);
     }
   }
 
@@ -30792,7 +32447,7 @@ class DocumentController {
       );
       return res.status(201).json(version);
     } catch (e) {
-      next(ApiError.badRequest(e.message));
+      handleError(e, next);
     }
   }
 
@@ -30810,7 +32465,7 @@ class DocumentController {
 
       return res.json(version);
     } catch (e) {
-      next(ApiError.badRequest(e.message));
+      handleError(e, next);
     }
   }
 
@@ -30831,7 +32486,7 @@ class DocumentController {
 
       return res.json(version);
     } catch (e) {
-      next(ApiError.badRequest(e.message));
+      handleError(e, next);
     }
   }
 
@@ -30850,7 +32505,7 @@ class DocumentController {
 
       return res.json(approval);
     } catch (e) {
-      next(ApiError.badRequest(e.message));
+      handleError(e, next);
     }
   }
 
@@ -30859,7 +32514,7 @@ class DocumentController {
       const version = await DocumentService.makeEffective(req, Number(req.params.id));
       return res.json(version);
     } catch (e) {
-      next(ApiError.badRequest(e.message));
+      handleError(e, next);
     }
   }
 
@@ -30880,7 +32535,7 @@ class DocumentController {
 
       return res.json(distributions);
     } catch (e) {
-      next(ApiError.badRequest(e.message));
+      handleError(e, next);
     }
   }
 
@@ -30889,7 +32544,7 @@ class DocumentController {
       const dist = await DocumentService.acknowledge(req, Number(req.params.id));
       return res.json(dist);
     } catch (e) {
-      next(ApiError.badRequest(e.message));
+      handleError(e, next);
     }
   }
 }
@@ -31382,24 +33037,20 @@ class DocumentService {
 
 
   async createDocument(req, { title, type, category, description, isoSection, tags, reviewCycleMonths }) {
-    const transaction = await sequelize.transaction();
+    const transaction = await sequelize.transaction({
+      isolationLevel: "SERIALIZABLE",
+    });
 
     try {
       
       const prefix = TYPE_CODE_PREFIX[type] || "ДОК";
-      const lastDoc = await Document.findOne({
-        where: { type },
-        order: [["id", "DESC"]],
-        attributes: ["code"],
-        transaction,
-      });
+      const [maxResult] = await sequelize.query(
+        `SELECT MAX(CAST(SUBSTRING(code FROM '(\\d+)$') AS INTEGER)) AS max_num
+         FROM documents WHERE type = :type`,
+        { replacements: { type }, transaction, type: sequelize.QueryTypes.SELECT }
+      );
 
-      let number = 1;
-      if (lastDoc && lastDoc.code) {
-        const match = lastDoc.code.match(/(\d+)$/);
-        if (match) number = parseInt(match[1]) + 1;
-      }
-
+      const number = (maxResult?.max_num || 0) + 1;
       const code = `${prefix}-СМК-${String(number).padStart(3, "0")}`;
 
       
@@ -31435,10 +33086,10 @@ class DocumentService {
       
       await document.update({ currentVersionId: version.id }, { transaction });
 
-      await transaction.commit();
-
       
-      await logDocumentCreate(req, document);
+      await logDocumentCreate(req, document, { transaction });
+
+      await transaction.commit();
 
       return { document, version };
     } catch (error) {
@@ -31532,6 +33183,19 @@ class DocumentService {
       }
 
       
+      const userIds = approvalChain.map((a) => a.userId);
+      const existingUsers = await User.findAll({
+        where: { id: userIds },
+        attributes: ["id"],
+        transaction,
+      });
+      const existingIds = new Set(existingUsers.map((u) => u.id));
+      const missingIds = userIds.filter((id) => !existingIds.has(id));
+      if (missingIds.length > 0) {
+        throw new Error(`Пользователи не найдены: ${missingIds.join(", ")}`);
+      }
+
+      
       for (let i = 0; i < approvalChain.length; i++) {
         const { userId, role, dueDate } = approvalChain[i];
 
@@ -31552,8 +33216,6 @@ class DocumentService {
       await version.update({ status: VERSION_STATUSES.REVIEW }, { transaction });
       await version.document.update({ status: DOCUMENT_STATUSES.REVIEW }, { transaction });
 
-      await transaction.commit();
-
       
       await logAudit({
         req,
@@ -31565,7 +33227,10 @@ class DocumentService {
           approvers: approvalChain.map((a) => a.userId),
           steps: approvalChain.length,
         },
+        transaction,
       });
+
+      await transaction.commit();
 
       return version;
     } catch (error) {
@@ -31667,10 +33332,10 @@ class DocumentService {
         }
       }
 
-      await transaction.commit();
-
       
-      await logDocumentApproval(req, doc, version, decision, { comment });
+      await logDocumentApproval(req, doc, version, decision, { comment, transaction });
+
+      await transaction.commit();
 
       return approval;
     } catch (error) {
@@ -31738,10 +33403,10 @@ class DocumentService {
         { transaction }
       );
 
-      await transaction.commit();
-
       
-      await logDocumentEffective(req, doc, version);
+      await logDocumentEffective(req, doc, version, { transaction });
+
+      await transaction.commit();
 
       return version;
     } catch (error) {
@@ -31797,8 +33462,6 @@ class DocumentService {
         await doc.update({ status: DOCUMENT_STATUSES.REVISION }, { transaction });
       }
 
-      await transaction.commit();
-
       
       await logAudit({
         req,
@@ -31807,7 +33470,10 @@ class DocumentService {
         entityId: version.id,
         description: `Создана новая версия ${doc.code} v${version.version}`,
         metadata: { documentId: doc.id, changeDescription },
+        transaction,
       });
+
+      await transaction.commit();
 
       return version;
     } catch (error) {
@@ -31824,35 +33490,45 @@ class DocumentService {
 
 
   async distribute(req, versionId, userIds) {
-    const version = await DocumentVersion.findByPk(versionId, {
-      include: [{ model: Document, as: "document" }],
-    });
-
-    if (!version) throw new Error("Версия не найдена");
-    if (version.status !== VERSION_STATUSES.EFFECTIVE) {
-      throw new Error("Рассылка возможна только для действующей версии");
-    }
-
-    const distributions = [];
-    for (const userId of userIds) {
-      const [dist, created] = await DocumentDistribution.findOrCreate({
-        where: { versionId, userId },
-        defaults: { distributedAt: new Date() },
+    const transaction = await sequelize.transaction();
+    try {
+      const version = await DocumentVersion.findByPk(versionId, {
+        include: [{ model: Document, as: "document" }],
+        transaction,
       });
-      distributions.push(dist);
+
+      if (!version) throw new Error("Версия не найдена");
+      if (version.status !== VERSION_STATUSES.EFFECTIVE) {
+        throw new Error("Рассылка возможна только для действующей версии");
+      }
+
+      const distributions = [];
+      for (const userId of userIds) {
+        const [dist] = await DocumentDistribution.findOrCreate({
+          where: { versionId, userId },
+          defaults: { distributedAt: new Date() },
+          transaction,
+        });
+        distributions.push(dist);
+      }
+
+      
+      await logAudit({
+        req,
+        action: AUDIT_ACTIONS.DOCUMENT_DISTRIBUTE,
+        entity: "Document",
+        entityId: version.document.id,
+        description: `Документ ${version.document.code} разослан ${userIds.length} сотрудникам`,
+        metadata: { userIds, versionId },
+        transaction,
+      });
+
+      await transaction.commit();
+      return distributions;
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
     }
-
-    
-    await logAudit({
-      req,
-      action: AUDIT_ACTIONS.DOCUMENT_DISTRIBUTE,
-      entity: "Document",
-      entityId: version.document.id,
-      description: `Документ ${version.document.code} разослан ${userIds.length} сотрудникам`,
-      metadata: { userIds, versionId },
-    });
-
-    return distributions;
   }
 
   
@@ -32363,9 +34039,18 @@ FILE: QMS-Server-master/modules/qms-nc/controllers/ncCapaController.js
 
 
 
-
 const ApiError = require("../../../error/ApiError");
 const NcCapaService = require("../services/NcCapaService");
+
+
+const handleError = (e, next) => {
+  if (e instanceof ApiError) return next(e);
+  if (e.message && !e.message.includes("Cannot") && !e.message.includes("ECONNREFUSED")) {
+    return next(ApiError.badRequest(e.message));
+  }
+  console.error("NcCapaController error:", e);
+  return next(ApiError.internal("Внутренняя ошибка сервера"));
+};
 
 class NcCapaController {
   
@@ -32373,7 +34058,7 @@ class NcCapaController {
     try {
       const result = await NcCapaService.getNCList(req.query);
       return res.json(result);
-    } catch (e) { next(ApiError.badRequest(e.message)); }
+    } catch (e) { handleError(e, next); }
   }
 
   async getNcOne(req, res, next) {
@@ -32383,14 +34068,14 @@ class NcCapaController {
       const nc = await NcCapaService.getNCDetail(id);
       if (!nc) return next(ApiError.notFound("NC не найдена"));
       return res.json(nc);
-    } catch (e) { next(ApiError.badRequest(e.message)); }
+    } catch (e) { handleError(e, next); }
   }
 
   async createNc(req, res, next) {
     try {
       const nc = await NcCapaService.createNC(req, req.body);
       return res.status(201).json(nc);
-    } catch (e) { next(ApiError.badRequest(e.message)); }
+    } catch (e) { handleError(e, next); }
   }
 
   async updateNc(req, res, next) {
@@ -32399,7 +34084,7 @@ class NcCapaController {
       if (isNaN(id)) return next(ApiError.badRequest("Некорректный ID"));
       const nc = await NcCapaService.updateNC(req, id, req.body);
       return res.json(nc);
-    } catch (e) { next(ApiError.badRequest(e.message)); }
+    } catch (e) { handleError(e, next); }
   }
 
   async closeNc(req, res, next) {
@@ -32408,7 +34093,7 @@ class NcCapaController {
       if (isNaN(id)) return next(ApiError.badRequest("Некорректный ID"));
       const nc = await NcCapaService.closeNC(req, id, req.body);
       return res.json(nc);
-    } catch (e) { next(ApiError.badRequest(e.message)); }
+    } catch (e) { handleError(e, next); }
   }
 
   
@@ -32416,7 +34101,7 @@ class NcCapaController {
     try {
       const result = await NcCapaService.getCAPAList(req.query);
       return res.json(result);
-    } catch (e) { next(ApiError.badRequest(e.message)); }
+    } catch (e) { handleError(e, next); }
   }
 
   async getCapaOne(req, res, next) {
@@ -32426,14 +34111,14 @@ class NcCapaController {
       const capa = await NcCapaService.getCAPADetail(id);
       if (!capa) return next(ApiError.notFound("CAPA не найдена"));
       return res.json(capa);
-    } catch (e) { next(ApiError.badRequest(e.message)); }
+    } catch (e) { handleError(e, next); }
   }
 
   async createCapa(req, res, next) {
     try {
       const capa = await NcCapaService.createCAPA(req, req.body);
       return res.status(201).json(capa);
-    } catch (e) { next(ApiError.badRequest(e.message)); }
+    } catch (e) { handleError(e, next); }
   }
 
   async updateCapaStatus(req, res, next) {
@@ -32442,7 +34127,7 @@ class NcCapaController {
       if (isNaN(id)) return next(ApiError.badRequest("Некорректный ID"));
       const capa = await NcCapaService.updateCAPAStatus(req, id, req.body);
       return res.json(capa);
-    } catch (e) { next(ApiError.badRequest(e.message)); }
+    } catch (e) { handleError(e, next); }
   }
 
   async addCapaAction(req, res, next) {
@@ -32451,7 +34136,7 @@ class NcCapaController {
       if (isNaN(id)) return next(ApiError.badRequest("Некорректный ID"));
       const action = await NcCapaService.addCapaAction(req, id, req.body);
       return res.status(201).json(action);
-    } catch (e) { next(ApiError.badRequest(e.message)); }
+    } catch (e) { handleError(e, next); }
   }
 
   async updateCapaAction(req, res, next) {
@@ -32460,7 +34145,7 @@ class NcCapaController {
       if (isNaN(id)) return next(ApiError.badRequest("Некорректный ID"));
       const action = await NcCapaService.updateCapaAction(req, id, req.body);
       return res.json(action);
-    } catch (e) { next(ApiError.badRequest(e.message)); }
+    } catch (e) { handleError(e, next); }
   }
 
   async verifyEffectiveness(req, res, next) {
@@ -32469,7 +34154,7 @@ class NcCapaController {
       if (isNaN(id)) return next(ApiError.badRequest("Некорректный ID"));
       const v = await NcCapaService.verifyCapaEffectiveness(req, id, req.body);
       return res.json(v);
-    } catch (e) { next(ApiError.badRequest(e.message)); }
+    } catch (e) { handleError(e, next); }
   }
 
   
@@ -32477,7 +34162,7 @@ class NcCapaController {
     try {
       const stats = await NcCapaService.getStats();
       return res.json(stats);
-    } catch (e) { next(ApiError.badRequest(e.message)); }
+    } catch (e) { handleError(e, next); }
   }
 }
 
@@ -32747,14 +34432,49 @@ const {
 const { User } = require("../../../models/index");
 const { logNonconformity, logCapa } = require("../../core/utils/auditLogger");
 
+
+const NC_TRANSITIONS = {
+  OPEN: ["INVESTIGATING"],
+  INVESTIGATING: ["DISPOSITION", "OPEN"],
+  DISPOSITION: ["IMPLEMENTING", "INVESTIGATING"],
+  IMPLEMENTING: ["VERIFICATION"],
+  VERIFICATION: ["CLOSED", "REOPENED"],
+  CLOSED: ["REOPENED"],
+  REOPENED: ["INVESTIGATING"],
+};
+
+
+const CAPA_TRANSITIONS = {
+  INITIATED: ["INVESTIGATING", "PLANNING"],
+  INVESTIGATING: ["PLANNING", "INITIATED"],
+  PLANNING: ["PLAN_APPROVED", "INVESTIGATING", "INITIATED"],
+  PLAN_APPROVED: ["IMPLEMENTING"],
+  IMPLEMENTING: ["VERIFYING"],
+  VERIFYING: ["EFFECTIVE", "INEFFECTIVE"],
+  INEFFECTIVE: ["PLANNING"],
+  EFFECTIVE: ["CLOSED"],
+  CLOSED: [],
+};
+
+
+const NC_UPDATABLE_FIELDS = [
+  "title", "description", "source", "classification", "assignedToId",
+  "rootCause", "rootCauseMethod", "disposition", "dispositionJustification",
+  "containmentAction", "dueDate", "priority",
+];
+
 class NcCapaService {
   
 
   async createNC(req, data) {
-    const t = await sequelize.transaction();
+    const t = await sequelize.transaction({ isolationLevel: "SERIALIZABLE" });
     try {
-      const lastNc = await Nonconformity.findOne({ order: [["id", "DESC"]], attributes: ["id"], transaction: t });
-      const num = (lastNc?.id || 0) + 1;
+      
+      const [maxResult] = await sequelize.query(
+        `SELECT MAX(CAST(SUBSTRING(number FROM '(\\d+)$') AS INTEGER)) AS max_num FROM nonconformities`,
+        { transaction: t, type: sequelize.QueryTypes.SELECT }
+      );
+      const num = (maxResult?.max_num || 0) + 1;
       const number = `NC-${String(num).padStart(4, "0")}`;
 
       
@@ -32781,7 +34501,25 @@ class NcCapaService {
     if (nc.status === NC_STATUSES.CLOSED) throw new Error("Нельзя редактировать закрытую NC");
 
     const oldStatus = nc.status;
-    await nc.update(data);
+
+    
+    if (data.status && data.status !== oldStatus) {
+      const allowed = NC_TRANSITIONS[oldStatus] || [];
+      if (!allowed.includes(data.status)) {
+        throw new Error(
+          `Недопустимый переход статуса NC: ${oldStatus} → ${data.status}. Допустимые: ${allowed.join(", ") || "нет"}`
+        );
+      }
+    }
+
+    
+    const safeData = {};
+    for (const field of NC_UPDATABLE_FIELDS) {
+      if (data[field] !== undefined) safeData[field] = data[field];
+    }
+    if (data.status) safeData.status = data.status;
+
+    await nc.update(safeData);
 
     if (data.status && data.status !== oldStatus) {
       const actionMap = {
@@ -32875,10 +34613,14 @@ class NcCapaService {
   
 
   async createCAPA(req, data) {
-    const t = await sequelize.transaction();
+    const t = await sequelize.transaction({ isolationLevel: "SERIALIZABLE" });
     try {
-      const lastCapa = await Capa.findOne({ order: [["id", "DESC"]], attributes: ["id"], transaction: t });
-      const num = (lastCapa?.id || 0) + 1;
+      
+      const [maxResult] = await sequelize.query(
+        `SELECT MAX(CAST(SUBSTRING(number FROM '(\\d+)$') AS INTEGER)) AS max_num FROM capas`,
+        { transaction: t, type: sequelize.QueryTypes.SELECT }
+      );
+      const num = (maxResult?.max_num || 0) + 1;
       const number = `CAPA-${String(num).padStart(4, "0")}`;
 
       
@@ -32888,6 +34630,12 @@ class NcCapaService {
         const d = new Date(data.dueDate);
         d.setDate(d.getDate() + checkDays);
         effectivenessCheckDate = d;
+      }
+
+      
+      if (data.nonconformityId) {
+        const nc = await Nonconformity.findByPk(data.nonconformityId, { transaction: t });
+        if (!nc) throw new Error(`NC с id=${data.nonconformityId} не найдена`);
       }
 
       const capa = await Capa.create({
@@ -32920,6 +34668,14 @@ class NcCapaService {
     const capa = await Capa.findByPk(id);
     if (!capa) throw new Error("CAPA не найдена");
 
+    
+    const allowed = CAPA_TRANSITIONS[capa.status] || [];
+    if (!allowed.includes(status)) {
+      throw new Error(
+        `Недопустимый переход статуса CAPA: ${capa.status} → ${status}. Допустимые: ${allowed.join(", ") || "нет"}`
+      );
+    }
+
     const updates = { status };
     const actionMap = {
       PLAN_APPROVED: "planApprove",
@@ -32934,6 +34690,13 @@ class NcCapaService {
     } else if (status === "IMPLEMENTING") {
       updates.implementedAt = new Date();
     } else if (status === "CLOSED") {
+      
+      const incompleteActions = await CapaAction.count({
+        where: { capaId: id, status: { [Op.notIn]: ["COMPLETED", "CANCELLED"] } },
+      });
+      if (incompleteActions > 0) {
+        throw new Error(`Невозможно закрыть CAPA: ${incompleteActions} действий ещё не завершены`);
+      }
       updates.closedAt = new Date();
     }
 
@@ -32947,14 +34710,29 @@ class NcCapaService {
     if (!capa) throw new Error("CAPA не найдена");
 
     const maxOrder = await CapaAction.max("order", { where: { capaId } }) || 0;
-    return CapaAction.create({ capaId, order: maxOrder + 1, ...data });
+    const action = await CapaAction.create({ capaId, order: maxOrder + 1, ...data });
+
+    await logCapa(req, capa, "update", { actionAdded: action.id });
+    return action;
   }
 
   async updateCapaAction(req, actionId, data) {
     const action = await CapaAction.findByPk(actionId);
     if (!action) throw new Error("Действие не найдено");
-    if (data.status === "COMPLETED") data.completedAt = new Date();
-    return action.update(data);
+
+    
+    const safeData = {};
+    const allowed = ["title", "description", "status", "assignedToId", "dueDate", "evidence"];
+    for (const field of allowed) {
+      if (data[field] !== undefined) safeData[field] = data[field];
+    }
+    if (safeData.status === "COMPLETED") safeData.completedAt = new Date();
+
+    await action.update(safeData);
+
+    const capa = await Capa.findByPk(action.capaId);
+    if (capa) await logCapa(req, capa, "update", { actionUpdated: action.id, newStatus: safeData.status });
+    return action;
   }
 
   async verifyCapaEffectiveness(req, capaId, { isEffective, evidence, comment }) {
@@ -32962,6 +34740,9 @@ class NcCapaService {
     try {
       const capa = await Capa.findByPk(capaId, { transaction: t });
       if (!capa) throw new Error("CAPA не найдена");
+      if (!["VERIFYING", "IMPLEMENTING"].includes(capa.status)) {
+        throw new Error(`Проверка эффективности доступна только для CAPA в статусе VERIFYING/IMPLEMENTING, текущий: ${capa.status}`);
+      }
 
       const verification = await CapaVerification.create({
         capaId,
@@ -33361,12 +35142,21 @@ const { User } = require("../../../models/index");
 const RiskMatrixService = require("../services/RiskMatrixService");
 const { logAudit } = require("../../core/utils/auditLogger");
 const { Op } = require("sequelize");
+const sequelize = require("../../../db");
+const ApiError = require("../../../error/ApiError");
+
+
+const RISK_UPDATABLE_FIELDS = [
+  "title", "description", "category", "ownerId",
+  "initialProbability", "initialSeverity",
+  "relatedEntity", "relatedEntityId", "isoClause",
+];
 
 
 
 
 
-const getAll = async (req, res) => {
+const getAll = async (req, res, next) => {
   try {
     const { category, status, riskClass, ownerId, page = 1, limit = 50 } = req.query;
     const where = {};
@@ -33376,7 +35166,9 @@ const getAll = async (req, res) => {
     if (riskClass) where.initialRiskClass = riskClass;
     if (ownerId) where.ownerId = ownerId;
 
-    const offset = (page - 1) * limit;
+    const limitNum = Math.min(parseInt(limit) || 50, 100);
+    const pageNum = parseInt(page) || 1;
+    const offset = (pageNum - 1) * limitNum;
     const { count, rows } = await RiskRegister.findAndCountAll({
       where,
       include: [
@@ -33385,18 +35177,18 @@ const getAll = async (req, res) => {
         { model: User, as: "owner", attributes: ["id", "name", "surname"] },
       ],
       order: [["initialRiskLevel", "DESC"], ["createdAt", "DESC"]],
-      limit: parseInt(limit),
+      limit: limitNum,
       offset,
     });
 
-    res.json({ count, rows, page: parseInt(page), totalPages: Math.ceil(count / limit) });
+    res.json({ count, rows, page: pageNum, totalPages: Math.ceil(count / limitNum) });
   } catch (e) {
     console.error("Risk getAll error:", e);
-    res.status(500).json({ error: e.message });
+    next(ApiError.internal(e.message));
   }
 };
 
-const getOne = async (req, res) => {
+const getOne = async (req, res, next) => {
   try {
     const risk = await RiskRegister.findByPk(req.params.id, {
       include: [
@@ -33406,20 +35198,25 @@ const getOne = async (req, res) => {
       ],
     });
 
-    if (!risk) return res.status(404).json({ error: "Риск не найден" });
+    if (!risk) return next(ApiError.notFound("Риск не найден"));
     res.json(risk);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    next(ApiError.internal(e.message));
   }
 };
 
-const create = async (req, res) => {
+const create = async (req, res, next) => {
   try {
+    if (!req.user?.id) return next(ApiError.unauthorized("Требуется авторизация"));
+
     const { title, description, category, initialProbability, initialSeverity, ownerId, relatedEntity, relatedEntityId, isoClause } = req.body;
 
     
-    const count = await RiskRegister.count();
-    const riskNumber = RiskMatrixService.generateRiskNumber(count + 1);
+    const [maxResult] = await sequelize.query(
+      `SELECT MAX(CAST(SUBSTRING("riskNumber" FROM '(\\d+)$') AS INTEGER)) AS max_num FROM risk_registers`,
+      { type: sequelize.QueryTypes.SELECT }
+    );
+    const riskNumber = RiskMatrixService.generateRiskNumber((maxResult?.max_num || 0) + 1);
 
     
     const { level, riskClass } = RiskMatrixService.calculate(initialProbability, initialSeverity);
@@ -33443,7 +35240,7 @@ const create = async (req, res) => {
     
     await RiskAssessment.create({
       riskRegisterId: risk.id,
-      assessorId: req.user?.id || 1,
+      assessorId: req.user.id,
       probability: initialProbability,
       severity: initialSeverity,
       riskLevel: level,
@@ -33456,17 +35253,21 @@ const create = async (req, res) => {
     res.status(201).json(risk);
   } catch (e) {
     console.error("Risk create error:", e);
-    res.status(500).json({ error: e.message });
+    next(ApiError.internal(e.message));
   }
 };
 
-const update = async (req, res) => {
+const update = async (req, res, next) => {
   try {
     const risk = await RiskRegister.findByPk(req.params.id);
-    if (!risk) return res.status(404).json({ error: "Риск не найден" });
+    if (!risk) return next(ApiError.notFound("Риск не найден"));
 
-    const updateData = { ...req.body };
     
+    const updateData = {};
+    for (const field of RISK_UPDATABLE_FIELDS) {
+      if (req.body[field] !== undefined) updateData[field] = req.body[field];
+    }
+
     
     if (updateData.initialProbability && updateData.initialSeverity) {
       const { level, riskClass } = RiskMatrixService.calculate(updateData.initialProbability, updateData.initialSeverity);
@@ -33478,7 +35279,7 @@ const update = async (req, res) => {
     await logAudit(req, "risk.update", "risk_register", risk.id, updateData);
     res.json(risk);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    next(ApiError.internal(e.message));
   }
 };
 
@@ -33486,17 +35287,19 @@ const update = async (req, res) => {
 
 
 
-const addAssessment = async (req, res) => {
+const addAssessment = async (req, res, next) => {
   try {
+    if (!req.user?.id) return next(ApiError.unauthorized("Требуется авторизация"));
+
     const { probability, severity, detectability, rationale, assessmentType } = req.body;
     const risk = await RiskRegister.findByPk(req.params.id);
-    if (!risk) return res.status(404).json({ error: "Риск не найден" });
+    if (!risk) return next(ApiError.notFound("Риск не найден"));
 
     const { level, riskClass } = RiskMatrixService.calculate(probability, severity);
 
     const assessment = await RiskAssessment.create({
       riskRegisterId: risk.id,
-      assessorId: req.user?.id || 1,
+      assessorId: req.user.id,
       probability,
       severity,
       detectability,
@@ -33516,7 +35319,7 @@ const addAssessment = async (req, res) => {
     await logAudit(req, "risk.assess", "risk_register", risk.id, { riskClass, level });
     res.status(201).json(assessment);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    next(ApiError.internal(e.message));
   }
 };
 
@@ -33524,33 +35327,50 @@ const addAssessment = async (req, res) => {
 
 
 
-const addMitigation = async (req, res) => {
+
+const MITIGATION_FIELDS = [
+  "mitigationType", "description", "responsibleId", "dueDate", "priority",
+];
+
+const addMitigation = async (req, res, next) => {
   try {
     const risk = await RiskRegister.findByPk(req.params.id);
-    if (!risk) return res.status(404).json({ error: "Риск не найден" });
+    if (!risk) return next(ApiError.notFound("Риск не найден"));
+
+    
+    const safeData = {};
+    for (const field of MITIGATION_FIELDS) {
+      if (req.body[field] !== undefined) safeData[field] = req.body[field];
+    }
 
     const mitigation = await RiskMitigation.create({
       riskRegisterId: risk.id,
-      ...req.body,
+      ...safeData,
       status: "PLANNED",
     });
 
-    if (risk.status === "IDENTIFIED") {
+    
+    if (risk.status === "IDENTIFIED" || risk.status === "ASSESSED") {
       risk.status = "ASSESSED";
       await risk.save();
     }
 
-    await logAudit(req, "risk.mitigation.add", "risk_register", risk.id, { mitigationType: req.body.mitigationType });
+    await logAudit(req, "risk.mitigation.add", "risk_register", risk.id, { mitigationType: safeData.mitigationType });
     res.status(201).json(mitigation);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    next(ApiError.internal(e.message));
   }
 };
 
-const completeMitigation = async (req, res) => {
+const completeMitigation = async (req, res, next) => {
   try {
     const mitigation = await RiskMitigation.findByPk(req.params.mitigationId);
-    if (!mitigation) return res.status(404).json({ error: "Мера не найдена" });
+    if (!mitigation) return next(ApiError.notFound("Мера не найдена"));
+
+    
+    if (mitigation.status !== "PLANNED") {
+      return next(ApiError.badRequest(`Завершить можно только запланированную меру. Текущий статус: ${mitigation.status}`));
+    }
 
     mitigation.status = "COMPLETED";
     mitigation.completedDate = new Date();
@@ -33559,17 +35379,24 @@ const completeMitigation = async (req, res) => {
     await logAudit(req, "risk.mitigation.complete", "risk_mitigation", mitigation.id);
     res.json(mitigation);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    next(ApiError.internal(e.message));
   }
 };
 
-const verifyMitigation = async (req, res) => {
+const verifyMitigation = async (req, res, next) => {
   try {
+    if (!req.user?.id) return next(ApiError.unauthorized("Требуется авторизация"));
+
     const mitigation = await RiskMitigation.findByPk(req.params.mitigationId);
-    if (!mitigation) return res.status(404).json({ error: "Мера не найдена" });
+    if (!mitigation) return next(ApiError.notFound("Мера не найдена"));
+
+    
+    if (mitigation.status !== "COMPLETED") {
+      return next(ApiError.badRequest(`Верифицировать можно только выполненную меру. Текущий статус: ${mitigation.status}`));
+    }
 
     mitigation.status = "VERIFIED";
-    mitigation.verifiedBy = req.user?.id || 1;
+    mitigation.verifiedBy = req.user.id;
     mitigation.verifiedAt = new Date();
     mitigation.verificationNotes = req.body.notes;
     await mitigation.save();
@@ -33578,7 +35405,7 @@ const verifyMitigation = async (req, res) => {
     const risk = await RiskRegister.findByPk(mitigation.riskRegisterId, {
       include: [{ model: RiskMitigation, as: "mitigations" }],
     });
-    
+
     const allVerified = risk.mitigations.every(m => m.status === "VERIFIED");
     if (allVerified) {
       risk.status = "MITIGATED";
@@ -33588,7 +35415,7 @@ const verifyMitigation = async (req, res) => {
     await logAudit(req, "risk.mitigation.verify", "risk_mitigation", mitigation.id);
     res.json(mitigation);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    next(ApiError.internal(e.message));
   }
 };
 
@@ -33596,21 +35423,35 @@ const verifyMitigation = async (req, res) => {
 
 
 
-const acceptRisk = async (req, res) => {
+const acceptRisk = async (req, res, next) => {
   try {
+    if (!req.user?.id) return next(ApiError.unauthorized("Требуется авторизация"));
+
     const risk = await RiskRegister.findByPk(req.params.id);
-    if (!risk) return res.status(404).json({ error: "Риск не найден" });
+    if (!risk) return next(ApiError.notFound("Риск не найден"));
+
+    
+    const allowedForAcceptance = ["ASSESSED", "MITIGATED", "MONITORING"];
+    if (!allowedForAcceptance.includes(risk.status)) {
+      return next(ApiError.badRequest(
+        `Принять риск можно только в статусе ${allowedForAcceptance.join("/")}. Текущий: ${risk.status}`
+      ));
+    }
+
+    if (!req.body.decision) {
+      return next(ApiError.badRequest("Обоснование принятия (decision) обязательно"));
+    }
 
     risk.status = "ACCEPTED";
     risk.acceptanceDecision = req.body.decision;
-    risk.acceptedBy = req.user?.id || 1;
+    risk.acceptedBy = req.user.id;
     risk.acceptedAt = new Date();
     await risk.save();
 
     await logAudit(req, "risk.accept", "risk_register", risk.id, { severity: "WARNING" });
     res.json(risk);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    next(ApiError.internal(e.message));
   }
 };
 
@@ -33618,7 +35459,7 @@ const acceptRisk = async (req, res) => {
 
 
 
-const getMatrix = async (req, res) => {
+const getMatrix = async (req, res, next) => {
   try {
     const matrix = RiskMatrixService.getMatrix();
     const labels = RiskMatrixService.getScaleLabels();
@@ -33637,29 +35478,42 @@ const getMatrix = async (req, res) => {
 
     res.json({ matrix, labels, cellCounts });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    next(ApiError.internal(e.message));
   }
 };
 
-const getStats = async (req, res) => {
+const getStats = async (req, res, next) => {
   try {
-    const total = await RiskRegister.count();
-    const byClass = {};
-    for (const cls of ["LOW", "MEDIUM", "HIGH", "CRITICAL"]) {
-      byClass[cls] = await RiskRegister.count({ where: { initialRiskClass: cls, status: { [Op.ne]: "CLOSED" } } });
-    }
-    const byStatus = {};
-    for (const s of ["IDENTIFIED", "ASSESSED", "MITIGATED", "ACCEPTED", "CLOSED", "MONITORING"]) {
-      byStatus[s] = await RiskRegister.count({ where: { status: s } });
-    }
+    
+    const [total, byClassRaw, byStatusRaw, overdue] = await Promise.all([
+      RiskRegister.count(),
+      RiskRegister.findAll({
+        attributes: ["initialRiskClass", [sequelize.fn("COUNT", "*"), "count"]],
+        where: { status: { [Op.ne]: "CLOSED" } },
+        group: ["initialRiskClass"],
+        raw: true,
+      }),
+      RiskRegister.findAll({
+        attributes: ["status", [sequelize.fn("COUNT", "*"), "count"]],
+        group: ["status"],
+        raw: true,
+      }),
+      RiskRegister.count({
+        where: { reviewDate: { [Op.lt]: new Date() }, status: { [Op.notIn]: ["CLOSED", "ACCEPTED"] } },
+      }),
+    ]);
 
-    const overdue = await RiskRegister.count({
-      where: { reviewDate: { [Op.lt]: new Date() }, status: { [Op.notIn]: ["CLOSED", "ACCEPTED"] } },
-    });
+    const byClass = {};
+    for (const cls of ["LOW", "MEDIUM", "HIGH", "CRITICAL"]) byClass[cls] = 0;
+    byClassRaw.forEach(r => { byClass[r.initialRiskClass] = parseInt(r.count); });
+
+    const byStatus = {};
+    for (const s of ["IDENTIFIED", "ASSESSED", "MITIGATED", "ACCEPTED", "CLOSED", "MONITORING"]) byStatus[s] = 0;
+    byStatusRaw.forEach(r => { byStatus[r.status] = parseInt(r.count); });
 
     res.json({ total, byClass, byStatus, overdue });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    next(ApiError.internal(e.message));
   }
 };
 
@@ -34021,6 +35875,18 @@ const { Supplier, SupplierEvaluation, SupplierAudit } = require("../models/Suppl
 const { User } = require("../../../models/index");
 const SupplierScoringService = require("../services/SupplierScoringService");
 const { logAudit } = require("../../core/utils/auditLogger");
+const sequelize = require("../../../db");
+const ApiError = require("../../../error/ApiError");
+
+
+const SUPPLIER_CREATABLE_FIELDS = [
+  "name", "category", "criticality", "contactPerson", "email", "phone",
+  "address", "inn", "description", "qualificationStatus", "certifications",
+];
+const SUPPLIER_UPDATABLE_FIELDS = [
+  "name", "category", "criticality", "contactPerson", "email", "phone",
+  "address", "description", "qualificationStatus", "certifications",
+];
 
 
 
@@ -34034,27 +35900,29 @@ const getAll = async (req, res, next) => {
     if (criticality) where.criticality = criticality;
     if (qualificationStatus) where.qualificationStatus = qualificationStatus;
 
-    const offset = (page - 1) * limit;
+    const limitNum = Math.min(parseInt(limit) || 50, 100);
+    const pageNum = parseInt(page) || 1;
+    const offset = (pageNum - 1) * limitNum;
     const { count, rows } = await Supplier.findAndCountAll({
       where,
       include: [
         { model: SupplierEvaluation, as: "evaluations", limit: 1, order: [["evaluationDate", "DESC"]] },
       ],
       order: [["name", "ASC"]],
-      limit: parseInt(limit),
+      limit: limitNum,
       offset,
     });
-    res.json({ count, rows, page: parseInt(page), totalPages: Math.ceil(count / limit) });
+    res.json({ count, rows, page: pageNum, totalPages: Math.ceil(count / limitNum) });
   } catch (e) {
     console.error("Supplier getAll error:", e);
-    res.status(500).json({ error: e.message });
+    next(ApiError.internal(e.message));
   }
 };
 
 const getOne = async (req, res, next) => {
   try {
     const id = parseInt(req.params.id);
-    if (isNaN(id)) return res.status(400).json({ error: "Invalid ID" });
+    if (isNaN(id)) return next(ApiError.badRequest("Invalid ID"));
 
     const supplier = await Supplier.findByPk(id, {
       include: [
@@ -34062,75 +35930,101 @@ const getOne = async (req, res, next) => {
         { model: SupplierAudit, as: "audits", order: [["auditDate", "DESC"]] },
       ],
     });
-    if (!supplier) return res.status(404).json({ error: "Supplier not found" });
+    if (!supplier) return next(ApiError.notFound("Поставщик не найден"));
     res.json(supplier);
   } catch (e) {
-    console.error("Supplier getOne error:", e);
-    res.status(500).json({ error: e.message });
+    next(ApiError.internal(e.message));
   }
 };
 
 const create = async (req, res, next) => {
   try {
-    const count = await Supplier.count();
-    const code = `SUP-${String(count + 1).padStart(3, "0")}`;
+    
+    const [maxResult] = await sequelize.query(
+      `SELECT MAX(CAST(SUBSTRING(code FROM '(\\d+)$') AS INTEGER)) AS max_num FROM suppliers`,
+      { type: sequelize.QueryTypes.SELECT }
+    );
+    const code = `SUP-${String((maxResult?.max_num || 0) + 1).padStart(3, "0")}`;
 
-    const supplier = await Supplier.create({ ...req.body, code });
+    
+    const safeData = {};
+    for (const field of SUPPLIER_CREATABLE_FIELDS) {
+      if (req.body[field] !== undefined) safeData[field] = req.body[field];
+    }
+
+    const supplier = await Supplier.create({ ...safeData, code });
     await logAudit(req, "supplier.create", "supplier", supplier.id, { code, name: supplier.name });
     res.status(201).json(supplier);
   } catch (e) {
     console.error("Supplier create error:", e);
-    res.status(500).json({ error: e.message });
+    next(ApiError.internal(e.message));
   }
 };
 
 const update = async (req, res, next) => {
   try {
     const id = parseInt(req.params.id);
-    if (isNaN(id)) return res.status(400).json({ error: "Invalid ID" });
+    if (isNaN(id)) return next(ApiError.badRequest("Invalid ID"));
 
     const supplier = await Supplier.findByPk(id);
-    if (!supplier) return res.status(404).json({ error: "Supplier not found" });
+    if (!supplier) return next(ApiError.notFound("Поставщик не найден"));
 
-    await supplier.update(req.body);
-    await logAudit(req, "supplier.update", "supplier", supplier.id, req.body);
+    
+    const safeData = {};
+    for (const field of SUPPLIER_UPDATABLE_FIELDS) {
+      if (req.body[field] !== undefined) safeData[field] = req.body[field];
+    }
+
+    await supplier.update(safeData);
+    await logAudit(req, "supplier.update", "supplier", supplier.id, safeData);
     res.json(supplier);
   } catch (e) {
-    console.error("Supplier update error:", e);
-    res.status(500).json({ error: e.message });
+    next(ApiError.internal(e.message));
   }
 };
 
 const remove = async (req, res, next) => {
   try {
     const id = parseInt(req.params.id);
-    if (isNaN(id)) return res.status(400).json({ error: "Invalid ID" });
+    if (isNaN(id)) return next(ApiError.badRequest("Invalid ID"));
 
     const supplier = await Supplier.findByPk(id);
-    if (!supplier) return res.status(404).json({ error: "Supplier not found" });
+    if (!supplier) return next(ApiError.notFound("Поставщик не найден"));
 
     await supplier.update({ qualificationStatus: "DISQUALIFIED" });
     await logAudit(req, "supplier.delete", "supplier", supplier.id, { name: supplier.name });
     res.json({ message: "Supplier disqualified", id });
   } catch (e) {
-    console.error("Supplier delete error:", e);
-    res.status(500).json({ error: e.message });
+    next(ApiError.internal(e.message));
   }
 };
 
 const getStats = async (req, res, next) => {
   try {
-    const total = await Supplier.count();
-    const qualified = await Supplier.count({ where: { qualificationStatus: "QUALIFIED" } });
-    const pending = await Supplier.count({ where: { qualificationStatus: "PENDING" } });
-    const suspended = await Supplier.count({ where: { qualificationStatus: "SUSPENDED" } });
-    const disqualified = await Supplier.count({ where: { qualificationStatus: "DISQUALIFIED" } });
-    const critical = await Supplier.count({ where: { criticality: "CRITICAL" } });
+    
+    const [total, byStatusRaw, critical] = await Promise.all([
+      Supplier.count(),
+      Supplier.findAll({
+        attributes: ["qualificationStatus", [sequelize.fn("COUNT", "*"), "count"]],
+        group: ["qualificationStatus"],
+        raw: true,
+      }),
+      Supplier.count({ where: { criticality: "CRITICAL" } }),
+    ]);
 
-    res.json({ total, qualified, pending, suspended, disqualified, critical });
+    const statusMap = {};
+    byStatusRaw.forEach(r => { statusMap[r.qualificationStatus] = parseInt(r.count); });
+
+    res.json({
+      total,
+      qualified: statusMap.QUALIFIED || 0,
+      pending: statusMap.PENDING || 0,
+      suspended: statusMap.SUSPENDED || 0,
+      disqualified: statusMap.DISQUALIFIED || 0,
+      critical,
+    });
   } catch (e) {
-    console.error("Supplier getStats error:", e);
-    res.status(500).json({ error: e.message });
+    next(ApiError.internal(e.message));
   }
 };
 
@@ -34140,46 +36034,55 @@ const getStats = async (req, res, next) => {
 
 const addEvaluation = async (req, res, next) => {
   try {
+    if (!req.user?.id) return next(ApiError.unauthorized("Требуется авторизация"));
+
     const supplierId = parseInt(req.params.id);
-    if (isNaN(supplierId)) return res.status(400).json({ error: "Invalid ID" });
+    if (isNaN(supplierId)) return next(ApiError.badRequest("Invalid ID"));
 
     const supplier = await Supplier.findByPk(supplierId);
-    if (!supplier) return res.status(404).json({ error: "Supplier not found" });
+    if (!supplier) return next(ApiError.notFound("Поставщик не найден"));
 
     const evaluation = await SupplierEvaluation.create({
       ...req.body,
       supplierId,
-      evaluatorId: req.user?.id || 1,
+      evaluatorId: req.user.id,
     });
 
     
-    const scores = [
-      evaluation.qualityScore, evaluation.deliveryScore,
-      evaluation.documentationScore, evaluation.communicationScore,
-      evaluation.priceScore, evaluation.complianceScore,
-    ].filter(s => s != null);
+    const scoreData = {
+      qualityScore: evaluation.qualityScore,
+      deliveryScore: evaluation.deliveryScore,
+      documentationScore: evaluation.documentationScore,
+      communicationScore: evaluation.communicationScore,
+      priceScore: evaluation.priceScore,
+      complianceScore: evaluation.complianceScore,
+    };
 
-    if (scores.length > 0) {
-      const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
-      evaluation.totalScore = Math.round(avg * 10) / 10;
-      await evaluation.save();
+    const totalScore = SupplierScoringService.calculateScore(scoreData);
+    const decision = SupplierScoringService.determineDecision(totalScore);
+    const nextEvaluationDate = SupplierScoringService.getNextEvaluationDate(supplier.criticality);
 
-      supplier.overallScore = Math.round(evaluation.totalScore * 10);
-      await supplier.save();
-    }
+    evaluation.totalScore = totalScore;
+    evaluation.decision = decision;
+    await evaluation.save();
 
-    await logAudit(req, "supplier.evaluate", "supplier_evaluation", evaluation.id, { supplierId });
+    
+    supplier.overallScore = totalScore;
+    supplier.nextEvaluationDate = nextEvaluationDate;
+    await supplier.save();
+
+    await logAudit(req, "supplier.evaluate", "supplier_evaluation", evaluation.id, { supplierId, totalScore, decision });
     res.status(201).json(evaluation);
   } catch (e) {
     console.error("Supplier addEvaluation error:", e);
-    res.status(500).json({ error: e.message });
+    next(ApiError.internal(e.message));
   }
 };
 
 const getEvaluations = async (req, res, next) => {
   try {
     const supplierId = parseInt(req.params.id);
-    if (isNaN(supplierId)) return res.status(400).json({ error: "Invalid ID" });
+    if (isNaN(supplierId)) return next(ApiError.badRequest("Invalid ID"));
 
     const evaluations = await SupplierEvaluation.findAll({
       where: { supplierId },
@@ -34187,8 +36090,7 @@ const getEvaluations = async (req, res, next) => {
     });
     res.json(evaluations);
   } catch (e) {
-    console.error("Supplier getEvaluations error:", e);
-    res.status(500).json({ error: e.message });
+    next(ApiError.internal(e.message));
   }
 };
 
@@ -34198,23 +36100,24 @@ const getEvaluations = async (req, res, next) => {
 
 const addAudit = async (req, res, next) => {
   try {
+    if (!req.user?.id) return next(ApiError.unauthorized("Требуется авторизация"));
+
     const supplierId = parseInt(req.params.id);
-    if (isNaN(supplierId)) return res.status(400).json({ error: "Invalid ID" });
+    if (isNaN(supplierId)) return next(ApiError.badRequest("Invalid ID"));
 
     const supplier = await Supplier.findByPk(supplierId);
-    if (!supplier) return res.status(404).json({ error: "Supplier not found" });
+    if (!supplier) return next(ApiError.notFound("Поставщик не найден"));
 
     const audit = await SupplierAudit.create({
       ...req.body,
       supplierId,
-      auditorId: req.user?.id || 1,
+      auditorId: req.user.id,
     });
 
     await logAudit(req, "supplier.audit", "supplier", supplierId, { auditId: audit.id });
     res.status(201).json(audit);
   } catch (e) {
-    console.error("Supplier addAudit error:", e);
-    res.status(500).json({ error: e.message });
+    next(ApiError.internal(e.message));
   }
 };
 
@@ -34467,13 +36370,21 @@ class SupplierScoringService {
   static calculateScore(scores) {
     let total = 0;
     let weightSum = 0;
+    let filledCount = 0;
+    const totalFields = Object.keys(WEIGHTS).length;
 
     for (const [field, weight] of Object.entries(WEIGHTS)) {
       const value = scores[field];
       if (value !== null && value !== undefined) {
         total += value * weight;
         weightSum += weight;
+        filledCount++;
       }
+    }
+
+    
+    if (filledCount < Math.ceil(totalFields * 0.6)) {
+      return 0; 
     }
 
     
@@ -35633,6 +37544,7 @@ module.exports = new AnalyticsController();
 FILE: QMS-Server-master/modules/wms/controllers/BoxController.js
 ================================================================================
 
+const crypto = require("crypto");
 const { Op } = require("sequelize");
 const ApiError = require("../../../error/ApiError");
 const {
@@ -35649,8 +37561,11 @@ const { logAudit } = require("../../core/utils/auditLogger");
 const sequelize = require("../../../db");
 const PdfService = require("../../../services/PdfService");
 
-const generateShortCode = () =>
-  Math.floor(100000 + Math.random() * 900000).toString();
+const generateShortCode = () => {
+  const bytes = crypto.randomBytes(3); 
+  const num = (bytes.readUIntBE(0, 3) % 900000) + 100000;
+  return num.toString();
+};
 
 class BoxController {
 
@@ -35742,9 +37657,9 @@ class BoxController {
 
       for (let i = 0; i < qty; i++) {
         const suffix = String(i + 1).padStart(3, "0");
-        const qrCode = `BOX-${Date.now()}-${suffix}-${Math.random()
-          .toString(36)
-          .substr(2, 3)
+        const qrCode = `BOX-${Date.now()}-${suffix}-${crypto
+          .randomBytes(2)
+          .toString("hex")
           .toUpperCase()}`;
         const shortCode = generateShortCode();
 
@@ -35793,16 +37708,24 @@ class BoxController {
         page = 1,
         limit = 50,
         search,
-        ...filters
+        status,
+        currentSectionId,
+        currentTeamId,
+        originType,
+        supplyId,
+        batchName,
+        projectName,
       } = req.query;
 
-      const where = { ...filters };
-
-      Object.keys(where).forEach((key) => {
-        if (where[key] === undefined || where[key] === "") {
-          delete where[key];
-        }
-      });
+      
+      const where = {};
+      if (status) where.status = status;
+      if (currentSectionId) where.currentSectionId = currentSectionId;
+      if (currentTeamId) where.currentTeamId = currentTeamId;
+      if (originType) where.originType = originType;
+      if (supplyId) where.supplyId = supplyId;
+      if (batchName) where.batchName = batchName;
+      if (projectName) where.projectName = projectName;
 
       if (search) {
         const s = String(search).trim();
@@ -35815,7 +37738,7 @@ class BoxController {
       }
 
       const pageNum = Number(page) || 1;
-      const limitNum = Number(limit) || 50;
+      const limitNum = Math.min(Number(limit) || 50, 200);
       const offset = (pageNum - 1) * limitNum;
 
       const { rows, count } = await WarehouseBox.findAndCountAll({
@@ -36766,6 +38689,7 @@ module.exports = {
       m.ProductionTask.belongsTo(m.User, { foreignKey: 'createdById', as: 'createdBy' });
       if (m.Project) {
         m.ProductionTask.belongsTo(m.Project, { foreignKey: 'projectId', as: 'project' });
+        m.Project.hasMany(m.ProductionTask, { foreignKey: 'projectId', as: 'tasks' });
       }
     }
   },
@@ -37025,6 +38949,7 @@ FILE: QMS-Server-master/package.json
   "license": "ISC",
   "dependencies": {
     "axios": "^1.13.2",
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "exceljs": "^4.4.0",
