@@ -132,10 +132,17 @@ module.exports = {
     const transaction = await queryInterface.sequelize.transaction();
 
     try {
-      await queryInterface.sequelize.query(
-        `DROP TRIGGER IF EXISTS trg_prevent_audit_logs_mutation ON audit_logs;`,
-        { transaction }
+      const hasAuditLogs = await queryInterface.sequelize.query(
+        `SELECT to_regclass('public.audit_logs') AS t`,
+        { type: Sequelize.QueryTypes.SELECT, transaction }
       );
+
+      if (hasAuditLogs?.[0]?.t) {
+        await queryInterface.sequelize.query(
+          `DROP TRIGGER IF EXISTS trg_prevent_audit_logs_mutation ON audit_logs;`,
+          { transaction }
+        );
+      }
 
       await queryInterface.sequelize.query(
         `DROP FUNCTION IF EXISTS prevent_audit_logs_mutation();`,
