@@ -18,6 +18,10 @@ const protect = [authMiddleware, syncUserMiddleware];
 // ── Statistics ──
 router.get("/stats", ...protect, checkAbility("nc.view"), ctrl.getStats);
 
+// ── SLA Escalation (ISO 8.5.2/8.5.3) ──
+router.post("/escalation/check",   ...protect, checkAbility("nc.manage"), ctrl.checkEscalation);
+router.get("/escalation/overdue",   ...protect, checkAbility("nc.view"),   ctrl.getOverdueItems);
+
 // ── CAPA (before /:id so "/capa" isn't caught by the NC /:id param) ──
 router.get("/capa",             ...protect, checkAbility("capa.view"),   ctrl.getCapaList);
 router.get("/capa/:id",         ...protect, checkAbility("capa.view"),   ctrl.getCapaOne);
@@ -33,5 +37,9 @@ router.get("/:id",       ...protect, checkAbility("nc.view"),   ctrl.getNcOne);
 router.post("/",         ...protect, checkAbility("nc.create"), ctrl.createNc);
 router.put("/:id",       ...protect, checkAbility("nc.manage"), ctrl.updateNc);
 router.post("/:id/close",...protect, checkAbility("nc.manage"), ctrl.closeNc);
+
+// ── NC ↔ Risk linkage (ISO 14971 интеграция) ──
+router.post("/:id/link-risk",   ...protect, checkAbility("nc.manage"), ctrl.linkNcToRisk);
+router.delete("/:id/link-risk", ...protect, checkAbility("nc.manage"), ctrl.unlinkNcFromRisk);
 
 module.exports = router;

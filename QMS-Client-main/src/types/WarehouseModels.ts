@@ -125,3 +125,26 @@ export interface InventoryLimitModel {
   originType?: string;
   originId?: number;
 }
+
+export interface DailyOperationSummary {
+  operation: string;
+  count: string;
+  sumGood: string;
+  sumScrap: string;
+}
+
+export interface ChartDataPoint {
+  date: string;
+  count: string;
+}
+
+export interface StockSummary {
+  totalItems: number;
+  totalBoxes: number;
+}
+
+export interface DashboardStats {
+  stock: StockSummary;
+  today: DailyOperationSummary[];
+  chart: ChartDataPoint[];
+}

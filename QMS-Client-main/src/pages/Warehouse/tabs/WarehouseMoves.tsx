@@ -187,10 +187,15 @@ export const WarehouseMoves: React.FC<Props> = ({ sections }) => {
                                  <div>
                                      <label className="text-[10px] uppercase font-bold text-asvo-text-dim">Статус</label>
                                      <select className="w-full p-2 border border-asvo-border rounded text-sm bg-asvo-surface-2 text-asvo-text outline-none" value={statusAfter} onChange={e => setStatusAfter(e.target.value)}>
-                                         <option value="ON_STOCK">На складе</option>
+                                         <option value="QUARANTINE">Карантин</option>
+                                         <option value="ON_STOCK">На складе (Годен)</option>
+                                         <option value="APPROVED">Годен (Контроль пройден)</option>
                                          <option value="IN_WORK">В работе</option>
                                          <option value="DONE">Готово</option>
+                                         <option value="UNDER_REVIEW">На проверке</option>
+                                         <option value="REJECTED">Забраковано</option>
                                          <option value="SCRAP">Брак</option>
+                                         <option value="RETURN_TO_SUPPLIER">Возврат поставщику</option>
                                      </select>
                                  </div>
                              </div>
@@ -250,7 +255,7 @@ export const WarehouseMoves: React.FC<Props> = ({ sections }) => {
                             className="flex-1 p-2 border border-asvo-border rounded-lg text-sm outline-none focus:ring-2 focus:ring-asvo-accent bg-asvo-surface text-asvo-text"
                             placeholder="Напр: ТН-2025-10-15"
                         />
-                        <button onClick={commitBatch} disabled={loading || cart.length === 0} className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded-lg font-bold shadow transition flex items-center gap-2 disabled:opacity-50">
+                        <button onClick={commitBatch} disabled={loading || cart.length === 0} className="bg-asvo-accent hover:bg-asvo-accent/80 text-asvo-bg px-6 py-2 rounded-lg font-bold shadow transition flex items-center gap-2 disabled:opacity-50">
                             {loading ? <Loader2 className="animate-spin"/> : <Save size={18}/>} Провести
                         </button>
                     </div>

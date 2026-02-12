@@ -45,7 +45,7 @@ export const WarehouseIntake: React.FC<Props> = ({ sections, productsList, compo
       return { fullUnits, remainder, totalUnits };
   }, [shipmentTotal, capacityPerUnit]);
 
-  const [intakeStatus, setIntakeStatus] = useState("ON_STOCK");
+  const [intakeStatus, setIntakeStatus] = useState("QUARANTINE");
   const [intakeSectionId, setIntakeSectionId] = useState<number | "">("");
   const [intakeNotes, setIntakeNotes] = useState("");
   const [createdBoxes, setCreatedBoxes] = useState<InventoryBoxModel[]>([]);
@@ -69,31 +69,31 @@ export const WarehouseIntake: React.FC<Props> = ({ sections, productsList, compo
   }, [intakeMode, selectedSkuId]);
 
 
-  const applyTemplate = (type: "THERMAL" | "CABLE" | "SUB") => {
-      if (type === "THERMAL") {
-        setLabel("Тепловизор ТП-200 (Комплект)");
-        setProjectName("Project-40k");
-        setBatchName("Партия 2");
+  const applyTemplate = (type: "CONSUMABLE" | "REAGENT" | "SUBCONTRACT") => {
+      if (type === "CONSUMABLE") {
+        setLabel("Шприц инъекционный 5 мл (стерильный)");
+        setProjectName("Набор процедурный НП-100");
+        setBatchName("Партия 2025-01");
         setMeasureType("PCS");
-        setShipmentTotal(4000);
-        setCapacityPerUnit(200);
-        setIntakeNotes("Пришла часть. Сборку выполняем сами.");
-      } else if (type === "CABLE") {
-        setLabel("Кабель Коаксиальный RG-6");
-        setProjectName("Общий запас");
-        setBatchName("Поставка Дек-24");
-        setMeasureType("METERS");
-        setShipmentTotal(5000);
-        setCapacityPerUnit(1000);
-        setIntakeNotes("Кабель для нарезки");
-      } else if (type === "SUB") {
-        setLabel("Полётный контроллер v3 (Субподряд)");
-        setProjectName("Дроны FPV");
-        setBatchName("От ООО 'Техно'");
+        setShipmentTotal(2000);
+        setCapacityPerUnit(100);
+        setIntakeNotes("Входной контроль пройден. Сертификат соответствия в комплекте.");
+      } else if (type === "REAGENT") {
+        setLabel("Реагент диагностический ИФА (набор)");
+        setProjectName("Общий запас лаборатории");
+        setBatchName("Поставка Янв-25");
         setMeasureType("PCS");
-        setShipmentTotal(10000);
-        setCapacityPerUnit(500);
-        setIntakeNotes("Пришли готовые, сразу на прошивку!");
+        setShipmentTotal(500);
+        setCapacityPerUnit(50);
+        setIntakeNotes("Хранение при +2..+8°C. Срок годности 12 мес.");
+      } else if (type === "SUBCONTRACT") {
+        setLabel("Датчик пульсоксиметра SpO2 (Субподряд)");
+        setProjectName("Монитор пациента МП-3");
+        setBatchName("От ООО 'МедКомпонент'");
+        setMeasureType("PCS");
+        setShipmentTotal(1000);
+        setCapacityPerUnit(50);
+        setIntakeNotes("Компоненты прошли входной контроль, направлены на сборку.");
         setIntakeStatus("IN_WORK");
       }
   };
@@ -136,9 +136,9 @@ export const WarehouseIntake: React.FC<Props> = ({ sections, productsList, compo
         <div className="xl:col-span-8 space-y-6">
 
             <div className="flex gap-2 overflow-x-auto pb-2">
-                <button onClick={() => applyTemplate("THERMAL")} className="whitespace-nowrap px-4 py-2 bg-asvo-surface border border-asvo-border rounded text-xs font-bold text-asvo-text-mid hover:bg-asvo-blue-dim transition flex gap-2"><Copy size={14}/> Пример: Тепловизоры</button>
-                <button onClick={() => applyTemplate("SUB")} className="whitespace-nowrap px-4 py-2 bg-asvo-surface border border-asvo-border rounded text-xs font-bold text-asvo-text-mid hover:bg-asvo-purple-dim transition flex gap-2"><Copy size={14}/> Пример: Субподряд</button>
-                <button onClick={() => applyTemplate("CABLE")} className="whitespace-nowrap px-4 py-2 bg-asvo-surface border border-asvo-border rounded text-xs font-bold text-asvo-text-mid hover:bg-asvo-amber-dim transition flex gap-2"><Copy size={14}/> Пример: Кабель</button>
+                <button onClick={() => applyTemplate("CONSUMABLE")} className="whitespace-nowrap px-4 py-2 bg-asvo-surface border border-asvo-border rounded text-xs font-bold text-asvo-text-mid hover:bg-asvo-blue-dim transition flex gap-2"><Copy size={14}/> Пример: Расходные материалы</button>
+                <button onClick={() => applyTemplate("SUBCONTRACT")} className="whitespace-nowrap px-4 py-2 bg-asvo-surface border border-asvo-border rounded text-xs font-bold text-asvo-text-mid hover:bg-asvo-purple-dim transition flex gap-2"><Copy size={14}/> Пример: Субподряд МИ</button>
+                <button onClick={() => applyTemplate("REAGENT")} className="whitespace-nowrap px-4 py-2 bg-asvo-surface border border-asvo-border rounded text-xs font-bold text-asvo-text-mid hover:bg-asvo-amber-dim transition flex gap-2"><Copy size={14}/> Пример: Реагенты</button>
             </div>
 
             <div className="bg-asvo-surface p-6 rounded-2xl shadow-sm border border-asvo-border">
@@ -154,7 +154,7 @@ export const WarehouseIntake: React.FC<Props> = ({ sections, productsList, compo
                             <button
                                 key={m}
                                 onClick={() => { setIntakeMode(m); setSelectedSkuId(""); setLabel(""); }}
-                                className={`flex-1 py-2 rounded-lg border text-sm font-bold transition ${intakeMode === m ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-asvo-surface-2 text-asvo-text-mid border-asvo-border'}`}
+                                className={`flex-1 py-2 rounded-lg border text-sm font-bold transition ${intakeMode === m ? 'bg-asvo-accent text-asvo-bg border-asvo-accent' : 'bg-asvo-surface-2 text-asvo-text-mid border-asvo-border'}`}
                             >
                                 {m === 'PRODUCT' ? 'Изделие' : m === 'COMPONENT' ? 'Комплектующее' : 'Прочее'}
                             </button>
@@ -202,8 +202,12 @@ export const WarehouseIntake: React.FC<Props> = ({ sections, productsList, compo
                      <div>
                          <label className="block text-xs font-medium text-asvo-text-dim mb-1 uppercase">Статус</label>
                          <select value={intakeStatus} onChange={e => setIntakeStatus(e.target.value)} className="w-full p-2 border border-asvo-border rounded-lg text-sm bg-asvo-surface-2 text-asvo-text">
-                             <option value="ON_STOCK">На складе (Обычный)</option>
+                             <option value="QUARANTINE">Карантин (Входной контроль)</option>
+                             <option value="ON_STOCK">На складе (Годен)</option>
                              <option value="IN_WORK">Сразу в работу</option>
+                             <option value="UNDER_REVIEW">На проверке</option>
+                             <option value="REJECTED">Забраковано</option>
+                             <option value="RETURN_TO_SUPPLIER">Возврат поставщику</option>
                          </select>
                      </div>
                      <div className="md:col-span-2">
@@ -249,7 +253,7 @@ export const WarehouseIntake: React.FC<Props> = ({ sections, productsList, compo
                 <div className="flex justify-end">
                      <button
                         onClick={handleCreateBatch} disabled={intakeLoading || !label}
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl font-bold shadow-lg transition flex items-center gap-2"
+                        className="bg-asvo-accent hover:bg-asvo-accent/80 text-asvo-bg px-6 py-3 rounded-xl font-bold shadow-lg transition flex items-center gap-2"
                      >
                         {intakeLoading ? "..." : <Printer size={20}/>} Создать партию
                      </button>

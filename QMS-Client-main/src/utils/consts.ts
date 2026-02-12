@@ -29,6 +29,7 @@ export const DOCUMENTS_ROUTE = '/qms/documents';
 export const NC_ROUTE = '/qms/nonconformity';
 export const CAPA_ROUTE = '/qms/capa';
 export const RISKS_ROUTE = '/qms/risks';
+export const RISK_MANAGEMENT_ROUTE = '/qms/risk-management';
 export const SUPPLIERS_ROUTE = '/qms/suppliers';
 export const INTERNAL_AUDITS_ROUTE = '/qms/audits';
 export const TRAINING_ROUTE = '/qms/training';

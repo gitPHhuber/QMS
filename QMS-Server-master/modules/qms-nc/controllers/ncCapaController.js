@@ -4,6 +4,7 @@
 
 const ApiError = require("../../../error/ApiError");
 const NcCapaService = require("../services/NcCapaService");
+const SlaEscalationService = require("../services/SlaEscalationService");
 
 // Хелпер: бизнес-ошибки → 400, инфраструктурные → 500
 const handleError = (e, next) => {
@@ -125,6 +126,40 @@ class NcCapaController {
     try {
       const stats = await NcCapaService.getStats();
       return res.json(stats);
+    } catch (e) { handleError(e, next); }
+  }
+
+  // ── SLA Escalation ──
+  async checkEscalation(req, res, next) {
+    try {
+      const results = await SlaEscalationService.checkAndEscalate();
+      return res.json(results);
+    } catch (e) { handleError(e, next); }
+  }
+
+  async getOverdueItems(req, res, next) {
+    try {
+      const items = await SlaEscalationService.getOverdueItems();
+      return res.json(items);
+    } catch (e) { handleError(e, next); }
+  }
+
+  // ── NC ↔ Risk linkage ──
+  async linkNcToRisk(req, res, next) {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) return next(ApiError.badRequest("Некорректный ID"));
+      const nc = await NcCapaService.linkNCToRisk(req, id, req.body.riskRegisterId);
+      return res.json(nc);
+    } catch (e) { handleError(e, next); }
+  }
+
+  async unlinkNcFromRisk(req, res, next) {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) return next(ApiError.badRequest("Некорректный ID"));
+      const nc = await NcCapaService.unlinkNCFromRisk(req, id);
+      return res.json(nc);
     } catch (e) { handleError(e, next); }
   }
 }

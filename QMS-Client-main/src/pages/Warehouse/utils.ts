@@ -7,11 +7,16 @@ export const formatDateTime = (iso: string | null | undefined) => {
 
 export const getStatusBadge = (status: string) => {
   switch (status) {
-    case "ON_STOCK": return "bg-emerald-100 text-emerald-700 border-emerald-200";
-    case "IN_WORK": return "bg-blue-100 text-blue-700 border-blue-200";
-    case "DONE": return "bg-purple-100 text-purple-700 border-purple-200";
-    case "SCRAP": return "bg-red-100 text-red-700 border-red-200";
-    default: return "bg-gray-100 text-gray-700 border-gray-200";
+    case "ON_STOCK": return "bg-asvo-green-dim text-asvo-green border-asvo-border";
+    case "IN_WORK": return "bg-asvo-blue-dim text-asvo-blue border-asvo-border";
+    case "DONE": return "bg-asvo-purple-dim text-asvo-purple border-asvo-border";
+    case "SCRAP": return "bg-asvo-red-dim text-asvo-red border-asvo-border";
+    case "QUARANTINE": return "bg-asvo-amber-dim text-asvo-amber border-asvo-border";
+    case "APPROVED": return "bg-asvo-green-dim text-asvo-green border-asvo-border";
+    case "REJECTED": return "bg-asvo-red-dim text-asvo-red border-asvo-border";
+    case "UNDER_REVIEW": return "bg-asvo-blue-dim text-asvo-blue border-asvo-border";
+    case "RETURN_TO_SUPPLIER": return "bg-asvo-orange text-asvo-bg border-asvo-border";
+    default: return "bg-asvo-grey-dim text-asvo-text-mid border-asvo-border";
   }
 };
 

@@ -26,6 +26,7 @@ import { DocumentsPage } from "./pages/Documents/DocumentsPage";
 import { NonconformityPage } from "./pages/Nonconformity/NonconformityPage";
 import { CapaPage } from "./pages/CAPA/CapaPage";
 import RisksPage from "./pages/Quality/RisksPage";
+import RiskManagementPage from "./pages/Quality/RiskManagementPage";
 import SuppliersPage from "./pages/Quality/SuppliersPage";
 import AuditsPage from "./pages/Quality/AuditsPage";
 import TrainingPage from "./pages/Quality/TrainingPage";
@@ -60,6 +61,7 @@ import {
   NC_ROUTE,
   CAPA_ROUTE,
   RISKS_ROUTE,
+  RISK_MANAGEMENT_ROUTE,
   SUPPLIERS_ROUTE,
   INTERNAL_AUDITS_ROUTE,
   TRAINING_ROUTE,
@@ -78,6 +80,7 @@ export const qmsRoutes = [
   { path: NC_ROUTE, Component: NonconformityPage },
   { path: CAPA_ROUTE, Component: CapaPage },
   { path: RISKS_ROUTE, Component: RisksPage },
+  { path: RISK_MANAGEMENT_ROUTE, Component: RiskManagementPage },
   { path: SUPPLIERS_ROUTE, Component: SuppliersPage },
   { path: INTERNAL_AUDITS_ROUTE, Component: AuditsPage },
   { path: TRAINING_ROUTE, Component: TrainingPage },

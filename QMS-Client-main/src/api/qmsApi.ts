@@ -266,6 +266,141 @@ export const risksApi = {
 };
 
 // ═══════════════════════════════════════════════════════════════
+// RISK MANAGEMENT (ISO 14971) API
+// ═══════════════════════════════════════════════════════════════
+
+export type RmpStatus = "DRAFT" | "REVIEW" | "APPROVED" | "EFFECTIVE" | "REVISION" | "ARCHIVED";
+export type LifecyclePhase = "CONCEPT" | "DESIGN" | "VERIFICATION" | "VALIDATION" | "PRODUCTION" | "POST_MARKET";
+export type HazardCategory =
+  | "ENERGY" | "BIOLOGICAL" | "CHEMICAL" | "OPERATIONAL"
+  | "INFORMATION" | "ENVIRONMENTAL" | "ELECTROMAGNETIC"
+  | "MECHANICAL" | "THERMAL" | "RADIATION" | "SOFTWARE" | "USE_ERROR";
+export type HazardStatus = "IDENTIFIED" | "ANALYZED" | "CONTROLLED" | "VERIFIED" | "ACCEPTED" | "MONITORING";
+export type RiskClass = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+export type ControlType = "INHERENT_SAFETY" | "PROTECTIVE" | "INFORMATION";
+export type ImplStatus = "PLANNED" | "IN_PROGRESS" | "IMPLEMENTED" | "VERIFIED" | "INEFFECTIVE";
+export type VerificationResult = "PENDING" | "PASS" | "FAIL" | "PARTIAL";
+
+export interface RiskManagementPlanShort {
+  id: number;
+  planNumber: string;
+  title: string;
+  version: string;
+  productName: string;
+  lifecyclePhase: LifecyclePhase;
+  status: RmpStatus;
+  responsiblePerson: { id: number; name: string; surname: string } | null;
+  hazards: { id: number }[];
+  updatedAt: string;
+}
+
+export interface HazardShort {
+  id: number;
+  hazardNumber: string;
+  hazardCategory: HazardCategory;
+  hazardDescription: string;
+  harm: string;
+  severityOfHarm: number;
+  probabilityOfOccurrence: number;
+  riskLevel: number;
+  riskClass: RiskClass;
+  residualRiskClass: RiskClass | null;
+  status: HazardStatus;
+}
+
+export interface TraceabilityMatrixRow {
+  hazardId: number;
+  hazardNumber: string;
+  hazardDescription: string;
+  hazardousSituation: string;
+  harm: string;
+  initialRisk: { severity: number; probability: number; level: number; class: RiskClass };
+  controlMeasures: Array<{
+    id: number;
+    traceNumber: string;
+    description: string;
+    type: ControlType;
+    status: ImplStatus;
+    verificationResult: VerificationResult;
+    residualRiskAcceptable: boolean | null;
+    newHazardsIntroduced: boolean;
+  }>;
+  residualRisk: { severity: number | null; probability: number | null; level: number | null; class: RiskClass | null };
+  benefitRiskAnalysis: { id: number; benefitOutweighsRisk: boolean; conclusion: string } | null;
+  hazardStatus: HazardStatus;
+}
+
+export const riskManagementApi = {
+  // Plans
+  getPlans: (params?: Record<string, any>) =>
+    $authHost.get("/api/risk-management/plans", { params }).then(r => r.data),
+
+  getPlan: (id: number) =>
+    $authHost.get(`/api/risk-management/plans/${id}`).then(r => r.data),
+
+  createPlan: (data: Record<string, any>) =>
+    $authHost.post("/api/risk-management/plans", data).then(r => r.data),
+
+  updatePlan: (id: number, data: Record<string, any>) =>
+    $authHost.put(`/api/risk-management/plans/${id}`, data).then(r => r.data),
+
+  submitPlanForReview: (id: number) =>
+    $authHost.post(`/api/risk-management/plans/${id}/submit-review`).then(r => r.data),
+
+  approvePlan: (id: number) =>
+    $authHost.post(`/api/risk-management/plans/${id}/approve`).then(r => r.data),
+
+  // Hazards
+  getHazards: (params?: Record<string, any>) =>
+    $authHost.get("/api/risk-management/hazards", { params }).then(r => r.data),
+
+  getHazard: (id: number) =>
+    $authHost.get(`/api/risk-management/hazards/${id}`).then(r => r.data),
+
+  createHazard: (planId: number, data: Record<string, any>) =>
+    $authHost.post(`/api/risk-management/plans/${planId}/hazards`, data).then(r => r.data),
+
+  updateHazard: (id: number, data: Record<string, any>) =>
+    $authHost.put(`/api/risk-management/hazards/${id}`, data).then(r => r.data),
+
+  updateHazardResidual: (id: number, data: { residualSeverity: number; residualProbability: number }) =>
+    $authHost.put(`/api/risk-management/hazards/${id}/residual`, data).then(r => r.data),
+
+  // Benefit-Risk
+  getBenefitRisk: (params?: Record<string, any>) =>
+    $authHost.get("/api/risk-management/benefit-risk", { params }).then(r => r.data),
+
+  createBenefitRisk: (planId: number, data: Record<string, any>) =>
+    $authHost.post(`/api/risk-management/plans/${planId}/benefit-risk`, data).then(r => r.data),
+
+  updateBenefitRisk: (id: number, data: Record<string, any>) =>
+    $authHost.put(`/api/risk-management/benefit-risk/${id}`, data).then(r => r.data),
+
+  reviewBenefitRisk: (id: number) =>
+    $authHost.post(`/api/risk-management/benefit-risk/${id}/review`).then(r => r.data),
+
+  // Traceability
+  getTraceability: (params?: Record<string, any>) =>
+    $authHost.get("/api/risk-management/traceability", { params }).then(r => r.data),
+
+  createTraceability: (hazardId: number, data: Record<string, any>) =>
+    $authHost.post(`/api/risk-management/hazards/${hazardId}/traceability`, data).then(r => r.data),
+
+  updateTraceability: (id: number, data: Record<string, any>) =>
+    $authHost.put(`/api/risk-management/traceability/${id}`, data).then(r => r.data),
+
+  verifyTraceability: (id: number, data: Record<string, any>) =>
+    $authHost.post(`/api/risk-management/traceability/${id}/verify`, data).then(r => r.data),
+
+  // Matrix & Stats
+  getTraceabilityMatrix: (planId: number) =>
+    $authHost.get(`/api/risk-management/plans/${planId}/matrix`).then(r => r.data),
+
+  getStats: () =>
+    $authHost.get("/api/risk-management/stats").then(r => r.data),
+};
+
+// ═══════════════════════════════════════════════════════════════
 // SUPPLIERS API
 // ═══════════════════════════════════════════════════════════════
 

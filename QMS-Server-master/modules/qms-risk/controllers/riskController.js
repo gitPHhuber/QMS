@@ -52,6 +52,7 @@ const getAll = async (req, res, next) => {
 
 const getOne = async (req, res, next) => {
   try {
+
     const risk = await RiskRegister.findByPk(req.params.id, {
       include: [
         { model: RiskAssessment, as: "assessments", order: [["assessmentDate", "DESC"]] },
@@ -59,6 +60,24 @@ const getOne = async (req, res, next) => {
         { model: User, as: "owner", attributes: ["id", "name", "surname"] },
       ],
     });
+
+    const includes = [
+      { model: RiskAssessment, as: "assessments", order: [["assessmentDate", "DESC"]] },
+      { model: RiskMitigation, as: "mitigations", order: [["createdAt", "ASC"]] },
+      { model: User, as: "owner", attributes: ["id", "name", "surname"] },
+    ];
+
+    // Включаем связанные NC если модуль доступен
+    try {
+      const { Nonconformity } = require("../../qms-nc/models/NcCapa");
+      includes.push({
+        model: Nonconformity, as: "nonconformities",
+        attributes: ["id", "number", "title", "classification", "status", "source", "dueDate"],
+      });
+    } catch { /* NC модуль не доступен */ }
+
+    const risk = await RiskRegister.findByPk(req.params.id, { include: includes });
+
 
     if (!risk) return next(ApiError.notFound("Риск не найден"));
     res.json(risk);
@@ -406,10 +425,43 @@ const getStats = async (req, res, next) => {
   }
 };
 
+// ═══════════════════════════════════════════════════════════════
+// NC ↔ Risk: получение связанных NC (ISO 14971 интеграция)
+// ═══════════════════════════════════════════════════════════════
+
+const getLinkedNCs = async (req, res, next) => {
+  try {
+    const risk = await RiskRegister.findByPk(req.params.id);
+    if (!risk) return next(ApiError.notFound("Риск не найден"));
+
+    // Ленивая загрузка NC модели
+    let Nonconformity;
+    try {
+      ({ Nonconformity } = require("../../qms-nc/models/NcCapa"));
+    } catch {
+      return next(ApiError.badRequest("Модуль NC не доступен"));
+    }
+
+    const ncs = await Nonconformity.findAll({
+      where: { riskRegisterId: risk.id },
+      include: [
+        { model: User, as: "assignedTo", attributes: ["id", "name", "surname"] },
+      ],
+      attributes: ["id", "number", "title", "classification", "status", "source", "dueDate", "detectedAt"],
+      order: [["detectedAt", "DESC"]],
+    });
+
+    res.json({ riskId: risk.id, riskNumber: risk.riskNumber, nonconformities: ncs });
+  } catch (e) {
+    next(ApiError.internal(e.message));
+  }
+};
+
 module.exports = {
   getAll, getOne, create, update,
   addAssessment,
   addMitigation, completeMitigation, verifyMitigation,
   acceptRisk,
   getMatrix, getStats,
+  getLinkedNCs,
 };

@@ -1,13 +1,19 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { fetchDashboardStats } from "src/api/warehouseApi";
+import { DashboardStats, DailyOperationSummary } from "src/types/WarehouseModels";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { TrendingUp, Package, AlertTriangle, Activity, ArrowLeft } from "lucide-react";
+import { Package, AlertTriangle, Activity, ArrowLeft } from "lucide-react";
 import { WAREHOUSE_ROUTE } from "src/utils/consts";
+
+interface FormattedChartPoint {
+    name: string;
+    count: number;
+}
 
 export const AnalyticsPage: React.FC = () => {
     const navigate = useNavigate();
-    const [data, setData] = useState<any>(null);
+    const [data, setData] = useState<DashboardStats | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -19,14 +25,14 @@ export const AnalyticsPage: React.FC = () => {
 
     if (loading) return <div className="p-10 text-center text-asvo-text-mid">Загрузка аналитики...</div>;
 
-    const totalItems = data?.stock?.totalItems || 0;
-    const totalBoxes = data?.stock?.totalBoxes || 0;
-    const scrapOp = data?.today?.find((x: any) => x.operation === 'QUALITY' || x.operation === 'SCRAP');
+    const totalItems = data?.stock?.totalItems ?? 0;
+    const totalBoxes = data?.stock?.totalBoxes ?? 0;
+    const scrapOp = data?.today?.find((x: DailyOperationSummary) => x.operation === 'QUALITY' || x.operation === 'SCRAP');
     const scrapToday = scrapOp ? Number(scrapOp.sumScrap) : 0;
-    const chartData = data?.chart?.map((item: any) => ({
+    const chartData: FormattedChartPoint[] = data?.chart?.map(item => ({
         name: new Date(item.date).toLocaleDateString('ru-RU', {weekday: 'short'}),
         count: Number(item.count)
-    })) || [];
+    })) ?? [];
 
     return (
         <div className="p-6 max-w-7xl mx-auto animate-fade-in bg-asvo-surface-2 min-h-screen">
@@ -75,11 +81,14 @@ export const AnalyticsPage: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="bg-gradient-to-br from-indigo-600 to-purple-700 p-6 rounded-2xl shadow-lg text-white">
-                    <p className="text-indigo-100 text-sm font-medium">Эффективность</p>
-                    <h3 className="text-3xl font-bold mt-2">98.5%</h3>
-                    <div className="flex items-center gap-1 text-xs text-indigo-200 mt-1">
-                        <TrendingUp size={14}/> <span>Стабильный рост</span>
+                <div className="bg-asvo-surface p-6 rounded-2xl shadow-sm border border-asvo-border">
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <p className="text-asvo-text-mid text-sm font-medium">Эффективность</p>
+                            <h3 className="text-3xl font-bold text-asvo-text-dim mt-2">—</h3>
+                            <p className="text-xs text-asvo-text-dim mt-1">Ожидает подключения API</p>
+                        </div>
+                        <div className="p-3 bg-asvo-surface-2 rounded-xl text-asvo-text-dim"><Activity /></div>
                     </div>
                 </div>
             </div>
@@ -89,11 +98,11 @@ export const AnalyticsPage: React.FC = () => {
                 <div className="h-80 w-full">
                     <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={chartData}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#9ca3af'}} dy={10} />
-                            <YAxis axisLine={false} tickLine={false} tick={{fill: '#9ca3af'}} />
-                            <Tooltip cursor={{fill: '#f9fafb'}} contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
-                            <Bar dataKey="count" fill="#4f46e5" radius={[4, 4, 0, 0]} barSize={40} />
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1A2D42" />
+                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#8899AB'}} dy={10} />
+                            <YAxis axisLine={false} tickLine={false} tick={{fill: '#8899AB'}} />
+                            <Tooltip cursor={{fill: '#162231'}} contentStyle={{borderRadius: '8px', border: '1px solid #1A2D42', backgroundColor: '#0D1520', color: '#E8EDF3', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.3)'}} />
+                            <Bar dataKey="count" fill="#2DD4A8" radius={[4, 4, 0, 0]} barSize={40} />
                         </BarChart>
                     </ResponsiveContainer>
                 </div>

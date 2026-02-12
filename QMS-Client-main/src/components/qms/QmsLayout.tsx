@@ -15,6 +15,7 @@ import {
   GitBranch,
   FlaskConical,
   Package,
+  ShieldCheck,
 } from "lucide-react";
 
 const SIDEBAR_ITEMS = [
@@ -23,6 +24,7 @@ const SIDEBAR_ITEMS = [
   { label: "Несоответствия",  to: "/qms/nonconformity", icon: AlertTriangle },
   { label: "CAPA",            to: "/qms/capa",        icon: RefreshCw },
   { label: "Риски",           to: "/qms/risks",       icon: Target },
+  { label: "Файл риск-менеджмента", to: "/qms/risk-management", icon: ShieldCheck },
   { label: "Поставщики",      to: "/qms/suppliers",   icon: Factory },
   { label: "Аудиты",          to: "/qms/audits",      icon: ClipboardList },
   { label: "Обучение",        to: "/qms/training",    icon: GraduationCap },

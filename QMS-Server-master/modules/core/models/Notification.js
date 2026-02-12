@@ -14,7 +14,10 @@ const Notification = sequelize.define("notification", {
       "CALIBRATION_DUE", "AUDIT_UPCOMING", "NC_CREATED",
       "COMPLAINT_RECEIVED", "TRAINING_EXPIRED",
       "CHANGE_REQUEST_PENDING", "REVALIDATION_DUE",
-      "REVIEW_SCHEDULED", "GENERAL"
+      "REVIEW_SCHEDULED", "GENERAL",
+      // SLA-эскалация (ISO 8.5.2/8.5.3)
+      "NC_OVERDUE", "NC_ESCALATED",
+      "CAPA_ESCALATED", "CAPA_ACTION_OVERDUE"
     ),
     allowNull: false,
   },

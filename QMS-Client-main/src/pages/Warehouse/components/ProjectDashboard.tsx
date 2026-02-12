@@ -39,7 +39,7 @@ export const ProjectDashboard: React.FC = () => {
 
                     <div className="w-full bg-asvo-surface-2 rounded-full h-1.5 overflow-hidden mt-1">
                         <div
-                            className="bg-emerald-500 h-full rounded-full"
+                            className="bg-asvo-accent h-full rounded-full"
                             style={{ width: idx === 0 ? '100%' : `${(Number(item.totalQuantity) / Number(topItems[0].totalQuantity)) * 100}%` }}
                         ></div>
                     </div>
