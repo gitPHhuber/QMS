@@ -118,9 +118,7 @@ const App = observer(() => {
 
 
   return (
-
     <div className="bg-[#0b1120] min-h-screen flex flex-col">
-
       <Toaster
         position="top-right"
         toastOptions={{
