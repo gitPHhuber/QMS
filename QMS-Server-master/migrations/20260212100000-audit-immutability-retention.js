@@ -36,7 +36,7 @@ module.exports = {
             id: { type: Sequelize.BIGINT, primaryKey: true, autoIncrement: true, allowNull: false },
             sourceAuditId: { type: Sequelize.INTEGER, allowNull: false, unique: true },
             userId: { type: Sequelize.INTEGER, allowNull: true },
-            action: { type: Sequelize.STRING(255), allowNull: false },
+            action: { type: Sequelize.STRING(255), allowNull: true },
             entity: { type: Sequelize.STRING(255), allowNull: true },
             entityId: { type: Sequelize.STRING(255), allowNull: true },
             description: { type: Sequelize.TEXT, allowNull: true },
