@@ -8,6 +8,14 @@ export default {
     extend: {
       colors: {
         asvo: {
+          // Legacy aliases (used across existing UI components)
+          dark:         '#080E14',
+          'dark-2':     '#162231',
+          'dark-3':     '#1C2D40',
+          light:        '#E8EDF3',
+          muted:        '#8899AB',
+          'accent-hover': '#24B993',
+
           bg:           '#080E14',
           surface:      '#0D1520',
           'surface-2':  '#162231',
