@@ -477,19 +477,19 @@ export const VideoTransmittersLabel: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className="text-xs text-indigo-700 flex items-center justify-between">
+                            <div className="text-xs text-asvo-accent flex items-center justify-between">
                                 <span>Диапазон:</span>
                                 <div className="font-mono font-bold">{form.code} <ArrowRight size={12} className="inline"/> {endCode}</div>
                             </div>
 
-                            <button onClick={handlePrint} disabled={loading} className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xl rounded-xl shadow-lg hover:shadow-indigo-300 transition flex justify-center items-center gap-3">
+                            <button onClick={handlePrint} disabled={loading} className="w-full py-4 bg-asvo-accent hover:bg-asvo-accent/80 text-asvo-bg font-bold text-xl rounded-xl shadow-lg hover:shadow-asvo-accent/20 transition flex justify-center items-center gap-3">
                                 {loading ? "Генерация..." : <><Printer /> ПЕЧАТЬ</>}
                             </button>
                         </div>
                     </div>
 
 
-                    <div className="flex-1 bg-gray-100 rounded-3xl p-8 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 min-h-[500px] sticky top-6">
+                    <div className="flex-1 bg-asvo-surface rounded-3xl p-8 flex flex-col items-center justify-center border-2 border-dashed border-asvo-border min-h-[500px] sticky top-6">
                         <div className="grid grid-cols-1 gap-12 w-full place-items-center max-h-[800px] overflow-y-auto custom-scrollbar">
                             <LabelPreviewCard
                                 title="Первая в серии"
@@ -502,7 +502,7 @@ export const VideoTransmittersLabel: React.FC = () => {
                             />
                             {printCount > 1 && (
                                 <>
-                                    <div className="text-gray-400 -my-6"><ArrowRight className="rotate-90" size={32}/></div>
+                                    <div className="text-asvo-text-dim -my-6"><ArrowRight className="rotate-90" size={32}/></div>
                                     <LabelPreviewCard
                                         title={`Последняя (№${printCount})`}
                                         data={{...form, code: endCode}}
@@ -515,7 +515,7 @@ export const VideoTransmittersLabel: React.FC = () => {
                                 </>
                             )}
                         </div>
-                        <p className="text-xs text-gray-400 mt-6 font-mono text-center">
+                        <p className="text-xs text-asvo-text-dim mt-6 font-mono text-center">
                             * Визуализация может незначительно отличаться от PDF.<br/>
                             Размер бумаги: {labelSize.width}x{labelSize.height} мм
                         </p>
