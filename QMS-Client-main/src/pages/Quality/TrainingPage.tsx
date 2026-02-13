@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   GraduationCap,
   Plus,
@@ -17,9 +17,10 @@ import Badge from "../../components/qms/Badge";
 import DataTable from "../../components/qms/DataTable";
 import Card from "../../components/qms/Card";
 import SectionTitle from "../../components/qms/SectionTitle";
+import { trainingApi } from "../../api/qmsApi";
 
 /* ------------------------------------------------------------------ */
-/*  Mock data                                                          */
+/*  Types                                                               */
 /* ------------------------------------------------------------------ */
 
 interface TrainingRow {
@@ -33,15 +34,6 @@ interface TrainingRow {
   certificate: string;
 }
 
-const TRAINING_DATA: TrainingRow[] = [
-  { employee: "Костюков И.",   position: "Инженер по качеству", department: "ОТК",          training: "ISO 13485:2016 Основы",   status: "passed",      date: "15.01.2026", certificate: "Да" },
-  { employee: "Холтобин А.",   position: "Начальник ОТК",       department: "ОТК",          training: "Внутренний аудитор ISO",  status: "passed",      date: "20.01.2026", certificate: "Да" },
-  { employee: "Омельченко А.", position: "Монтажник",            department: "Производство", training: "IPC-A-610 Класс 3",      status: "in_progress", date: "10.02.2026", certificate: "\u2014" },
-  { employee: "Яровой Е.",     position: "Инженер-технолог",     department: "Производство", training: "ESD-защита",              status: "assigned",    date: "15.02.2026", certificate: "\u2014" },
-  { employee: "Чирков И.",     position: "Метролог",             department: "Метрология",   training: "Калибровка ISO 17025",   status: "overdue",     date: "01.02.2026", certificate: "\u2014" },
-  { employee: "Петров Д.",     position: "Кладовщик",            department: "Склад",        training: "GMP для склада",          status: "assigned",    date: "20.02.2026", certificate: "\u2014" },
-];
-
 /* ---- Status badge mapping ---- */
 
 const STATUS_CFG: Record<TrainingRow["status"], { label: string; color: string; bg: string }> = {
@@ -53,20 +45,11 @@ const STATUS_CFG: Record<TrainingRow["status"], { label: string; color: string; 
 
 /* ---- Competency matrix ---- */
 
-const SKILLS = ["ISO 13485", "IPC-A-610", "Пайка SMD", "ESD", "GMP"];
-
 interface CompetencyRow {
   name: string;
+  skills: string[];
   levels: number[]; // 0-3
 }
-
-const COMPETENCY: CompetencyRow[] = [
-  { name: "Костюков И.",   levels: [3, 2, 1, 3, 2] },
-  { name: "Холтобин А.",   levels: [3, 3, 2, 2, 3] },
-  { name: "Омельченко А.", levels: [2, 3, 3, 2, 1] },
-  { name: "Яровой Е.",     levels: [2, 1, 2, 3, 2] },
-  { name: "Чирков И.",     levels: [1, 2, 3, 1, 1] },
-];
 
 const LEVEL_CFG: Record<number, { dots: string; cls: string }> = {
   3: { dots: "\u25CF\u25CF\u25CF", cls: "bg-[rgba(45,212,168,0.20)] text-[#2DD4A8]" },
@@ -74,6 +57,10 @@ const LEVEL_CFG: Record<number, { dots: string; cls: string }> = {
   1: { dots: "\u25CF",             cls: "bg-[rgba(232,168,48,0.20)] text-[#E8A830]" },
   0: { dots: "\u2014",             cls: "bg-[rgba(240,96,96,0.20)] text-[#F06060]" },
 };
+
+/* ---- Default skills for competency matrix header ---- */
+
+const DEFAULT_SKILLS = ["ISO 13485", "IPC-A-610", "Пайка SMD", "ESD", "GMP"];
 
 /* ---- View toggle ---- */
 
@@ -85,6 +72,54 @@ type View = "table" | "matrix";
 
 const TrainingPage: React.FC = () => {
   const [view, setView] = useState<View>("table");
+
+  /* ---- API state ---- */
+  const [plans, setPlans] = useState<TrainingRow[]>([]);
+  const [records, setRecords] = useState<any[]>([]);
+  const [competency, setCompetency] = useState<CompetencyRow[]>([]);
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  /* ---- Fetch data on mount and when view changes ---- */
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        // Always fetch stats
+        const statsData = await trainingApi.getStats();
+        setStats(statsData);
+
+        if (view === "table") {
+          const [plansRes, recordsRes] = await Promise.all([
+            trainingApi.getPlans(),
+            trainingApi.getRecords(),
+          ]);
+          setPlans(plansRes.rows ?? []);
+          setRecords(recordsRes.rows ?? []);
+        } else {
+          const compRes = await trainingApi.getCompetency();
+          setCompetency(compRes.rows ?? []);
+        }
+      } catch (e: any) {
+        console.error(e);
+        setError(e?.response?.data?.message || "Ошибка загрузки данных обучения");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
+  }, [view]);
+
+  /* ---- Derive skills list from competency data ---- */
+
+  const skills: string[] =
+    competency.length > 0 && competency[0].skills?.length > 0
+      ? competency[0].skills
+      : DEFAULT_SKILLS;
 
   /* ---- columns for DataTable ---- */
 
@@ -116,7 +151,7 @@ const TrainingPage: React.FC = () => {
       label: "Статус",
       align: "center" as const,
       render: (r: TrainingRow) => {
-        const s = STATUS_CFG[r.status];
+        const s = STATUS_CFG[r.status] ?? STATUS_CFG.assigned;
         return <Badge color={s.color} bg={s.bg}>{s.label}</Badge>;
       },
     },
@@ -179,18 +214,35 @@ const TrainingPage: React.FC = () => {
       {/* KPI Row */}
       <KpiRow
         items={[
-          { label: "Всего сотрудников", value: 42, icon: <Users size={18} />,         color: "#4A90E8" },
-          { label: "Обучено",           value: 38, icon: <UserCheck size={18} />,      color: "#2DD4A8" },
-          { label: "План обучения",     value: 15, icon: <CalendarClock size={18} />,  color: "#E8A830" },
-          { label: "Просрочено",        value: 2,  icon: <AlertCircle size={18} />,    color: "#F06060" },
+          { label: "Всего сотрудников", value: stats?.totalEmployees ?? 0,  icon: <Users size={18} />,         color: "#4A90E8" },
+          { label: "Обучено",           value: stats?.trained ?? 0,         icon: <UserCheck size={18} />,      color: "#2DD4A8" },
+          { label: "План обучения",     value: stats?.planned ?? 0,         icon: <CalendarClock size={18} />,  color: "#E8A830" },
+          { label: "Просрочено",        value: stats?.overdue ?? 0,         icon: <AlertCircle size={18} />,    color: "#F06060" },
         ]}
       />
 
+      {/* Loading state */}
+      {loading && (
+        <div className="flex justify-center items-center h-64">
+          <div className="w-8 h-8 border-4 border-t-4 border-asvo-accent border-t-transparent rounded-full animate-spin" />
+        </div>
+      )}
+
+      {/* Error state */}
+      {error && !loading && (
+        <Card>
+          <div className="flex items-center gap-3 p-4 text-[#F06060]">
+            <AlertCircle size={20} />
+            <span className="text-sm">{error}</span>
+          </div>
+        </Card>
+      )}
+
       {/* ---- View: Table ---- */}
-      {view === "table" && <DataTable columns={columns} data={TRAINING_DATA} />}
+      {!loading && !error && view === "table" && <DataTable columns={columns} data={plans} />}
 
       {/* ---- View: Competency Matrix ---- */}
-      {view === "matrix" && (
+      {!loading && !error && view === "matrix" && (
         <Card>
           <SectionTitle>Матрица компетенций</SectionTitle>
 
@@ -201,7 +253,7 @@ const TrainingPage: React.FC = () => {
                   <th className="text-left text-[10px] font-semibold text-asvo-text-dim uppercase tracking-wider px-3 py-2.5">
                     Сотрудник
                   </th>
-                  {SKILLS.map((sk) => (
+                  {skills.map((sk) => (
                     <th key={sk} className="text-center text-[10px] font-semibold text-asvo-text-dim uppercase tracking-wider px-3 py-2.5">
                       {sk}
                     </th>
@@ -209,13 +261,13 @@ const TrainingPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {COMPETENCY.map((row) => (
+                {competency.map((row) => (
                   <tr key={row.name} className="border-t border-asvo-border/40">
                     <td className="px-3 py-2.5 text-[13px] font-medium text-asvo-text whitespace-nowrap">
                       {row.name}
                     </td>
-                    {row.levels.map((lvl, ci) => {
-                      const cfg = LEVEL_CFG[lvl];
+                    {(row.levels ?? []).map((lvl, ci) => {
+                      const cfg = LEVEL_CFG[lvl] ?? LEVEL_CFG[0];
                       return (
                         <td key={ci} className="px-3 py-2.5 text-center">
                           <span
