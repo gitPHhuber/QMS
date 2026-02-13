@@ -52,7 +52,7 @@ async function archiveBatch(cutoffDate, batchSize) {
         SELECT
           id, "userId", action, entity, "entityId", description, metadata,
           "chainIndex", "prevHash", "currentHash", "dataHash", "signedBy", "signedAt",
-          severity, "createdAt", "updatedAt", NOW()
+          severity::text::enum_audit_logs_archive_severity, "createdAt", "updatedAt", NOW()
         FROM moved_rows
         ON CONFLICT ("sourceAuditId") DO NOTHING
         RETURNING "sourceAuditId"
