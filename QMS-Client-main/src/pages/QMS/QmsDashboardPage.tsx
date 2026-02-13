@@ -432,9 +432,11 @@ export const QmsDashboardPage: React.FC = () => {
   // --- Audit completion percentage ---
   const auditCompletionPct: string = auditStats?.completionRate != null
     ? `${Math.round(auditStats.completionRate)}%`
-    : auditStats?.completedCount != null && auditStats?.totalCount
-      ? `${Math.round((auditStats.completedCount / auditStats.totalCount) * 100)}%`
-      : "0%";
+    : auditStats?.completedAudits != null && auditStats?.totalAudits
+      ? `${Math.round((auditStats.completedAudits / auditStats.totalAudits) * 100)}%`
+      : auditStats?.completedCount != null && auditStats?.totalCount
+        ? `${Math.round((auditStats.completedCount / auditStats.totalCount) * 100)}%`
+        : "0%";
 
   // --- Total risk count ---
   const totalRisks: number = riskStats

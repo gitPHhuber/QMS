@@ -155,7 +155,7 @@ const SuppliersPage: React.FC = () => {
   const filtered = suppliers.filter(
     (r) =>
       r.name.toLowerCase().includes(search.toLowerCase()) ||
-      r.id.toLowerCase().includes(search.toLowerCase()),
+      String(r.id).toLowerCase().includes(search.toLowerCase()),
   );
 
   /* ───── KPI ───── */

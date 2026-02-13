@@ -153,9 +153,9 @@ const RisksPage: React.FC = () => {
   /* ───── KPI from stats ───── */
   const kpis = [
     { label: 'Всего рисков',         value: stats?.total       ?? 0, color: '#A06AE8', icon: <Shield size={18} /> },
-    { label: 'Критических',           value: stats?.critical    ?? 0, color: '#F06060', icon: <AlertTriangle size={18} /> },
-    { label: 'Высоких',               value: stats?.high        ?? 0, color: '#E87040', icon: <TrendingUp size={18} /> },
-    { label: 'Низких / Приемлемых',   value: stats?.low         ?? 0, color: '#2DD4A8', icon: <Shield size={18} /> },
+    { label: 'Критических',           value: stats?.byClass?.CRITICAL ?? 0, color: '#F06060', icon: <AlertTriangle size={18} /> },
+    { label: 'Высоких',               value: stats?.byClass?.HIGH     ?? 0, color: '#E87040', icon: <TrendingUp size={18} /> },
+    { label: 'Низких / Приемлемых',   value: (stats?.byClass?.LOW ?? 0) + (stats?.byClass?.MEDIUM ?? 0), color: '#2DD4A8', icon: <Shield size={18} /> },
   ];
 
   return (
