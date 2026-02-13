@@ -1,9 +1,10 @@
 /**
  * CreateDocumentModal.tsx — Модалка создания нового документа
+ * С поддержкой загрузки файла (.pdf, .docx, .xlsx)
  */
 
-import React, { useState } from "react";
-import { FileText } from "lucide-react";
+import React, { useState, useRef } from "react";
+import { FileText, Upload, X } from "lucide-react";
 
 import { Modal } from "../../components/Modal/Modal";
 import { documentsApi } from "../../api/qmsApi";
@@ -33,6 +34,9 @@ const ISO_SECTIONS = [
   "8.1", "8.2", "8.3", "8.4", "8.5",
 ];
 
+const ACCEPTED_TYPES = ".pdf,.docx,.xlsx,.doc,.xls,.odt,.ods,.txt,.csv";
+const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
+
 /* ── Props ── */
 
 interface CreateDocumentModalProps {
@@ -54,9 +58,14 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
   const [description, setDescription] = useState("");
   const [isoSection, setIsoSection] = useState("");
   const [reviewCycleMonths, setReviewCycleMonths] = useState(12);
+  const [file, setFile] = useState<File | null>(null);
 
   const [submitting, setSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const dropZoneRef = useRef<HTMLDivElement>(null);
 
   const resetForm = () => {
     setTitle("");
@@ -65,6 +74,8 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
     setDescription("");
     setIsoSection("");
     setReviewCycleMonths(12);
+    setFile(null);
+    setUploadProgress(null);
     setFormError(null);
   };
 
@@ -73,8 +84,51 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
     onClose();
   };
 
+  /* ── File handling ── */
+
+  const validateFile = (f: File): string | null => {
+    if (f.size > MAX_FILE_SIZE) {
+      return `Файл слишком большой (${(f.size / 1024 / 1024).toFixed(1)} МБ). Максимум 50 МБ.`;
+    }
+    const ext = f.name.split(".").pop()?.toLowerCase();
+    const allowed = ["pdf", "docx", "xlsx", "doc", "xls", "odt", "ods", "txt", "csv"];
+    if (ext && !allowed.includes(ext)) {
+      return `Неподдерживаемый формат .${ext}. Допустимые: ${allowed.join(", ")}`;
+    }
+    return null;
+  };
+
+  const handleFileSelect = (f: File) => {
+    const error = validateFile(f);
+    if (error) {
+      setFormError(error);
+      return;
+    }
+    setFormError(null);
+    setFile(f);
+  };
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (f) handleFileSelect(f);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const f = e.dataTransfer.files?.[0];
+    if (f) handleFileSelect(f);
+  };
+
+  /* ── Submit ── */
+
   const handleSubmit = async () => {
-    // Validation
     if (!title.trim()) {
       setFormError("Укажите название документа");
       return;
@@ -88,13 +142,22 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
     setFormError(null);
 
     try {
-      await documentsApi.create({
+      // 1. Create document (returns doc with first version in DRAFT)
+      const created = await documentsApi.create({
         title: title.trim(),
         type,
         category: category.trim() || undefined,
         description: description.trim() || undefined,
         isoSection: isoSection || undefined,
       });
+
+      // 2. Upload file if selected
+      if (file && created.currentVersionId) {
+        setUploadProgress(0);
+        await documentsApi.uploadFile(created.currentVersionId, file);
+        setUploadProgress(100);
+      }
+
       resetForm();
       onCreated();
       onClose();
@@ -104,6 +167,7 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
       );
     } finally {
       setSubmitting(false);
+      setUploadProgress(null);
     }
   };
 
@@ -201,6 +265,61 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
           />
         </div>
 
+        {/* File Upload */}
+        <div>
+          <label className={labelCls}>Файл документа</label>
+          {file ? (
+            <div className="flex items-center gap-2 bg-asvo-surface-2 border border-asvo-accent/30 rounded-lg px-3 py-2.5">
+              <FileText size={16} className="text-asvo-accent shrink-0" />
+              <div className="flex-1 min-w-0">
+                <div className="text-[13px] text-asvo-text truncate">{file.name}</div>
+                <div className="text-[10px] text-asvo-text-dim">
+                  {(file.size / 1024).toFixed(0)} КБ
+                </div>
+              </div>
+              <button
+                onClick={() => setFile(null)}
+                className="text-asvo-text-dim hover:text-red-400 transition-colors"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          ) : (
+            <div
+              ref={dropZoneRef}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+              className="flex flex-col items-center gap-2 border-2 border-dashed border-asvo-border hover:border-asvo-accent/40 rounded-lg px-4 py-5 cursor-pointer transition-colors"
+            >
+              <Upload size={20} className="text-asvo-text-dim" />
+              <div className="text-[12px] text-asvo-text-mid text-center">
+                Перетащите файл сюда или <span className="text-asvo-accent underline">выберите</span>
+              </div>
+              <div className="text-[10px] text-asvo-text-dim">
+                PDF, DOCX, XLSX — до 50 МБ
+              </div>
+            </div>
+          )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept={ACCEPTED_TYPES}
+            onChange={handleFileInputChange}
+            className="hidden"
+          />
+        </div>
+
+        {/* Upload Progress */}
+        {uploadProgress !== null && (
+          <div className="w-full bg-asvo-surface-2 rounded-full h-1.5">
+            <div
+              className="bg-asvo-accent h-1.5 rounded-full transition-all"
+              style={{ width: `${uploadProgress}%` }}
+            />
+          </div>
+        )}
+
         {/* Info */}
         <div className="bg-asvo-accent/5 border border-asvo-accent/20 rounded-lg p-3">
           <p className="text-[11px] text-asvo-text-dim leading-relaxed">
@@ -229,7 +348,11 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
             onClick={handleSubmit}
             disabled={submitting}
           >
-            {submitting ? "Создание..." : "Создать документ"}
+            {submitting
+              ? uploadProgress !== null
+                ? "Загрузка файла..."
+                : "Создание..."
+              : "Создать документ"}
           </ActionBtn>
         </div>
       </div>
