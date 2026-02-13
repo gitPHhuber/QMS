@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   Loader2,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { notificationsApi } from "../api/qmsApi";
 
 /* ------------------------------------------------------------------ */
@@ -68,6 +69,7 @@ const SEVERITY_DOT: Record<NotificationSeverity, string> = {
 /* ================================================================== */
 
 const NotificationBell: React.FC = () => {
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -156,6 +158,14 @@ const NotificationBell: React.FC = () => {
     }
   };
 
+  const handleNotificationClick = async (n: NotificationItem) => {
+    await markRead(n.id);
+    if (n.link) {
+      navigate(n.link);
+      setIsOpen(false);
+    }
+  };
+
   return (
     <div ref={panelRef} className="relative">
       {/* Bell button */}
@@ -205,7 +215,7 @@ const NotificationBell: React.FC = () => {
                 return (
                   <button
                     key={n.id}
-                    onClick={() => markRead(n.id)}
+                    onClick={() => handleNotificationClick(n)}
                     className={`w-full flex items-start gap-3 px-4 py-3 text-left transition-colors border-b border-slate-700/30 ${
                       !n.isRead
                         ? "bg-slate-800/60 hover:bg-slate-700/50"
