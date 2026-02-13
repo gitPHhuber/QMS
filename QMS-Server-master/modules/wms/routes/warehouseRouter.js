@@ -12,6 +12,7 @@ const DocumentController = require("../controllers/DocumentController");
 const AnalyticsController = require("../controllers/AnalyticsController");
 const AlertsController = require("../controllers/AlertsController");
 const HistoryController = require("../controllers/HistoryController");
+const RankingsController = require("../controllers/RankingsController");
 
 const protect = [authMiddleware, syncUserMiddleware];
 
@@ -56,6 +57,8 @@ router.get("/documents", ...protect, checkAbility("warehouse.view"), DocumentCon
 
 
 router.get("/analytics/dashboard", ...protect, checkAbility("analytics.view"), AnalyticsController.getDashboardStats);
+
+router.get("/rankings", ...protect, checkAbility("warehouse.view"), RankingsController.getRankings);
 
 router.get("/alerts", ...protect, checkAbility("warehouse.view"), AlertsController.getAlerts);
 router.get("/limits", ...protect, checkAbility("warehouse.view"), AlertsController.getAllLimits);

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Package,
   Plus,
@@ -7,6 +7,7 @@ import {
   Lightbulb,
   AlertTriangle,
   Shield,
+  Loader2,
 } from "lucide-react";
 import KpiRow from "../../components/qms/KpiRow";
 import ActionBtn from "../../components/qms/ActionBtn";
@@ -14,6 +15,7 @@ import Badge from "../../components/qms/Badge";
 import DataTable from "../../components/qms/DataTable";
 import Card from "../../components/qms/Card";
 import SectionTitle from "../../components/qms/SectionTitle";
+import { productsApi } from "../../api/qmsApi";
 
 /* ───── types ───── */
 
@@ -30,16 +32,6 @@ interface ProductRow {
   status: ProductionStatus;
   validUntil: string;
 }
-
-/* ───── mock data ───── */
-
-const PRODUCTS: ProductRow[] = [
-  { code: "PRD-001", name: "Денситометр рентгеновский", model: "DEXA-PRO 3000", ru: "РЗН-2025-12345", riskClass: "2B", status: "SERIAL",      validUntil: "15.06.2030" },
-  { code: "PRD-002", name: "Рентгеновский аппарат",     model: "AXR-100",       ru: "РЗН-2024-67890", riskClass: "2B", status: "SERIAL",      validUntil: "20.12.2029" },
-  { code: "PRD-003", name: "ПО для денситометрии",       model: "DensiSoft v3",  ru: "\u2014",         riskClass: "1",  status: "DEVELOPMENT", validUntil: "\u2014" },
-  { code: "PRD-004", name: "Калибровочный фантом",       model: "PHANTOM-ESP",   ru: "\u2014",         riskClass: "1",  status: "PROTOTYPE",   validUntil: "\u2014" },
-  { code: "PRD-005", name: "Мобильный денситометр",      model: "DEXA-MOBILE",   ru: "\u2014",         riskClass: "2A", status: "DEVELOPMENT", validUntil: "\u2014" },
-];
 
 /* ───── badge helpers ───── */
 
@@ -115,7 +107,7 @@ const columns = [
   },
 ];
 
-/* ───── risk class distribution data ───── */
+/* ───── risk class distribution helpers ───── */
 
 interface RiskDistribution {
   label: string;
@@ -123,28 +115,93 @@ interface RiskDistribution {
   color: string;
 }
 
-const riskDistribution: RiskDistribution[] = [
-  { label: "1",  count: 2, color: "#2DD4A8" },
-  { label: "2\u0430", count: 1, color: "#4A90E8" },
-  { label: "2\u0431", count: 2, color: "#E8A830" },
-  { label: "3",  count: 0, color: "#F06060" },
-];
-
-const maxCount = Math.max(...riskDistribution.map((d) => d.count), 1);
+const riskDistributionColors: Record<string, { label: string; color: string }> = {
+  "1":  { label: "1",  color: "#2DD4A8" },
+  "2A": { label: "2а", color: "#4A90E8" },
+  "2B": { label: "2б", color: "#E8A830" },
+  "3":  { label: "3",  color: "#F06060" },
+};
 
 /* ════════════════════════════════════════════════════ */
 
 const ProductRegistryPage: React.FC = () => {
-  const [_selected] = useState<string | null>(null);
+  const [products, setProducts] = useState<ProductRow[]>([]);
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  /* ───── KPI ───── */
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const [productsRes, statsRes] = await Promise.all([
+          productsApi.getAll(),
+          productsApi.getStats(),
+        ]);
+
+        setProducts(productsRes.rows ?? []);
+        setStats(statsRes);
+      } catch (err: any) {
+        console.error("ProductRegistryPage: failed to fetch data", err);
+        setError(err?.response?.data?.message || err?.message || "Ошибка загрузки данных");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  /* ───── KPI (derived from stats or fallback to 0) ───── */
   const kpis = [
-    { label: "Всего изделий",     value: 5,  icon: <Package size={18} />,       color: "#4A90E8" },
-    { label: "В серии",           value: 2,  icon: <Boxes size={18} />,          color: "#2DD4A8" },
-    { label: "В разработке",      value: 2,  icon: <Lightbulb size={18} />,      color: "#E8A830" },
-    { label: "Истекает РУ",       value: 0,  icon: <AlertTriangle size={18} />,  color: "#F06060" },
-    { label: "Класс риска 2б+",   value: 2,  icon: <Shield size={18} />,         color: "#A06AE8" },
+    { label: "Всего изделий",     value: stats?.totalProducts   ?? 0, icon: <Package size={18} />,       color: "#4A90E8" },
+    { label: "В серии",           value: stats?.inSerial        ?? 0, icon: <Boxes size={18} />,          color: "#2DD4A8" },
+    { label: "В разработке",      value: stats?.inDevelopment   ?? 0, icon: <Lightbulb size={18} />,      color: "#E8A830" },
+    { label: "Истекает РУ",       value: stats?.expiringRu      ?? 0, icon: <AlertTriangle size={18} />,  color: "#F06060" },
+    { label: "Класс риска 2б+",   value: stats?.highRiskClass   ?? 0, icon: <Shield size={18} />,         color: "#A06AE8" },
   ];
+
+  /* ───── risk class distribution (derived from stats) ───── */
+  const riskDistribution: RiskDistribution[] = (["1", "2A", "2B", "3"] as const).map((key) => ({
+    label: riskDistributionColors[key].label,
+    count: stats?.riskClassDistribution?.[key] ?? 0,
+    color: riskDistributionColors[key].color,
+  }));
+
+  const maxCount = Math.max(...riskDistribution.map((d) => d.count), 1);
+
+  /* ───── loading state ───── */
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-asvo-bg">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="animate-spin text-[#4A90E8]" size={32} />
+          <span className="text-asvo-text-dim text-sm">Загрузка реестра изделий...</span>
+        </div>
+      </div>
+    );
+  }
+
+  /* ───── error state ───── */
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-asvo-bg">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <AlertTriangle className="text-[#F06060]" size={32} />
+          <span className="text-asvo-text font-medium">Не удалось загрузить данные</span>
+          <span className="text-asvo-text-dim text-sm max-w-md">{error}</span>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-2 px-4 py-2 bg-asvo-surface-2 border border-asvo-border rounded-lg text-asvo-text text-sm hover:border-asvo-accent/50 transition-colors"
+          >
+            Повторить
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-5 bg-asvo-bg min-h-screen">
@@ -179,7 +236,7 @@ const ProductRegistryPage: React.FC = () => {
       <KpiRow items={kpis} />
 
       {/* ── Data table ── */}
-      <DataTable<ProductRow> columns={columns} data={PRODUCTS} />
+      <DataTable<ProductRow> columns={columns} data={products} />
 
       {/* ── Risk class distribution ── */}
       <Card>

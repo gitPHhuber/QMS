@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   GitBranch,
   Plus,
@@ -8,6 +8,8 @@ import {
   XCircle,
   Timer,
   CheckCircle2,
+  Loader2,
+  AlertTriangle,
 } from "lucide-react";
 import KpiRow from "../../components/qms/KpiRow";
 import TabBar from "../../components/qms/TabBar";
@@ -16,6 +18,7 @@ import Badge from "../../components/qms/Badge";
 import DataTable from "../../components/qms/DataTable";
 import Card from "../../components/qms/Card";
 import SectionTitle from "../../components/qms/SectionTitle";
+import { changeRequestsApi } from "../../api/qmsApi";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                               */
@@ -109,19 +112,6 @@ const statusColors: Record<ChangeStatus, { color: string; bg: string }> = {
   REJECTED:      { color: "#F06060", bg: "rgba(240,96,96,0.14)" },
   CANCELLED:     { color: "#64748B", bg: "rgba(100,116,139,0.14)" },
 };
-
-/* ------------------------------------------------------------------ */
-/*  Mock data                                                           */
-/* ------------------------------------------------------------------ */
-
-const CHANGES: ChangeRow[] = [
-  { ecr: "ECR-2026-001", date: "15.01.2026", type: "DESIGN",   title: "Замена датчика давления на DPS-200",      category: "MAJOR", priority: "HIGH",     status: "COMPLETED",     initiator: "Чирков И.",     approver: "Холтобин А." },
-  { ecr: "ECR-2026-002", date: "20.01.2026", type: "DOCUMENT", title: "Обновление ИИ сборки v3.2",               category: "MINOR", priority: "MEDIUM",   status: "APPROVED",      initiator: "Яровой Е.",     approver: "Холтобин А." },
-  { ecr: "ECR-2026-003", date: "01.02.2026", type: "PROCESS",  title: "Переход на бессвинцовую пайку",           category: "MAJOR", priority: "CRITICAL", status: "IMPACT_REVIEW", initiator: "Костюков И.",    approver: "\u2014" },
-  { ecr: "ECR-2026-004", date: "05.02.2026", type: "SOFTWARE", title: "Обновление алгоритма BMD v2.1",           category: "MAJOR", priority: "HIGH",     status: "SUBMITTED",     initiator: "Чирков И.",     approver: "\u2014" },
-  { ecr: "ECR-2026-005", date: "08.02.2026", type: "SUPPLIER", title: "Замена поставщика PCB",                   category: "MINOR", priority: "MEDIUM",   status: "DRAFT",         initiator: "Яровой Е.",     approver: "\u2014" },
-  { ecr: "ECR-2026-006", date: "10.02.2026", type: "MATERIAL", title: "Замена типа корпусного пластика",         category: "MAJOR", priority: "MEDIUM",   status: "VERIFICATION",  initiator: "Омельченко А.", approver: "Холтобин А." },
-];
 
 /* ------------------------------------------------------------------ */
 /*  Tabs                                                                */
@@ -232,13 +222,68 @@ const columns = [
 const ChangeControlPage: React.FC = () => {
   const [tab, setTab] = useState("registry");
 
-  /* ---- KPI ---- */
+  /* ---- API state ---- */
+  const [changes, setChanges] = useState<ChangeRow[]>([]);
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  /* ---- Fetch data on mount ---- */
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const [allResult, statsResult] = await Promise.all([
+          changeRequestsApi.getAll(),
+          changeRequestsApi.getStats(),
+        ]);
+
+        if (cancelled) return;
+
+        const rows: ChangeRow[] = (allResult.rows ?? []).map((r: any) => ({
+          ecr: r.ecr ?? r.number ?? `ECR-${r.id}`,
+          date: r.date ?? (r.createdAt ? new Date(r.createdAt).toLocaleDateString("ru-RU") : "\u2014"),
+          type: r.type ?? "DESIGN",
+          title: r.title ?? "",
+          category: r.category ?? "MINOR",
+          priority: r.priority ?? "MEDIUM",
+          status: r.status ?? "DRAFT",
+          initiator: r.initiator
+            ?? (r.initiatedBy ? `${r.initiatedBy.surname ?? ""} ${(r.initiatedBy.name ?? "").charAt(0)}.`.trim() : "\u2014"),
+          approver: r.approver
+            ?? (r.approvedBy ? `${r.approvedBy.surname ?? ""} ${(r.approvedBy.name ?? "").charAt(0)}.`.trim() : "\u2014"),
+        }));
+
+        setChanges(rows);
+        setStats(statsResult);
+      } catch (err: any) {
+        if (!cancelled) {
+          setError(err?.response?.data?.message ?? err?.message ?? "Ошибка загрузки данных");
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  /* ---- KPI (driven by stats from API) ---- */
   const kpis = [
-    { label: "Всего запросов",              value: 42,     icon: <GitBranch size={18} />,    color: "#4A90E8" },
-    { label: "Ожидают одобрения",           value: 8,      icon: <Clock size={18} />,        color: "#E8A830" },
-    { label: "В работе",                    value: 5,      icon: <PlayCircle size={18} />,   color: "#2DD4A8" },
-    { label: "Отклонено",                   value: 3,      icon: <XCircle size={18} />,      color: "#F06060" },
-    { label: "Среднее время внедрения дн.", value: 14,     icon: <Timer size={18} />,        color: "#2DD4A8" },
+    { label: "Всего запросов",              value: stats?.totalRequests   ?? stats?.total   ?? changes.length, icon: <GitBranch size={18} />,    color: "#4A90E8" },
+    { label: "Ожидают одобрения",           value: stats?.pendingApproval ?? stats?.pending ?? 0,              icon: <Clock size={18} />,        color: "#E8A830" },
+    { label: "В работе",                    value: stats?.inProgress      ?? 0,                                icon: <PlayCircle size={18} />,   color: "#2DD4A8" },
+    { label: "Отклонено",                   value: stats?.rejected        ?? 0,                                icon: <XCircle size={18} />,      color: "#F06060" },
+    { label: "Среднее время внедрения дн.", value: stats?.avgImplementationDays ?? stats?.avgDays ?? 0,        icon: <Timer size={18} />,        color: "#2DD4A8" },
   ];
 
   /* ---- render ---- */
@@ -269,11 +314,38 @@ const ChangeControlPage: React.FC = () => {
       {/* Tab Bar */}
       <TabBar tabs={TABS} active={tab} onChange={setTab} />
 
+      {/* ---- Loading spinner ---- */}
+      {loading && (
+        <Card>
+          <div className="flex flex-col items-center justify-center py-16">
+            <Loader2 size={36} className="animate-spin text-asvo-accent mb-3" />
+            <p className="text-[13px] text-asvo-text-dim">Загрузка данных...</p>
+          </div>
+        </Card>
+      )}
+
+      {/* ---- Error state ---- */}
+      {!loading && error && (
+        <Card>
+          <div className="flex flex-col items-center justify-center py-12">
+            <AlertTriangle size={36} className="mb-3" style={{ color: "#F06060" }} />
+            <p className="text-[13px] text-asvo-text mb-1" style={{ color: "#F06060" }}>{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-3 px-4 py-1.5 rounded-lg text-[12px] font-medium"
+              style={{ background: "rgba(74,144,232,0.15)", color: "#4A90E8" }}
+            >
+              Повторить
+            </button>
+          </div>
+        </Card>
+      )}
+
       {/* ---- TAB: Registry ---- */}
-      {tab === "registry" && <DataTable columns={columns} data={CHANGES} />}
+      {!loading && !error && tab === "registry" && <DataTable columns={columns} data={changes} />}
 
       {/* ---- TAB: Workflow ---- */}
-      {tab === "workflow" && (
+      {!loading && !error && tab === "workflow" && (
         <Card>
           <SectionTitle>Workflow &mdash; Жизненный цикл ECR</SectionTitle>
 
@@ -367,7 +439,7 @@ const ChangeControlPage: React.FC = () => {
       )}
 
       {/* ---- TAB: Analytics ---- */}
-      {tab === "analytics" && (
+      {!loading && !error && tab === "analytics" && (
         <Card>
           <div className="flex flex-col items-center justify-center py-12 text-asvo-text-dim">
             <GitBranch size={40} className="mb-3 opacity-30" />
