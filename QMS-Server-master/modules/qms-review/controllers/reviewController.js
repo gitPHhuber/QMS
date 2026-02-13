@@ -13,7 +13,6 @@ const getAll = async (req, res) => {
     const { year, status, page = 1, limit = 20 } = req.query;
     const where = {};
     if (year) {
-      const { Op } = require("sequelize");
       where.reviewDate = {
         [Op.gte]: new Date(`${year}-01-01`),
         [Op.lte]: new Date(`${year}-12-31`),
