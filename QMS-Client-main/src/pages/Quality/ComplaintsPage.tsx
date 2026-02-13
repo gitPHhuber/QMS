@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   MessageSquareWarning,
   Plus,
@@ -15,6 +15,7 @@ import Badge from "../../components/qms/Badge";
 import DataTable from "../../components/qms/DataTable";
 import Card from "../../components/qms/Card";
 import SectionTitle from "../../components/qms/SectionTitle";
+import { complaintsApi } from "../../api/qmsApi";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -93,75 +94,7 @@ const SOURCE_COLORS: Record<Source, string> = {
 };
 
 /* ------------------------------------------------------------------ */
-/*  Mock data                                                          */
-/* ------------------------------------------------------------------ */
-
-const COMPLAINTS: ComplaintRow[] = [
-  {
-    id: "CMP-2026-001",
-    date: "01.02.2026",
-    source: "CUSTOMER",
-    product: "DEXA-PRO 3000",
-    description: "Погрешность измерения BMD выше нормы",
-    severity: "MAJOR",
-    status: "INVESTIGATING",
-    owner: "Костюков И.",
-    ncRef: "NC-047",
-    capaRef: "\u2014",
-  },
-  {
-    id: "CMP-2026-002",
-    date: "05.02.2026",
-    source: "DISTRIBUTOR",
-    product: "AXR-100",
-    description: "Повреждение упаковки при транспортировке",
-    severity: "MINOR",
-    status: "CLOSED",
-    owner: "Яровой Е.",
-    ncRef: "\u2014",
-    capaRef: "\u2014",
-  },
-  {
-    id: "CMP-2026-003",
-    date: "08.02.2026",
-    source: "REGULATOR",
-    product: "DEXA-PRO 3000",
-    description: "Несоответствие маркировки требованиям",
-    severity: "MAJOR",
-    status: "RECEIVED",
-    owner: "Холтобин А.",
-    ncRef: "\u2014",
-    capaRef: "\u2014",
-    isReportable: true,
-  },
-  {
-    id: "CMP-2026-004",
-    date: "10.02.2026",
-    source: "INTERNAL",
-    product: "DensiBot v2",
-    description: "Сбой ПО при калибровке",
-    severity: "CRITICAL",
-    status: "INVESTIGATING",
-    owner: "Чирков И.",
-    ncRef: "NC-051",
-    capaRef: "CAPA-019",
-  },
-  {
-    id: "CMP-2026-005",
-    date: "11.02.2026",
-    source: "CUSTOMER",
-    product: "AXR-100",
-    description: "Некорректные показания после 6 мес эксплуатации",
-    severity: "MAJOR",
-    status: "UNDER_REVIEW",
-    owner: "\u2014",
-    ncRef: "\u2014",
-    capaRef: "\u2014",
-  },
-];
-
-/* ------------------------------------------------------------------ */
-/*  Source distribution data                                           */
+/*  Source distribution type                                           */
 /* ------------------------------------------------------------------ */
 
 interface SourceStat {
@@ -169,14 +102,6 @@ interface SourceStat {
   count: number;
   pct: number;
 }
-
-const SOURCE_STATS: SourceStat[] = [
-  { source: "CUSTOMER",     count: 2, pct: 40 },
-  { source: "DISTRIBUTOR",  count: 1, pct: 20 },
-  { source: "REGULATOR",    count: 1, pct: 20 },
-  { source: "INTERNAL",     count: 1, pct: 20 },
-  { source: "FIELD_REPORT", count: 0, pct: 0 },
-];
 
 /* ------------------------------------------------------------------ */
 /*  Tabs                                                               */
@@ -286,14 +211,110 @@ const columns = [
 const ComplaintsPage: React.FC = () => {
   const [tab, setTab] = useState("registry");
 
-  /* ---- KPI ---- */
+  /* ---- Data state ---- */
+  const [complaints, setComplaints] = useState<ComplaintRow[]>([]);
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  /* ---- Fetch data on mount ---- */
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const [complaintsRes, statsRes] = await Promise.all([
+          complaintsApi.getAll(),
+          complaintsApi.getStats(),
+        ]);
+
+        setComplaints(complaintsRes.rows ?? []);
+        setStats(statsRes);
+      } catch (err: any) {
+        console.error("Failed to load complaints data:", err);
+        setError(err?.response?.data?.message || err?.message || "Ошибка загрузки данных");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  /* ---- Compute source stats from complaints ---- */
+  const sourceStats: SourceStat[] = (() => {
+    const total = complaints.length;
+    const allSources: Source[] = ["CUSTOMER", "DISTRIBUTOR", "REGULATOR", "INTERNAL", "FIELD_REPORT"];
+    return allSources.map((source) => {
+      const count = complaints.filter((c) => c.source === source).length;
+      return { source, count, pct: total > 0 ? Math.round((count / total) * 100) : 0 };
+    });
+  })();
+
+  /* ---- KPI (from stats or fallback to computed) ---- */
   const kpis = [
-    { label: "Всего рекламаций",          value: 5,     icon: <MessageSquareWarning size={18} />, color: "#4A90E8" },
-    { label: "Открытых",                   value: 3,     icon: <Clock size={18} />,                color: "#E8A830" },
-    { label: "Критических",                value: 1,     icon: <AlertTriangle size={18} />,        color: "#F06060" },
-    { label: "Среднее время закрытия дн.",  value: 12,    icon: <Timer size={18} />,                color: "#2DD4A8" },
-    { label: "Требуют уведомления",        value: 1,     icon: <Shield size={18} />,               color: "#F06060" },
+    {
+      label: "Всего рекламаций",
+      value: stats?.totalComplaints ?? complaints.length,
+      icon: <MessageSquareWarning size={18} />,
+      color: "#4A90E8",
+    },
+    {
+      label: "Открытых",
+      value: stats?.openComplaints ?? complaints.filter((c) => !["CLOSED", "REJECTED", "RESOLVED"].includes(c.status)).length,
+      icon: <Clock size={18} />,
+      color: "#E8A830",
+    },
+    {
+      label: "Критических",
+      value: stats?.criticalComplaints ?? complaints.filter((c) => c.severity === "CRITICAL").length,
+      icon: <AlertTriangle size={18} />,
+      color: "#F06060",
+    },
+    {
+      label: "Среднее время закрытия дн.",
+      value: stats?.avgClosingDays ?? 0,
+      icon: <Timer size={18} />,
+      color: "#2DD4A8",
+    },
+    {
+      label: "Требуют уведомления",
+      value: stats?.reportableComplaints ?? complaints.filter((c) => c.isReportable).length,
+      icon: <Shield size={18} />,
+      color: "#F06060",
+    },
   ];
+
+  /* ---- Loading state ---- */
+  if (loading) {
+    return (
+      <div className="p-6 bg-asvo-bg min-h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-asvo-blue border-t-transparent rounded-full animate-spin" />
+          <span className="text-sm text-asvo-text-dim">Загрузка рекламаций...</span>
+        </div>
+      </div>
+    );
+  }
+
+  /* ---- Error state ---- */
+  if (error) {
+    return (
+      <div className="p-6 bg-asvo-bg min-h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <AlertTriangle size={36} className="text-red-400" />
+          <p className="text-sm text-red-400">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-2 px-4 py-1.5 text-xs bg-asvo-surface border border-asvo-border rounded-lg text-asvo-text hover:bg-asvo-border transition-colors"
+          >
+            Повторить
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-5 bg-asvo-bg min-h-screen">
@@ -322,7 +343,7 @@ const ComplaintsPage: React.FC = () => {
       <TabBar tabs={TABS} active={tab} onChange={setTab} />
 
       {/* ---- TAB: Registry ---- */}
-      {tab === "registry" && <DataTable columns={columns} data={COMPLAINTS} />}
+      {tab === "registry" && <DataTable columns={columns} data={complaints} />}
 
       {/* ---- TAB: Sources ---- */}
       {tab === "sources" && (
@@ -331,7 +352,7 @@ const ComplaintsPage: React.FC = () => {
 
           {/* Bar chart visualization */}
           <div className="space-y-4">
-            {SOURCE_STATS.map((s) => (
+            {sourceStats.map((s) => (
               <div key={s.source} className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <span className="text-[13px] text-asvo-text">{SOURCE_LABELS[s.source]}</span>
@@ -352,59 +373,43 @@ const ComplaintsPage: React.FC = () => {
             ))}
           </div>
 
-          {/* Pie chart visualization (static) */}
+          {/* Pie chart visualization */}
           <div className="mt-8">
             <SectionTitle>Визуализация</SectionTitle>
 
             <div className="flex items-center justify-center gap-10">
-              {/* Static pie representation */}
+              {/* Dynamic pie representation */}
               <div className="relative w-40 h-40">
                 <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-                  {/* CUSTOMER 40% */}
-                  <circle
-                    cx="50" cy="50" r="40"
-                    fill="none"
-                    stroke={SOURCE_COLORS.CUSTOMER}
-                    strokeWidth="20"
-                    strokeDasharray={`${40 * 2.512} ${100 * 2.512}`}
-                    strokeDashoffset="0"
-                  />
-                  {/* DISTRIBUTOR 20% */}
-                  <circle
-                    cx="50" cy="50" r="40"
-                    fill="none"
-                    stroke={SOURCE_COLORS.DISTRIBUTOR}
-                    strokeWidth="20"
-                    strokeDasharray={`${20 * 2.512} ${100 * 2.512}`}
-                    strokeDashoffset={`${-40 * 2.512}`}
-                  />
-                  {/* REGULATOR 20% */}
-                  <circle
-                    cx="50" cy="50" r="40"
-                    fill="none"
-                    stroke={SOURCE_COLORS.REGULATOR}
-                    strokeWidth="20"
-                    strokeDasharray={`${20 * 2.512} ${100 * 2.512}`}
-                    strokeDashoffset={`${-60 * 2.512}`}
-                  />
-                  {/* INTERNAL 20% */}
-                  <circle
-                    cx="50" cy="50" r="40"
-                    fill="none"
-                    stroke={SOURCE_COLORS.INTERNAL}
-                    strokeWidth="20"
-                    strokeDasharray={`${20 * 2.512} ${100 * 2.512}`}
-                    strokeDashoffset={`${-80 * 2.512}`}
-                  />
+                  {(() => {
+                    let offset = 0;
+                    return sourceStats
+                      .filter((s) => s.pct > 0)
+                      .map((s) => {
+                        const circle = (
+                          <circle
+                            key={s.source}
+                            cx="50" cy="50" r="40"
+                            fill="none"
+                            stroke={SOURCE_COLORS[s.source]}
+                            strokeWidth="20"
+                            strokeDasharray={`${s.pct * 2.512} ${100 * 2.512}`}
+                            strokeDashoffset={`${-offset * 2.512}`}
+                          />
+                        );
+                        offset += s.pct;
+                        return circle;
+                      });
+                  })()}
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-lg font-bold text-asvo-text">5</span>
+                  <span className="text-lg font-bold text-asvo-text">{complaints.length}</span>
                 </div>
               </div>
 
               {/* Legend */}
               <div className="space-y-2.5">
-                {SOURCE_STATS.filter((s) => s.count > 0).map((s) => (
+                {sourceStats.filter((s) => s.count > 0).map((s) => (
                   <div key={s.source} className="flex items-center gap-2.5">
                     <div
                       className="w-3 h-3 rounded-sm"
