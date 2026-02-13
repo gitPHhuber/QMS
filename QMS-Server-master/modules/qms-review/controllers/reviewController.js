@@ -212,6 +212,10 @@ const getDashboard = async (req, res) => {
 
     for (const action of actions) {
       const status = String(action.status || "").toUpperCase();
+      if (status === "CANCELLED" || status === "CANCELED") {
+        continue;
+      }
+
       const deadline = action.deadline ? new Date(action.deadline) : null;
       const isCompleted = status === "COMPLETED" || Boolean(action.completedAt);
       const isOverdue = status === "OVERDUE" || (!isCompleted && deadline instanceof Date && !isNaN(deadline) && deadline < now);
