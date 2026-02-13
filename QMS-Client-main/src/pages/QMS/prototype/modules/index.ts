@@ -1,0 +1,10 @@
+export { DashboardModule } from "./DashboardModule";
+export { DocumentsModule } from "./DocumentsModule";
+export { NonconformityModule } from "./NonconformityModule";
+export { CapaModule } from "./CapaModule";
+export { RisksModule } from "./RisksModule";
+export { SuppliersModule } from "./SuppliersModule";
+export { AuditsModule } from "./AuditsModule";
+export { TrainingModule } from "./TrainingModule";
+export { EquipmentModule } from "./EquipmentModule";
+export { ManagementReviewModule } from "./ManagementReviewModule";
