@@ -59,10 +59,12 @@ const getAll = async (req, res, next) => {
 
 const getOne = async (req, res, next) => {
   try {
+
     const mitigationInc = { model: RiskMitigation, as: "mitigations", order: [["createdAt", "ASC"]] };
     if (Capa) {
       mitigationInc.include = [{ model: Capa, as: "capa", attributes: ["id", "number", "status", "title"] }];
     }
+
 
     const includes = [
       { model: RiskAssessment, as: "assessments", order: [["assessmentDate", "DESC"]] },

@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Truck, Plus, Search, Award, ShieldCheck, FileText,
-  Clock, Headphones, BadgeCheck, Package,
+  Clock, Headphones, BadgeCheck, Package, Loader2, AlertCircle,
 } from 'lucide-react';
 import KpiRow from '../../components/qms/KpiRow';
 import ActionBtn from '../../components/qms/ActionBtn';
@@ -9,6 +9,7 @@ import Badge from '../../components/qms/Badge';
 import DataTable from '../../components/qms/DataTable';
 import SectionTitle from '../../components/qms/SectionTitle';
 import ProgressBar from '../../components/qms/ProgressBar';
+import { suppliersApi } from '../../api/qmsApi';
 
 /* ───── types ───── */
 interface SupplierRow {
@@ -21,16 +22,6 @@ interface SupplierRow {
   certs: string;
   [key: string]: unknown;
 }
-
-/* ───── mock data ───── */
-const SUPPLIERS: SupplierRow[] = [
-  { id: 'SUP-001', name: 'ООО "Резонанс"',         category: 'Компоненты',  rating: 92, status: 'Одобрен',       lastAudit: '15.01.2026', certs: 'ISO 9001' },
-  { id: 'SUP-003', name: 'АО "ПКБ Электро"',       category: 'PCB',         rating: 85, status: 'Одобрен',       lastAudit: '20.12.2025', certs: 'ISO 9001, IPC' },
-  { id: 'SUP-005', name: 'ИП Волков',               category: 'Крепёж',      rating: 67, status: 'Условный',      lastAudit: '10.11.2025', certs: '\u2014' },
-  { id: 'SUP-007', name: 'ООО "МетаПласт"',         category: 'Корпуса',     rating: 78, status: 'Одобрен',       lastAudit: '05.01.2026', certs: 'ISO 9001' },
-  { id: 'SUP-012', name: 'Shenzhen Sensors Co.',     category: 'Датчики',     rating: 45, status: 'Заблокирован', lastAudit: '01.09.2025', certs: '\u2014' },
-  { id: 'SUP-015', name: 'ООО "КалибрПро"',         category: 'Калибровка',  rating: 91, status: 'Одобрен',       lastAudit: '20.01.2026', certs: 'ISO 17025' },
-];
 
 /* ───── badge helpers ───── */
 const statusMap: Record<string, { color: string; bg: string }> = {
@@ -132,22 +123,82 @@ const CRITERIA: Criterion[] = [
 /* ════════════════════════════════════════════════════ */
 
 const SuppliersPage: React.FC = () => {
-  const [search, setSearch] = React.useState('');
+  const [search, setSearch] = useState('');
+  const [suppliers, setSuppliers] = useState<SupplierRow[]>([]);
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const filtered = SUPPLIERS.filter(
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const [suppliersRes, statsRes] = await Promise.all([
+          suppliersApi.getAll(),
+          suppliersApi.getStats(),
+        ]);
+
+        setSuppliers(suppliersRes.rows ?? []);
+        setStats(statsRes);
+      } catch (err: any) {
+        setError(err?.response?.data?.message || err?.message || 'Ошибка загрузки данных');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const filtered = suppliers.filter(
     (r) =>
       r.name.toLowerCase().includes(search.toLowerCase()) ||
-      r.id.toLowerCase().includes(search.toLowerCase()),
+      String(r.id).toLowerCase().includes(search.toLowerCase()),
   );
 
   /* ───── KPI ───── */
   const kpis = [
-    { label: 'Всего поставщиков', value: 28,     color: '#4A90E8', icon: <Truck size={18} /> },
-    { label: 'Одобренных',        value: 22,     color: '#2DD4A8', icon: <ShieldCheck size={18} /> },
-    { label: 'На аудите',         value: 3,      color: '#E8A830', icon: <Search size={18} /> },
-    { label: 'Заблокированных',   value: 2,      color: '#F06060', icon: <Package size={18} /> },
-    { label: 'Средний рейтинг',   value: '78%',  color: '#2DD4A8', icon: <Award size={18} /> },
+    { label: 'Всего поставщиков', value: stats?.totalSuppliers ?? 0,    color: '#4A90E8', icon: <Truck size={18} /> },
+    { label: 'Одобренных',        value: stats?.approved ?? 0,          color: '#2DD4A8', icon: <ShieldCheck size={18} /> },
+    { label: 'На аудите',         value: stats?.onAudit ?? 0,           color: '#E8A830', icon: <Search size={18} /> },
+    { label: 'Заблокированных',   value: stats?.blocked ?? 0,           color: '#F06060', icon: <Package size={18} /> },
+    { label: 'Средний рейтинг',   value: stats?.averageRating != null ? `${stats.averageRating}%` : '—', color: '#2DD4A8', icon: <Award size={18} /> },
   ];
+
+  /* ───── loading state ───── */
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-asvo-bg flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="animate-spin text-asvo-accent" size={36} />
+          <span className="text-asvo-text-mid text-sm">Загрузка данных поставщиков...</span>
+        </div>
+      </div>
+    );
+  }
+
+  /* ───── error state ───── */
+  if (error) {
+    return (
+      <div className="min-h-screen bg-asvo-bg flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3 max-w-md text-center">
+          <div className="p-3 rounded-full bg-[rgba(240,96,96,0.14)]">
+            <AlertCircle className="text-[#F06060]" size={32} />
+          </div>
+          <h2 className="text-lg font-semibold text-asvo-text">Ошибка загрузки</h2>
+          <p className="text-asvo-text-mid text-sm">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-2 px-4 py-2 bg-asvo-accent text-white rounded-lg text-sm hover:opacity-90 transition-opacity"
+          >
+            Попробовать снова
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-asvo-bg p-6 space-y-6">
