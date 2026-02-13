@@ -1,12 +1,8 @@
 const { ManagementReview, ReviewAction } = require("../models/ManagementReview");
 const { User } = require("../../../models/index");
 const { Nonconformity, Capa } = require("../../qms-nc/models/NcCapa");
-<<<<<<< HEAD
-=======
 const { Op } = require("sequelize");
->>>>>>> origin/main
 const { logAudit } = require("../../core/utils/auditLogger");
-const { Op } = require("sequelize");
 
 // ═══════════════════════════════════════════════════════════════
 // ManagementReview CRUD
@@ -17,6 +13,7 @@ const getAll = async (req, res) => {
     const { year, status, page = 1, limit = 20 } = req.query;
     const where = {};
     if (year) {
+      const { Op } = require("sequelize");
       where.reviewDate = {
         [Op.gte]: new Date(`${year}-01-01`),
         [Op.lte]: new Date(`${year}-12-31`),
@@ -163,26 +160,6 @@ const getStats = async (req, res) => {
   }
 };
 
-<<<<<<< HEAD
-/**
- * Dashboard payload for widgets.
- *
- * Shape:
- * {
- *   summary: {
- *     nonconformityTrend: { total, averagePerMonth },
- *     processKpi: {
- *       NC_CLOSURE_RATE: { formula, value, numerator, denominator, unit },
- *       CAPA_EFFECTIVENESS_RATE: { formula, value, numerator, denominator, unit },
- *       REVIEW_ACTION_COMPLETION_RATE: { formula, value, numerator, denominator, unit }
- *     },
- *     qualityGoalsStatus: { ACHIEVED, AT_RISK, OVERDUE, total }
- *   },
- *   series: {
- *     nonconformityTrend: [{ month, count }],
- *     processKpi: [{ code, formula, value, numerator, denominator, unit }],
- *     qualityGoalsStatus: [{ status, count }]
-=======
 // ═══════════════════════════════════════════════════════════════
 // Dashboard
 // ═══════════════════════════════════════════════════════════════
@@ -207,112 +184,12 @@ const getStats = async (req, res) => {
  *     qualityGoalsStatus: [
  *       { status: "ACHIEVED"|"AT_RISK"|"OVERDUE", value: number }
  *     ]
->>>>>>> origin/main
  *   }
  * }
  */
 const getDashboard = async (req, res) => {
   try {
     const now = new Date();
-<<<<<<< HEAD
-    const startMonth = new Date(now.getFullYear(), now.getMonth() - 11, 1);
-
-    const nonconformities = await Nonconformity.findAll({
-      attributes: ["detectedAt", "status"],
-      where: {
-        detectedAt: { [Op.gte]: startMonth },
-      },
-      raw: true,
-    });
-
-    const nonconformityTrend = [];
-    const monthIndexToLabel = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    for (let i = 11; i >= 0; i -= 1) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      nonconformityTrend.push({ month: monthIndexToLabel(d), count: 0 });
-    }
-
-    const trendMap = new Map(nonconformityTrend.map((x) => [x.month, x]));
-    for (const nc of nonconformities) {
-      const d = new Date(nc.detectedAt);
-      if (!(d instanceof Date) || isNaN(d)) continue;
-      const key = monthIndexToLabel(d);
-      if (trendMap.has(key)) trendMap.get(key).count += 1;
-    }
-
-    const [totalNc, closedNc, capaVerified, capaEffective, totalReviewActions, completedReviewActions, latestReview] = await Promise.all([
-      Nonconformity.count(),
-      Nonconformity.count({ where: { status: "CLOSED" } }),
-      Capa.count({ where: { status: { [Op.in]: ["EFFECTIVE", "INEFFECTIVE"] } } }),
-      Capa.count({ where: { status: "EFFECTIVE" } }),
-      ReviewAction.count(),
-      ReviewAction.count({ where: { status: "COMPLETED" } }),
-      ManagementReview.findOne({
-        where: { outputData: { [Op.ne]: null } },
-        attributes: ["outputData", "reviewDate", "createdAt"],
-        order: [["reviewDate", "DESC"], ["createdAt", "DESC"]],
-      }),
-    ]);
-
-    const rate = (numerator, denominator) => (denominator > 0 ? Number(((numerator / denominator) * 100).toFixed(2)) : 0);
-
-    const processKpi = {
-      NC_CLOSURE_RATE: {
-        formula: "(closed NC / total NC) * 100",
-        numerator: closedNc,
-        denominator: totalNc,
-        value: rate(closedNc, totalNc),
-        unit: "%",
-      },
-      CAPA_EFFECTIVENESS_RATE: {
-        formula: "(effective CAPA / verified CAPA) * 100",
-        numerator: capaEffective,
-        denominator: capaVerified,
-        value: rate(capaEffective, capaVerified),
-        unit: "%",
-      },
-      REVIEW_ACTION_COMPLETION_RATE: {
-        formula: "(completed review actions / total review actions) * 100",
-        numerator: completedReviewActions,
-        denominator: totalReviewActions,
-        value: rate(completedReviewActions, totalReviewActions),
-        unit: "%",
-      },
-    };
-
-    const qualityGoalsStatus = { ACHIEVED: 0, AT_RISK: 0, OVERDUE: 0, total: 0 };
-    const objectives = Array.isArray(latestReview?.outputData?.qualityObjectives)
-      ? latestReview.outputData.qualityObjectives
-      : [];
-
-    for (const objective of objectives) {
-      const status = String(objective?.status || "").toUpperCase();
-      if (status === "ACHIEVED") qualityGoalsStatus.ACHIEVED += 1;
-      else if (status === "AT_RISK") qualityGoalsStatus.AT_RISK += 1;
-      else if (status === "OVERDUE") qualityGoalsStatus.OVERDUE += 1;
-    }
-    qualityGoalsStatus.total = qualityGoalsStatus.ACHIEVED + qualityGoalsStatus.AT_RISK + qualityGoalsStatus.OVERDUE;
-
-    const totalTrendNc = nonconformityTrend.reduce((acc, x) => acc + x.count, 0);
-
-    res.json({
-      summary: {
-        nonconformityTrend: {
-          total: totalTrendNc,
-          averagePerMonth: Number((totalTrendNc / 12).toFixed(2)),
-        },
-        processKpi,
-        qualityGoalsStatus,
-      },
-      series: {
-        nonconformityTrend,
-        processKpi: Object.entries(processKpi).map(([code, value]) => ({ code, ...value })),
-        qualityGoalsStatus: [
-          { status: "ACHIEVED", count: qualityGoalsStatus.ACHIEVED },
-          { status: "AT_RISK", count: qualityGoalsStatus.AT_RISK },
-          { status: "OVERDUE", count: qualityGoalsStatus.OVERDUE },
-        ],
-=======
     const monthSeries = [];
 
     // 1) Тренды NC (последние 12 месяцев, включая текущий)
@@ -447,7 +324,6 @@ const getDashboard = async (req, res) => {
         nonconformityTrend: monthSeries,
         processKpi,
         qualityGoalsStatus,
->>>>>>> origin/main
       },
     });
   } catch (e) {
