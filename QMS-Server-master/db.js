@@ -4,7 +4,7 @@ const { Sequelize } = require('sequelize');
 module.exports = new Sequelize(
     process.env.DB_NAME || 'asvo_qms',
     process.env.DB_USER || 'qms',
-    process.env.DB_PASSWORD || 'qms_dev_2026',
+    process.env.DB_PASSWORD,
     {
         dialect: 'postgres',
         host: process.env.DB_HOST || '127.0.0.1',

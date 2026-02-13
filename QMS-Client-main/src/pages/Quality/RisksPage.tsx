@@ -167,11 +167,11 @@ const RisksPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <ActionBtn icon={<Plus size={15} />}>Новый риск</ActionBtn>
+          <ActionBtn icon={<Plus size={15} />} disabled title="Будет доступно в следующем спринте">Новый риск</ActionBtn>
           <ActionBtn variant="secondary" color="#A06AE8" icon={<Grid3X3 size={15} />} onClick={() => setShowMatrix((v) => !v)}>
             Матрица рисков
           </ActionBtn>
-          <ActionBtn variant="secondary" icon={<Download size={15} />}>Экспорт</ActionBtn>
+          <ActionBtn variant="secondary" icon={<Download size={15} />} disabled title="Будет доступно в следующем спринте">Экспорт</ActionBtn>
         </div>
       </div>
 

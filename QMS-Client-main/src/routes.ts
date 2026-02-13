@@ -58,6 +58,7 @@ import {
   REGISTRATION_ROUTE,
   QMS_DASHBOARD_ROUTE,
   DOCUMENTS_ROUTE,
+  DOCUMENT_DETAIL_ROUTE,
   NC_ROUTE,
   CAPA_ROUTE,
   RISKS_ROUTE,
@@ -77,6 +78,7 @@ import {
 export const qmsRoutes = [
   { path: QMS_DASHBOARD_ROUTE, Component: QmsDashboardPage },
   { path: DOCUMENTS_ROUTE, Component: DocumentsPage },
+  { path: DOCUMENT_DETAIL_ROUTE, Component: DocumentsPage },
   { path: NC_ROUTE, Component: NonconformityPage },
   { path: CAPA_ROUTE, Component: CapaPage },
   { path: RISKS_ROUTE, Component: RisksPage },

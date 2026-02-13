@@ -224,10 +224,10 @@ const ProductRegistryPage: React.FC = () => {
 
       {/* ── Action buttons ── */}
       <div className="flex items-center gap-3">
-        <ActionBtn variant="primary" icon={<Plus size={15} />}>
+        <ActionBtn variant="primary" icon={<Plus size={15} />} disabled title="Будет доступно в следующем спринте">
           + Новое изделие
         </ActionBtn>
-        <ActionBtn variant="secondary" icon={<Download size={15} />}>
+        <ActionBtn variant="secondary" icon={<Download size={15} />} disabled title="Будет доступно в следующем спринте">
           Экспорт
         </ActionBtn>
       </div>

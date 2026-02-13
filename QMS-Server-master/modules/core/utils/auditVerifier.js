@@ -17,7 +17,7 @@
  */
 
 const { AuditLog } = require("../../../models/index");
-const { computeDataHash, computeChainHash, GENESIS_HASH } = require("./hashChainLogger");
+const { computeDataHash, computeChainHash, GENESIS_HASH } = require("./auditLogger");
 const { Op } = require("sequelize");
 
 /**

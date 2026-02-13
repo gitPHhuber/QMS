@@ -215,7 +215,7 @@ const SuppliersPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <ActionBtn icon={<Plus size={15} />}>Новый поставщик</ActionBtn>
+          <ActionBtn icon={<Plus size={15} />} disabled title="Будет доступно в следующем спринте">Новый поставщик</ActionBtn>
         </div>
       </div>
 

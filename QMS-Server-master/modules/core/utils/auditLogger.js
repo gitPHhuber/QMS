@@ -1,22 +1,22 @@
 /**
- * hashChainLogger.js — Иммутабельный аудит-трейл с hash-chain
- * 
- * ЗАМЕНА: utils/auditLogger.js
- * 
+ * auditLogger.js — Иммутабельный аудит-трейл с hash-chain
+ *
+ * Единый модуль аудит-логирования (объединяет бывший hashChainLogger.js)
+ *
  * ISO 13485 §4.2.5: Записи должны быть защищены от несанкционированного
  * изменения, удаления и порчи. Hash-chain гарантирует целостность —
  * изменение любой записи ломает всю последующую цепочку.
- * 
+ *
  * Алгоритм:
  *   1. Вычисляем dataHash = SHA-256(userId + action + entity + entityId + description + metadata + timestamp)
  *   2. Получаем prevHash из последней записи в цепочке
  *   3. Вычисляем currentHash = SHA-256(chainIndex + prevHash + dataHash)
  *   4. Сохраняем запись атомарно (с блокировкой для chainIndex)
- * 
+ *
  * Genesis запись: prevHash = "0".repeat(64), chainIndex = 1
- * 
+ *
  * СОВМЕСТИМОСТЬ: Экспортирует те же функции что старый auditLogger.js,
- * плюс новые QMS-специфичные (logDocumentApproval, logNonconformity и т.д.)
+ * плюс QMS-специфичные (logDocumentApproval, logNonconformity и т.д.)
  */
 
 const crypto = require("crypto");
@@ -316,20 +316,21 @@ function computeChainHash(chainIndex, prevHash, dataHash) {
  * Возвращает { chainIndex, currentHash } или genesis-значения.
  */
 async function getLastChainEntry(transaction) {
-  const [results] = await sequelize.query(
-    `SELECT "chainIndex", "currentHash" 
-     FROM audit_logs 
-     WHERE "chainIndex" IS NOT NULL 
-     ORDER BY "chainIndex" DESC 
+  // QueryTypes.SELECT возвращает массив строк напрямую (не [rows, metadata])
+  const rows = await sequelize.query(
+    `SELECT "chainIndex", "currentHash"
+     FROM audit_logs
+     WHERE "chainIndex" IS NOT NULL
+     ORDER BY "chainIndex" DESC
      LIMIT 1
      FOR UPDATE`,
     { transaction, type: sequelize.QueryTypes.SELECT }
   );
 
-  if (results) {
+  if (rows && rows.length > 0) {
     return {
-      chainIndex: Number(results.chainIndex),
-      currentHash: results.currentHash,
+      chainIndex: Number(rows[0].chainIndex),
+      currentHash: rows[0].currentHash,
     };
   }
 
@@ -342,12 +343,12 @@ async function getLastChainEntry(transaction) {
 
 /**
  * Записывает событие в аудит-лог с hash-chain защитой.
- * 
+ *
  * Полностью обратно совместима со старым logAudit():
  *   - Принимает те же параметры (req, userId, action, entity, entityId, description, metadata)
  *   - Добавляет hash-chain автоматически
  *   - Автоматически определяет severity
- * 
+ *
  * @param {Object} params
  * @param {Object}  [params.req]         - Express request (для IP, user)
  * @param {number}  [params.userId]      - ID пользователя (если нет req)
@@ -357,6 +358,7 @@ async function getLastChainEntry(transaction) {
  * @param {string}  [params.description] - Описание
  * @param {Object}  [params.metadata]    - Доп. данные (JSON)
  * @param {string}  [params.severity]    - Принудительный severity (иначе авто)
+ * @param {Object}  [params.transaction] - Внешняя транзакция (для атомарности с бизнес-операцией)
  * @returns {Promise<Object>} Созданная запись AuditLog
  */
 async function logAudit({
@@ -368,15 +370,18 @@ async function logAudit({
   description,
   metadata,
   severity,
+  transaction: externalTransaction,
 }) {
   if (!action) {
-    console.warn("[HashChainLogger] Попытка логирования без указания action");
+    console.warn("[AuditLogger] Попытка логирования без указания action");
     return null;
   }
 
-  // Транзакция обязательна — нужна атомарность chain-записи
-  const transaction = await sequelize.transaction({
-    isolationLevel: "SERIALIZABLE", // Предотвращаем race condition на chainIndex
+  // Используем внешнюю транзакцию если передана (для атомарности с бизнес-операцией),
+  // иначе создаём собственную SERIALIZABLE транзакцию
+  const isExternalTransaction = !!externalTransaction;
+  const transaction = externalTransaction || await sequelize.transaction({
+    isolationLevel: "SERIALIZABLE",
   });
 
   try {
@@ -451,11 +456,16 @@ async function logAudit({
       { transaction }
     );
 
-    await transaction.commit();
+    // Коммитим только собственную транзакцию; внешняя управляется вызывающим кодом
+    if (!isExternalTransaction) {
+      await transaction.commit();
+    }
     return record;
   } catch (error) {
-    await transaction.rollback();
-    console.error("[HashChainLogger] Ошибка записи в журнал аудита:", error);
+    if (!isExternalTransaction) {
+      await transaction.rollback();
+    }
+    console.error("[AuditLogger] Ошибка записи в журнал аудита:", error);
 
     // Fallback: пишем без hash-chain чтобы не потерять событие
     try {
@@ -473,7 +483,7 @@ async function logAudit({
         severity: severity || getSeverity(action),
       });
     } catch (fallbackError) {
-      console.error("[HashChainLogger] CRITICAL: Даже fallback-запись не удалась:", fallbackError);
+      console.error("[AuditLogger] CRITICAL: Даже fallback-запись не удалась:", fallbackError);
       return null;
     }
   }
@@ -569,17 +579,20 @@ async function logExport(req, exportType, description, metadata = {}) {
 // ── Документы (DMS) ──
 
 async function logDocumentCreate(req, doc, metadata = {}) {
+  const { transaction, ...restMeta } = metadata;
   return logAudit({
     req,
     action: AUDIT_ACTIONS.DOCUMENT_CREATE,
     entity: AUDIT_ENTITIES.DOCUMENT,
     entityId: doc.id,
     description: `Создан документ: ${doc.code} "${doc.title}"`,
-    metadata: { code: doc.code, type: doc.type, ...metadata },
+    metadata: { code: doc.code, type: doc.type, ...restMeta },
+    transaction,
   });
 }
 
 async function logDocumentApproval(req, doc, version, decision, metadata = {}) {
+  const { transaction, ...restMeta } = metadata;
   const action =
     decision === "APPROVED"
       ? AUDIT_ACTIONS.DOCUMENT_APPROVE
@@ -596,12 +609,14 @@ async function logDocumentApproval(req, doc, version, decision, metadata = {}) {
       versionId: version.id,
       versionNumber: version.version,
       decision,
-      ...metadata,
+      ...restMeta,
     },
+    transaction,
   });
 }
 
 async function logDocumentEffective(req, doc, version, metadata = {}) {
+  const { transaction, ...restMeta } = metadata;
   return logAudit({
     req,
     action: AUDIT_ACTIONS.DOCUMENT_MAKE_EFFECTIVE,
@@ -611,8 +626,9 @@ async function logDocumentEffective(req, doc, version, metadata = {}) {
     metadata: {
       documentId: doc.id,
       versionId: version.id,
-      ...metadata,
+      ...restMeta,
     },
+    transaction,
   });
 }
 
