@@ -267,18 +267,28 @@ const getDashboard = async (req, res) => {
 
     const goalsStatus = { ACHIEVED: 0, AT_RISK: 0, OVERDUE: 0 };
 
+    const hasFiniteMetricValue = (value) => {
+      if (value === null || value === undefined) return false;
+      if (typeof value === "string" && value.trim() === "") return false;
+
+      const parsed = Number(value);
+      return Number.isFinite(parsed);
+    };
+
     rawQualityGoals.forEach((goal) => {
       const status = String(goal?.status || "").toUpperCase();
       const dueDate = goal?.dueDate ? new Date(goal.dueDate) : null;
-      const target = Number(goal?.target);
-      const actual = Number(goal?.actual);
+      const hasValidTarget = hasFiniteMetricValue(goal?.target);
+      const hasValidActual = hasFiniteMetricValue(goal?.actual);
+      const target = hasValidTarget ? Number(goal.target) : null;
+      const actual = hasValidActual ? Number(goal.actual) : null;
 
       if (status === "OVERDUE") {
         goalsStatus.OVERDUE += 1;
         return;
       }
 
-      if (status === "ACHIEVED" || (!Number.isNaN(target) && !Number.isNaN(actual) && actual >= target)) {
+      if (status === "ACHIEVED" || (target !== null && actual !== null && actual >= target)) {
         goalsStatus.ACHIEVED += 1;
         return;
       }
