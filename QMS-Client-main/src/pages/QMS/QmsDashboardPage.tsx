@@ -3,7 +3,7 @@
  * Dark-theme dashboard с KPI, Risk Matrix, Timeline и виджетами
  */
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   FileText,
   AlertTriangle,
@@ -21,6 +21,7 @@ import {
   CheckCircle2,
   Circle,
   Activity,
+  Info,
 } from "lucide-react";
 
 import ProcessMap from "../../components/qms/ProcessMap";
@@ -36,6 +37,8 @@ import {
   Legend,
 } from "recharts";
 import TabBar from "../../components/qms/TabBar";
+
+import { reviewsApi } from "../../api/qmsApi";
 
 
 /* ------------------------------------------------------------------ */
@@ -124,6 +127,14 @@ interface MesMetricsData {
   productionTarget: number;
   lineStatus: "running" | "stopped" | "maintenance";
 }
+
+interface QualityObjectivesStatusData {
+  achieved: number;
+  atRisk: number;
+  overdue: number;
+  total: number;
+}
+
 
 interface TimelineEvent {
   date: string;
@@ -358,6 +369,37 @@ const TrendTooltipContent: React.FC<{
 
 export const QmsDashboardPage: React.FC = () => {
   const [role, setRole] = useState<DashboardRole>("quality_manager");
+  const [qualityObjectivesStatus, setQualityObjectivesStatus] = useState<QualityObjectivesStatusData>({
+    achieved: 0,
+    atRisk: 0,
+    overdue: 0,
+    total: 0,
+  });
+
+  useEffect(() => {
+    let mounted = true;
+
+    reviewsApi
+      .getDashboard()
+      .then((data) => {
+        if (!mounted) return;
+        const status = data?.qualityObjectivesStatus;
+        setQualityObjectivesStatus({
+          achieved: Number(status?.achieved || 0),
+          atRisk: Number(status?.atRisk || 0),
+          overdue: Number(status?.overdue || 0),
+          total: Number(status?.total || 0),
+        });
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setQualityObjectivesStatus({ achieved: 0, atRisk: 0, overdue: 0, total: 0 });
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   /* ---------- visibility helper ---------- */
   const show = (qm: boolean, ph: boolean, dir: boolean): boolean => {
@@ -726,6 +768,39 @@ export const QmsDashboardPage: React.FC = () => {
                 style={{ width: `${supplierApprovedPct}%` }}
               />
             </div>
+          </div>
+        )}
+
+        {/* ---------- Widget: Статус целей качества ---------- */}
+        {show(true, false, true) && (
+          <div className="bg-asvo-surface-2 border border-asvo-border rounded-xl p-4">
+            <h3 className="text-sm font-semibold text-asvo-text mb-3 flex items-center gap-2">
+              <Target size={14} className="text-asvo-text-dim" />
+              Статус целей качества
+            </h3>
+
+            <div className="space-y-2 mb-3">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-[#2DD4A8]">Достигнуто</span>
+                <span className="font-semibold text-asvo-text">{qualityObjectivesStatus.achieved}</span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-[#E8A830]">В риске</span>
+                <span className="font-semibold text-asvo-text">{qualityObjectivesStatus.atRisk}</span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-[#F06060]">Просрочено</span>
+                <span className="font-semibold text-asvo-text">{qualityObjectivesStatus.overdue}</span>
+              </div>
+            </div>
+
+            <p
+              className="text-[10px] text-asvo-text-dim leading-4"
+              title="Критерии: достигнуто — факт выполнения/статус COMPLETED(ACHIEVED); в риске — дедлайн в ближайшие 30 дней без завершения; просрочено — дедлайн прошел или статус OVERDUE."
+            >
+              <Info size={11} className="inline mr-1" />
+              Критерии: «достигнуто» — выполнено; «в риске» — дедлайн ≤ 30 дней; «просрочено» — дедлайн прошёл.
+            </p>
           </div>
         )}
 
