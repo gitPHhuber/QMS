@@ -30,7 +30,7 @@ const {
   TYPE_CODE_PREFIX,
 } = require("../models/Document");
 const { User } = require("../../../models/index");
-const { logDocumentCreate, logDocumentApproval, logDocumentEffective, logAudit, AUDIT_ACTIONS } = require("../../core/utils/hashChainLogger");
+const { logDocumentCreate, logDocumentApproval, logDocumentEffective, logAudit, AUDIT_ACTIONS } = require("../../core/utils/auditLogger");
 
 // Директория для хранения файлов документов
 const DOCS_STORAGE = process.env.DOCS_STORAGE_PATH || path.join(__dirname, "..", "static", "documents");
