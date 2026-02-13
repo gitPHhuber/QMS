@@ -35,9 +35,11 @@ app.use("/api", router);
 app.use(errorHandler);
 
 const initInitialData = async () => {
+  const transaction = await sequelize.transaction();
   try {
     console.log(">>> [RBAC] Начинаем инициализацию ролей и прав...");
 
+    const txOpt = { transaction };
 
     const permissions = [
       // Система
@@ -117,11 +119,9 @@ const initInitialData = async () => {
       { code: "audit.log.view", description: "Просмотр журнала аудита" },
     ];
 
-
     for (const p of permissions) {
-      await models.Ability.findOrCreate({ where: { code: p.code }, defaults: p });
+      await models.Ability.findOrCreate({ where: { code: p.code }, defaults: p, ...txOpt });
     }
-
 
     const rolesData = [
       { code: "SUPER_ADMIN", name: "SUPER_ADMIN", description: "Полный доступ" },
@@ -138,27 +138,25 @@ const initInitialData = async () => {
       await models.Role.findOrCreate({
         where: { code: roleData.code },
         defaults: roleData,
+        ...txOpt,
       });
     }
 
-
     const assign = async (roleName, slugs) => {
-      const role = await models.Role.findOne({ where: { name: roleName } });
+      const role = await models.Role.findOne({ where: { name: roleName }, ...txOpt });
       if (!role) return;
 
       let abilities;
       if (slugs === '*') {
-
-        abilities = await models.Ability.findAll();
+        abilities = await models.Ability.findAll(txOpt);
       } else {
-        abilities = await models.Ability.findAll({ where: { code: slugs } });
+        abilities = await models.Ability.findAll({ where: { code: slugs }, ...txOpt });
       }
 
       if (abilities.length) {
-        await role.setAbilities(abilities);
+        await role.setAbilities(abilities, txOpt);
       }
     };
-
 
     await assign("SUPER_ADMIN", '*');
 
@@ -239,8 +237,10 @@ const initInitialData = async () => {
       "validation.read", "product.read", "analytics.view",
     ]);
 
+    await transaction.commit();
     console.log(">>> [RBAC] Инициализация завершена успешно.");
   } catch (e) {
+    await transaction.rollback();
     console.error(">>> [RBAC] Ошибка инициализации:", e);
   }
 };
