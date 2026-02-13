@@ -14,14 +14,14 @@ const checkAbility = require("../../core/middleware/checkAbilityMiddleware");
 const protect = [authMiddleware, syncUserMiddleware];
 
 // ── Агрегированные данные дашборда ──
-router.get("/summary", ...protect, checkAbility("dashboard.view"), ctrl.getSummary);
-router.get("/trends",  ...protect, checkAbility("dashboard.view"), ctrl.getTrends);
+router.get("/summary", ...protect, checkAbility("analytics.view"), ctrl.getSummary);
+router.get("/trends",  ...protect, checkAbility("analytics.view"), ctrl.getTrends);
 
 // ── Цели качества (ISO 6.2) CRUD ──
-router.get("/quality-objectives",       ...protect, checkAbility("dashboard.view"),   ctrl.getObjectives);
-router.get("/quality-objectives/:id",   ...protect, checkAbility("dashboard.view"),   ctrl.getObjectiveOne);
-router.post("/quality-objectives",      ...protect, checkAbility("dashboard.manage"), ctrl.createObjective);
-router.put("/quality-objectives/:id",   ...protect, checkAbility("dashboard.manage"), ctrl.updateObjective);
-router.delete("/quality-objectives/:id",...protect, checkAbility("dashboard.manage"), ctrl.deleteObjective);
+router.get("/quality-objectives",       ...protect, checkAbility("analytics.view"), ctrl.getObjectives);
+router.get("/quality-objectives/:id",   ...protect, checkAbility("analytics.view"), ctrl.getObjectiveOne);
+router.post("/quality-objectives",      ...protect, checkAbility("review.manage"),  ctrl.createObjective);
+router.put("/quality-objectives/:id",   ...protect, checkAbility("review.manage"),  ctrl.updateObjective);
+router.delete("/quality-objectives/:id",...protect, checkAbility("review.manage"),  ctrl.deleteObjective);
 
 module.exports = router;
