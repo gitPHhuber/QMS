@@ -1,0 +1,17 @@
+export const GROUP_LABELS: Record<string, string> = {
+    dms: "Документы СМК",
+    nc: "Несоответствия",
+    capa: "CAPA",
+    risk: "Управление рисками",
+    supplier: "Поставщики",
+    training: "Обучение",
+    equipment: "Оборудование",
+    review: "Анализ руководства",
+    qms: "Аудит QMS",
+    rbac: "Права доступа",
+    users: "Пользователи",
+    warehouse: "Склад",
+    labels: "Этикетки",
+    analytics: "Аналитика",
+    audit: "Журнал аудита",
+};
