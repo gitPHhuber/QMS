@@ -327,9 +327,6 @@ module.exports = {
         await queryInterface.sequelize.query(`DROP TYPE IF EXISTS "${type}";`, { transaction });
       }
 
-
-    try {
-
       // Drop indexes BEFORE removing columns to avoid implicit cascade errors
       await queryInterface.removeIndex("complaints", "idx_complaint_vigilance_status", { transaction });
       await queryInterface.removeIndex("complaints", "idx_complaint_vigilance_deadline", { transaction });
