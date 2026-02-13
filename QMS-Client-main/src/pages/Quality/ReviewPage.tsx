@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   BarChart3,
   Plus,
@@ -10,6 +10,7 @@ import {
   RefreshCw,
   TrendingUp,
   AlertTriangle,
+  Loader2,
 } from "lucide-react";
 import KpiRow from "../../components/qms/KpiRow";
 import ActionBtn from "../../components/qms/ActionBtn";
@@ -17,8 +18,9 @@ import DataTable from "../../components/qms/DataTable";
 import Badge from "../../components/qms/Badge";
 import Card from "../../components/qms/Card";
 import SectionTitle from "../../components/qms/SectionTitle";
+import { reviewsApi } from "../../api/qmsApi";
 
-/* ─── mock data — meetings table ─────────────────────────────────────── */
+/* ─── types ──────────────────────────────────────────────────────── */
 
 interface ReviewRow {
   [key: string]: unknown;
@@ -31,15 +33,7 @@ interface ReviewRow {
   status: string;
 }
 
-const reviewData: ReviewRow[] = [
-  { id: "MR-008", date: "05.02.2026", topic: "Анализ СМК Q4-2025",  chairman: "Холтобин А.", participants: "8",  decisions: "5", status: "Проведено" },
-  { id: "MR-007", date: "15.11.2025", topic: "Анализ СМК Q3-2025",  chairman: "Холтобин А.", participants: "7",  decisions: "6", status: "Проведено" },
-  { id: "MR-006", date: "10.08.2025", topic: "Анализ СМК Q2-2025",  chairman: "Холтобин А.", participants: "6",  decisions: "4", status: "Проведено" },
-  { id: "MR-005", date: "01.05.2025", topic: "Анализ СМК Q1-2025",  chairman: "Холтобин А.", participants: "8",  decisions: "7", status: "Проведено" },
-  { id: "MR-009", date: "15.05.2026", topic: "Анализ СМК Q1-2026",  chairman: "Холтобин А.", participants: "\u2014", decisions: "\u2014", status: "Запланировано" },
-];
-
-/* ─── ISO 13485 п.5.6.2 input data cards ─────────────────────────────── */
+/* ─── ISO 13485 п.5.6.2 input data cards ─────────────────────────── */
 
 interface InputCard {
   title: string;
@@ -58,7 +52,7 @@ const inputDataCards: InputCard[] = [
   { title: "Новые требования",              icon: <AlertTriangle size={24} />, color: "#F06060" },
 ];
 
-/* ─── decisions & actions ─────────────────────────────────────────────── */
+/* ─── decisions & actions ─────────────────────────────────────────── */
 
 interface DecisionRow {
   [key: string]: unknown;
@@ -67,14 +61,7 @@ interface DecisionRow {
   status: string;
 }
 
-const decisionsData: DecisionRow[] = [
-  { action: "Обновить процедуру закупок",             responsible: "Холтобин А.",   status: "В работе" },
-  { action: "Провести дополнительный аудит SUP-012",  responsible: "Костюков И.",   status: "Выполнено" },
-  { action: "Пересмотреть матрицу рисков",            responsible: "Яровой Е.",     status: "Назначено" },
-  { action: "Обучение новых сотрудников ОТК",         responsible: "Омельченко А.", status: "Просрочено" },
-];
-
-/* ─── helpers ────────────────────────────────────────────────────────── */
+/* ─── helpers ────────────────────────────────────────────────────── */
 
 const meetingStatusBadge = (s: string) => {
   switch (s) {
@@ -95,7 +82,7 @@ const decisionStatusBadge = (s: string) => {
   }
 };
 
-/* ─── table columns ──────────────────────────────────────────────────── */
+/* ─── table columns ──────────────────────────────────────────────── */
 
 const reviewColumns = [
   {
@@ -130,71 +117,159 @@ const decisionColumns = [
   },
 ];
 
-/* ─── component ──────────────────────────────────────────────────────── */
+/* ─── component ──────────────────────────────────────────────────── */
 
-const ReviewPage: React.FC = () => (
-  <div className="min-h-screen bg-asvo-bg p-6 space-y-6">
-    {/* Header */}
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-3">
-        <div className="p-2 bg-asvo-blue-dim rounded-lg">
-          <BarChart3 className="text-[#4A90E8]" size={24} />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold text-asvo-text">
-            Анализ со стороны руководства
-          </h1>
-          <p className="text-asvo-text-dim text-sm">
-            ISO 13485 &sect;5.6 &mdash; Management Review
-          </p>
+const ReviewPage: React.FC = () => {
+  const [reviews, setReviews] = useState<ReviewRow[]>([]);
+  const [decisions, setDecisions] = useState<DecisionRow[]>([]);
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const [reviewsRes, statsRes] = await Promise.all([
+          reviewsApi.getAll(),
+          reviewsApi.getStats(),
+        ]);
+
+        const rows: ReviewRow[] = (reviewsRes.rows ?? []).map((r: any) => ({
+          id: r.id ?? r.number ?? "",
+          date: r.date ?? "",
+          topic: r.topic ?? r.title ?? "",
+          chairman: r.chairman ?? "",
+          participants: r.participants ?? "\u2014",
+          decisions: r.decisions ?? "\u2014",
+          status: r.status ?? "",
+        }));
+
+        const actions: DecisionRow[] = (statsRes.actions ?? statsRes.decisions ?? []).map(
+          (a: any) => ({
+            action: a.action ?? a.description ?? "",
+            responsible: a.responsible ?? a.assignedTo ?? "",
+            status: a.status ?? "",
+          }),
+        );
+
+        setReviews(rows);
+        setDecisions(actions);
+        setStats(statsRes);
+      } catch (err: any) {
+        console.error("ReviewPage fetch error:", err);
+        setError(err?.response?.data?.message ?? err?.message ?? "Ошибка загрузки данных");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  /* ─── loading state ─── */
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-asvo-bg flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="animate-spin text-asvo-accent" size={36} />
+          <span className="text-asvo-text-dim text-sm">Загрузка данных...</span>
         </div>
       </div>
-    </div>
+    );
+  }
 
-    {/* KPI Row */}
-    <KpiRow
-      items={[
-        { label: "Всего совещаний",    value: 8,     icon: <BarChart3 size={18} />,    color: "#4A90E8" },
-        { label: "Решений",            value: 24,    icon: <CheckCircle2 size={18} />, color: "#2DD4A8" },
-        { label: "Открытых действий",  value: 6,     icon: <RefreshCw size={18} />,    color: "#E8A830" },
-        { label: "Выполнено",          value: "85%", icon: <TrendingUp size={18} />,   color: "#2DD4A8" },
-      ]}
-    />
-
-    {/* Action buttons */}
-    <div className="flex items-center gap-3">
-      <ActionBtn variant="primary" icon={<Plus size={15} />}>
-        + Новое совещание
-      </ActionBtn>
-      <ActionBtn variant="secondary" icon={<FileText size={15} />}>
-        Протокол
-      </ActionBtn>
-    </div>
-
-    {/* Meetings table */}
-    <SectionTitle>Совещания руководства</SectionTitle>
-    <DataTable<ReviewRow> columns={reviewColumns} data={reviewData} />
-
-    {/* ISO 13485 п.5.6.2 — Input data */}
-    <SectionTitle>ISO 13485 п.5.6.2 — Входные данные анализа</SectionTitle>
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-      {inputDataCards.map((c) => (
-        <div
-          key={c.title}
-          className="bg-asvo-surface-2 rounded-xl p-4 border border-asvo-border flex items-start gap-3"
-        >
-          <span style={{ color: c.color }} className="mt-0.5 shrink-0">
-            {c.icon}
-          </span>
-          <span className="text-sm text-asvo-text leading-snug">{c.title}</span>
+  /* ─── error state ─── */
+  if (error) {
+    return (
+      <div className="min-h-screen bg-asvo-bg flex items-center justify-center">
+        <div className="bg-asvo-surface-2 border border-red-500/30 rounded-xl p-6 max-w-md text-center space-y-3">
+          <AlertTriangle className="mx-auto text-red-400" size={36} />
+          <h2 className="text-lg font-semibold text-asvo-text">Ошибка загрузки</h2>
+          <p className="text-sm text-asvo-text-mid">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-2 px-4 py-2 bg-asvo-accent/20 text-asvo-accent rounded-lg text-sm hover:bg-asvo-accent/30 transition"
+          >
+            Повторить
+          </button>
         </div>
-      ))}
-    </div>
+      </div>
+    );
+  }
 
-    {/* Decisions & actions */}
-    <SectionTitle>Решения и действия</SectionTitle>
-    <DataTable<DecisionRow> columns={decisionColumns} data={decisionsData} />
-  </div>
-);
+  /* ─── KPI values from stats ─── */
+  const totalMeetings = stats?.totalMeetings ?? stats?.total ?? reviews.length;
+  const totalDecisions = stats?.totalDecisions ?? stats?.decisions ?? decisions.length;
+  const openActions = stats?.openActions ?? stats?.open ?? 0;
+  const completionRate = stats?.completionRate ?? stats?.completed ?? "0%";
+
+  return (
+    <div className="min-h-screen bg-asvo-bg p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-asvo-blue-dim rounded-lg">
+            <BarChart3 className="text-[#4A90E8]" size={24} />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-asvo-text">
+              Анализ со стороны руководства
+            </h1>
+            <p className="text-asvo-text-dim text-sm">
+              ISO 13485 &sect;5.6 &mdash; Management Review
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* KPI Row */}
+      <KpiRow
+        items={[
+          { label: "Всего совещаний",    value: totalMeetings,  icon: <BarChart3 size={18} />,    color: "#4A90E8" },
+          { label: "Решений",            value: totalDecisions, icon: <CheckCircle2 size={18} />, color: "#2DD4A8" },
+          { label: "Открытых действий",  value: openActions,    icon: <RefreshCw size={18} />,    color: "#E8A830" },
+          { label: "Выполнено",          value: completionRate, icon: <TrendingUp size={18} />,   color: "#2DD4A8" },
+        ]}
+      />
+
+      {/* Action buttons */}
+      <div className="flex items-center gap-3">
+        <ActionBtn variant="primary" icon={<Plus size={15} />}>
+          + Новое совещание
+        </ActionBtn>
+        <ActionBtn variant="secondary" icon={<FileText size={15} />}>
+          Протокол
+        </ActionBtn>
+      </div>
+
+      {/* Meetings table */}
+      <SectionTitle>Совещания руководства</SectionTitle>
+      <DataTable<ReviewRow> columns={reviewColumns} data={reviews} />
+
+      {/* ISO 13485 п.5.6.2 — Input data */}
+      <SectionTitle>ISO 13485 п.5.6.2 — Входные данные анализа</SectionTitle>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {inputDataCards.map((c) => (
+          <div
+            key={c.title}
+            className="bg-asvo-surface-2 rounded-xl p-4 border border-asvo-border flex items-start gap-3"
+          >
+            <span style={{ color: c.color }} className="mt-0.5 shrink-0">
+              {c.icon}
+            </span>
+            <span className="text-sm text-asvo-text leading-snug">{c.title}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Decisions & actions */}
+      <SectionTitle>Решения и действия</SectionTitle>
+      <DataTable<DecisionRow> columns={decisionColumns} data={decisions} />
+    </div>
+  );
+};
 
 export default ReviewPage;
