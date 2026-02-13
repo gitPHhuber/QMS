@@ -26,6 +26,7 @@ export const TASKS_ROUTE = '/tasks';
 // QMS модули
 export const QMS_DASHBOARD_ROUTE = '/qms';
 export const DOCUMENTS_ROUTE = '/qms/documents';
+export const DOCUMENT_DETAIL_ROUTE = '/qms/documents/:id';
 export const NC_ROUTE = '/qms/nonconformity';
 export const CAPA_ROUTE = '/qms/capa';
 export const RISKS_ROUTE = '/qms/risks';
