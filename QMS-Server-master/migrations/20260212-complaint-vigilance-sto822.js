@@ -162,10 +162,6 @@ module.exports = {
       await queryInterface.addIndex("complaint_attachments", ["complaintId"], { transaction });
       await queryInterface.addIndex("complaint_follow_ups", ["complaintId"], { transaction });
 
-      await transaction.commit();
-      console.log("✅ [complaint-vigilance-sto822] Миграция выполнена: vigilance_reports, complaint_attachments, complaint_follow_ups");
-
-
       // ─── Тип обращения (СТО-8.2.2 §4.1) ───
       await queryInterface.sequelize.query(
         `DO $$ BEGIN
