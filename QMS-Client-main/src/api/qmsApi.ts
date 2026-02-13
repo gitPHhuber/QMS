@@ -563,6 +563,9 @@ export const reviewsApi = {
 
   getStats: () =>
     $authHost.get("/api/reviews/stats").then(r => r.data),
+
+  getDashboard: () =>
+    $authHost.get("/api/reviews/dashboard").then(r => r.data),
 };
 
 // ═══════════════════════════════════════════════════════════════
