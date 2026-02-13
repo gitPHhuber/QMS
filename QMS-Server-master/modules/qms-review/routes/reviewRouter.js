@@ -9,6 +9,7 @@ const protect = [authMiddleware, syncUserMiddleware];
 
 // Stats (static route FIRST)
 router.get("/stats", ...protect, checkAbility("review.read"), ctrl.getStats);
+router.get("/dashboard", ...protect, checkAbility("review.read"), ctrl.getDashboard);
 
 // CRUD
 router.get("/",      ...protect, checkAbility("review.read"),   ctrl.getAll);
