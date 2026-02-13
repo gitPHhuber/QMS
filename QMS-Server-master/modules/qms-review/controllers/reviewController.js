@@ -1,5 +1,7 @@
 const { ManagementReview, ReviewAction } = require("../models/ManagementReview");
 const { User } = require("../../../models/index");
+const { Nonconformity, Capa } = require("../../qms-nc/models/NcCapa");
+const { Op } = require("sequelize");
 const { logAudit } = require("../../core/utils/auditLogger");
 
 // ═══════════════════════════════════════════════════════════════
@@ -158,7 +160,179 @@ const getStats = async (req, res) => {
   }
 };
 
+// ═══════════════════════════════════════════════════════════════
+// Dashboard
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * GET /api/reviews/dashboard
+ *
+ * Формат ответа (готов для прямой отрисовки dashboard):
+ * {
+ *   summary: {
+ *     nonconformitiesTotal: number,
+ *     qualityGoalsTotal: number,
+ *     qualityGoalsAchieved: number,
+ *     qualityGoalsAtRisk: number,
+ *     qualityGoalsOverdue: number
+ *   },
+ *   series: {
+ *     nonconformityTrend: [{ month: "YYYY-MM", count: number }],
+ *     processKpi: [
+ *       { code, title, formula, value, unit, numerator, denominator }
+ *     ],
+ *     qualityGoalsStatus: [
+ *       { status: "ACHIEVED"|"AT_RISK"|"OVERDUE", value: number }
+ *     ]
+ *   }
+ * }
+ */
+const getDashboard = async (req, res) => {
+  try {
+    const now = new Date();
+    const monthSeries = [];
+
+    // 1) Тренды NC (последние 12 месяцев, включая текущий)
+    for (let i = 11; i >= 0; i -= 1) {
+      const start = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const end = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+
+      const count = await Nonconformity.count({
+        where: {
+          detectedAt: {
+            [Op.gte]: start,
+            [Op.lt]: end,
+          },
+        },
+      });
+
+      monthSeries.push({
+        month: `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}`,
+        count,
+      });
+    }
+
+    const [
+      nonconformitiesTotal,
+      closedNcCount,
+      totalCapa,
+      effectiveCapa,
+      totalReviewActions,
+      completedReviewActions,
+      latestReview,
+    ] = await Promise.all([
+      Nonconformity.count(),
+      Nonconformity.count({ where: { status: "CLOSED" } }),
+      Capa.count(),
+      Capa.count({ where: { status: "EFFECTIVE" } }),
+      ReviewAction.count(),
+      ReviewAction.count({ where: { status: "COMPLETED" } }),
+      ManagementReview.findOne({ order: [["reviewDate", "DESC"]] }),
+    ]);
+
+    // 2) KPI процессов СМК (согласованный минимальный набор)
+    const processKpi = [
+      {
+        code: "NC_CLOSURE_RATE",
+        title: "Доля закрытых несоответствий",
+        formula: "(closedNcCount / nonconformitiesTotal) * 100",
+        value: nonconformitiesTotal ? Number(((closedNcCount / nonconformitiesTotal) * 100).toFixed(2)) : 0,
+        unit: "%",
+        numerator: closedNcCount,
+        denominator: nonconformitiesTotal,
+      },
+      {
+        code: "CAPA_EFFECTIVENESS_RATE",
+        title: "Доля результативных CAPA",
+        formula: "(effectiveCapa / totalCapa) * 100",
+        value: totalCapa ? Number(((effectiveCapa / totalCapa) * 100).toFixed(2)) : 0,
+        unit: "%",
+        numerator: effectiveCapa,
+        denominator: totalCapa,
+      },
+      {
+        code: "REVIEW_ACTION_COMPLETION_RATE",
+        title: "Исполнение действий по анализу руководства",
+        formula: "(completedReviewActions / totalReviewActions) * 100",
+        value: totalReviewActions ? Number(((completedReviewActions / totalReviewActions) * 100).toFixed(2)) : 0,
+        unit: "%",
+        numerator: completedReviewActions,
+        denominator: totalReviewActions,
+      },
+    ];
+
+    // 3) Статус целей качества (последний management review)
+    const rawQualityGoals = Array.isArray(latestReview?.outputData?.qualityObjectives)
+      ? latestReview.outputData.qualityObjectives
+      : [];
+
+    const goalsStatus = { ACHIEVED: 0, AT_RISK: 0, OVERDUE: 0 };
+
+    const hasFiniteMetricValue = (value) => {
+      if (value === null || value === undefined) return false;
+      if (typeof value === "string" && value.trim() === "") return false;
+
+      const parsed = Number(value);
+      return Number.isFinite(parsed);
+    };
+
+    rawQualityGoals.forEach((goal) => {
+      const status = String(goal?.status || "").toUpperCase();
+      const dueDate = goal?.dueDate ? new Date(goal.dueDate) : null;
+      const hasValidTarget = hasFiniteMetricValue(goal?.target);
+      const hasValidActual = hasFiniteMetricValue(goal?.actual);
+      const target = hasValidTarget ? Number(goal.target) : null;
+      const actual = hasValidActual ? Number(goal.actual) : null;
+
+      if (status === "OVERDUE") {
+        goalsStatus.OVERDUE += 1;
+        return;
+      }
+
+      if (status === "ACHIEVED" || (target !== null && actual !== null && actual >= target)) {
+        goalsStatus.ACHIEVED += 1;
+        return;
+      }
+
+      if (status === "AT_RISK") {
+        goalsStatus.AT_RISK += 1;
+        return;
+      }
+
+      if (dueDate && !Number.isNaN(dueDate.getTime()) && dueDate < now) {
+        goalsStatus.OVERDUE += 1;
+      } else {
+        goalsStatus.AT_RISK += 1;
+      }
+    });
+
+    const qualityGoalsStatus = [
+      { status: "ACHIEVED", value: goalsStatus.ACHIEVED },
+      { status: "AT_RISK", value: goalsStatus.AT_RISK },
+      { status: "OVERDUE", value: goalsStatus.OVERDUE },
+    ];
+
+    res.json({
+      summary: {
+        nonconformitiesTotal,
+        qualityGoalsTotal: rawQualityGoals.length,
+        qualityGoalsAchieved: goalsStatus.ACHIEVED,
+        qualityGoalsAtRisk: goalsStatus.AT_RISK,
+        qualityGoalsOverdue: goalsStatus.OVERDUE,
+      },
+      series: {
+        nonconformityTrend: monthSeries,
+        processKpi,
+        qualityGoalsStatus,
+      },
+    });
+  } catch (e) {
+    console.error("ManagementReview getDashboard error:", e);
+    res.status(500).json({ error: e.message });
+  }
+};
+
 module.exports = {
   getAll, getOne, create, update,
-  addAction, updateAction, getStats,
+  addAction, updateAction, getStats, getDashboard,
 };
