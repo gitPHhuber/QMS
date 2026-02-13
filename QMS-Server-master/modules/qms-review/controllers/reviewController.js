@@ -1,5 +1,6 @@
 const { ManagementReview, ReviewAction } = require("../models/ManagementReview");
 const { User } = require("../../../models/index");
+const { Nonconformity, Capa } = require("../../qms-nc/models/NcCapa");
 const { logAudit } = require("../../core/utils/auditLogger");
 const { Op } = require("sequelize");
 
@@ -158,82 +159,127 @@ const getStats = async (req, res) => {
   }
 };
 
+/**
+ * Dashboard payload for widgets.
+ *
+ * Shape:
+ * {
+ *   summary: {
+ *     nonconformityTrend: { total, averagePerMonth },
+ *     processKpi: {
+ *       NC_CLOSURE_RATE: { formula, value, numerator, denominator, unit },
+ *       CAPA_EFFECTIVENESS_RATE: { formula, value, numerator, denominator, unit },
+ *       REVIEW_ACTION_COMPLETION_RATE: { formula, value, numerator, denominator, unit }
+ *     },
+ *     qualityGoalsStatus: { ACHIEVED, AT_RISK, OVERDUE, total }
+ *   },
+ *   series: {
+ *     nonconformityTrend: [{ month, count }],
+ *     processKpi: [{ code, formula, value, numerator, denominator, unit }],
+ *     qualityGoalsStatus: [{ status, count }]
+ *   }
+ * }
+ */
 const getDashboard = async (req, res) => {
   try {
     const now = new Date();
-    const riskWindowDays = 30;
-    const riskWindowDate = new Date(now);
-    riskWindowDate.setDate(riskWindowDate.getDate() + riskWindowDays);
+    const startMonth = new Date(now.getFullYear(), now.getMonth() - 11, 1);
 
-    // Methodology (fallback without a dedicated quality-objectives model):
-    // 1) Objective-like entities from outputData.qualityObjectives (if present in management reviews).
-    // 2) Review actions are treated as objective execution artifacts.
-    // 3) Status rules:
-    //    - achieved: objective.status === ACHIEVED or progress >= 100 OR action.status === COMPLETED.
-    //    - overdue: objective.targetDate/deadline < now and not achieved OR action.status === OVERDUE.
-    //    - atRisk: not achieved/overdue and objective/action deadline within next 30 days OR objective.status === AT_RISK.
-    const [reviews, actions] = await Promise.all([
-      ManagementReview.findAll({
-        attributes: ["id", "outputData"],
-        where: {
-          status: { [Op.in]: ["PLANNED", "IN_PROGRESS", "COMPLETED", "APPROVED"] },
-        },
-      }),
-      ReviewAction.findAll({
-        attributes: ["id", "status", "deadline", "completedAt"],
+    const nonconformities = await Nonconformity.findAll({
+      attributes: ["detectedAt", "status"],
+      where: {
+        detectedAt: { [Op.gte]: startMonth },
+      },
+      raw: true,
+    });
+
+    const nonconformityTrend = [];
+    const monthIndexToLabel = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    for (let i = 11; i >= 0; i -= 1) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      nonconformityTrend.push({ month: monthIndexToLabel(d), count: 0 });
+    }
+
+    const trendMap = new Map(nonconformityTrend.map((x) => [x.month, x]));
+    for (const nc of nonconformities) {
+      const d = new Date(nc.detectedAt);
+      if (!(d instanceof Date) || isNaN(d)) continue;
+      const key = monthIndexToLabel(d);
+      if (trendMap.has(key)) trendMap.get(key).count += 1;
+    }
+
+    const [totalNc, closedNc, capaVerified, capaEffective, totalReviewActions, completedReviewActions, latestReview] = await Promise.all([
+      Nonconformity.count(),
+      Nonconformity.count({ where: { status: "CLOSED" } }),
+      Capa.count({ where: { status: { [Op.in]: ["EFFECTIVE", "INEFFECTIVE"] } } }),
+      Capa.count({ where: { status: "EFFECTIVE" } }),
+      ReviewAction.count(),
+      ReviewAction.count({ where: { status: "COMPLETED" } }),
+      ManagementReview.findOne({
+        where: { outputData: { [Op.ne]: null } },
+        attributes: ["outputData", "reviewDate", "createdAt"],
+        order: [["reviewDate", "DESC"], ["createdAt", "DESC"]],
       }),
     ]);
 
-    let achieved = 0;
-    let atRisk = 0;
-    let overdue = 0;
+    const rate = (numerator, denominator) => (denominator > 0 ? Number(((numerator / denominator) * 100).toFixed(2)) : 0);
 
-    for (const review of reviews) {
-      const objectives = Array.isArray(review?.outputData?.qualityObjectives)
-        ? review.outputData.qualityObjectives
-        : [];
+    const processKpi = {
+      NC_CLOSURE_RATE: {
+        formula: "(closed NC / total NC) * 100",
+        numerator: closedNc,
+        denominator: totalNc,
+        value: rate(closedNc, totalNc),
+        unit: "%",
+      },
+      CAPA_EFFECTIVENESS_RATE: {
+        formula: "(effective CAPA / verified CAPA) * 100",
+        numerator: capaEffective,
+        denominator: capaVerified,
+        value: rate(capaEffective, capaVerified),
+        unit: "%",
+      },
+      REVIEW_ACTION_COMPLETION_RATE: {
+        formula: "(completed review actions / total review actions) * 100",
+        numerator: completedReviewActions,
+        denominator: totalReviewActions,
+        value: rate(completedReviewActions, totalReviewActions),
+        unit: "%",
+      },
+    };
 
-      for (const objective of objectives) {
-        const status = String(objective?.status || "").toUpperCase();
-        const progress = Number(objective?.progress || objective?.progressPct || 0);
-        const deadlineRaw = objective?.targetDate || objective?.deadline;
-        const deadline = deadlineRaw ? new Date(deadlineRaw) : null;
+    const qualityGoalsStatus = { ACHIEVED: 0, AT_RISK: 0, OVERDUE: 0, total: 0 };
+    const objectives = Array.isArray(latestReview?.outputData?.qualityObjectives)
+      ? latestReview.outputData.qualityObjectives
+      : [];
 
-        const isAchieved = status === "ACHIEVED" || progress >= 100;
-        const isOverdue = !isAchieved && deadline instanceof Date && !isNaN(deadline) && deadline < now;
-        const isAtRiskByDate = !isAchieved && !isOverdue && deadline instanceof Date && !isNaN(deadline) && deadline <= riskWindowDate;
-        const isAtRisk = status === "AT_RISK" || isAtRiskByDate;
-
-        if (isOverdue) overdue += 1;
-        else if (isAchieved) achieved += 1;
-        else if (isAtRisk) atRisk += 1;
-      }
+    for (const objective of objectives) {
+      const status = String(objective?.status || "").toUpperCase();
+      if (status === "ACHIEVED") qualityGoalsStatus.ACHIEVED += 1;
+      else if (status === "AT_RISK") qualityGoalsStatus.AT_RISK += 1;
+      else if (status === "OVERDUE") qualityGoalsStatus.OVERDUE += 1;
     }
+    qualityGoalsStatus.total = qualityGoalsStatus.ACHIEVED + qualityGoalsStatus.AT_RISK + qualityGoalsStatus.OVERDUE;
 
-    for (const action of actions) {
-      const status = String(action.status || "").toUpperCase();
-      const deadline = action.deadline ? new Date(action.deadline) : null;
-      const isCompleted = status === "COMPLETED" || Boolean(action.completedAt);
-      const isOverdue = status === "OVERDUE" || (!isCompleted && deadline instanceof Date && !isNaN(deadline) && deadline < now);
-      const isAtRisk = !isCompleted && !isOverdue && deadline instanceof Date && !isNaN(deadline) && deadline <= riskWindowDate;
-
-      if (isOverdue) overdue += 1;
-      else if (isCompleted) achieved += 1;
-      else if (isAtRisk) atRisk += 1;
-    }
-
-    const total = achieved + atRisk + overdue;
+    const totalTrendNc = nonconformityTrend.reduce((acc, x) => acc + x.count, 0);
 
     res.json({
-      qualityObjectivesStatus: {
-        achieved,
-        atRisk,
-        overdue,
-        total,
-        methodology: {
-          source: "derived_from_management_reviews_and_review_actions",
-          riskWindowDays,
+      summary: {
+        nonconformityTrend: {
+          total: totalTrendNc,
+          averagePerMonth: Number((totalTrendNc / 12).toFixed(2)),
         },
+        processKpi,
+        qualityGoalsStatus,
+      },
+      series: {
+        nonconformityTrend,
+        processKpi: Object.entries(processKpi).map(([code, value]) => ({ code, ...value })),
+        qualityGoalsStatus: [
+          { status: "ACHIEVED", count: qualityGoalsStatus.ACHIEVED },
+          { status: "AT_RISK", count: qualityGoalsStatus.AT_RISK },
+          { status: "OVERDUE", count: qualityGoalsStatus.OVERDUE },
+        ],
       },
     });
   } catch (e) {
