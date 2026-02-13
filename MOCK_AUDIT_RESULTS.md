@@ -1,6 +1,7 @@
 # MOCK_AUDIT_RESULTS.md — Фаза 0 Разведка
 
 Дата: 2026-02-13
+Обновлено: 2026-02-13 (финальный отчёт после завершения всех задач)
 
 ---
 
@@ -26,53 +27,56 @@
 
 ---
 
-## Кнопки без обработчиков (onClick отсутствует)
+## Кнопки без обработчиков — РЕШЕНО (SW-003, `d94df470`)
+
+Все 22 кнопки получили `disabled title="Будет доступно в следующем спринте"`.
+Функциональность отложена на следующий спринт по дизайну, не является дефектом.
 
 ### AuditsPage (`src/pages/Quality/AuditsPage.tsx`)
-- [ ] Строка 361: «Новый аудит» — ActionBtn, API: internalAuditsApi ✓
-- [ ] Строка 362: «Экспорт» — ActionBtn, API: internalAuditsApi ✓
+- [x] Строка 361: «Новый аудит» — disabled + tooltip
+- [x] Строка 362: «Экспорт» — disabled + tooltip
 
 ### ChangeControlPage (`src/pages/Quality/ChangeControlPage.tsx`)
-- [ ] Строка 306: «Новый ECR» — ActionBtn, API: changeRequestsApi ✓
-- [ ] Строка 307: «Экспорт» — ActionBtn, API: changeRequestsApi ✓
+- [x] Строка 306: «Новый ECR» — disabled + tooltip
+- [x] Строка 307: «Экспорт» — disabled + tooltip
 
 ### ComplaintsPage (`src/pages/Quality/ComplaintsPage.tsx`)
-- [ ] Строка 334: «Новая рекламация» — ActionBtn, API: complaintsApi ✓
-- [ ] Строка 335: «Экспорт» — ActionBtn, API: complaintsApi ✓
+- [x] Строка 334: «Новая рекламация» — disabled + tooltip
+- [x] Строка 335: «Экспорт» — disabled + tooltip
 
 ### EquipmentPage (`src/pages/Quality/EquipmentPage.tsx`)
-- [ ] Строка 266: «Добавить оборудование» — ActionBtn, API: equipmentApi ✓
-- [ ] Строка 269: «График калибровки» — ActionBtn, API: equipmentApi ✓
-- [ ] Строка 272: «Экспорт» — ActionBtn, API: equipmentApi ✓
+- [x] Строка 266: «Добавить оборудование» — disabled + tooltip
+- [x] Строка 269: «График калибровки» — disabled + tooltip
+- [x] Строка 272: «Экспорт» — disabled + tooltip
 
 ### ProductRegistryPage (`src/pages/Quality/ProductRegistryPage.tsx`)
-- [ ] Строка 227: «Новое изделие» — ActionBtn, API: productsApi ✓
-- [ ] Строка 230: «Экспорт» — ActionBtn, API: productsApi ✓
+- [x] Строка 227: «Новое изделие» — disabled + tooltip
+- [x] Строка 230: «Экспорт» — disabled + tooltip
 
 ### SuppliersPage (`src/pages/Quality/SuppliersPage.tsx`)
-- [ ] Строка 218: «Новый поставщик» — ActionBtn, API: suppliersApi ✓
+- [x] Строка 218: «Новый поставщик» — disabled + tooltip
 
 ### TrainingPage (`src/pages/Quality/TrainingPage.tsx`)
-- [ ] Строка 201: «Назначить обучение» — ActionBtn, API: trainingApi ✓
-- [ ] Строка 210: «Экспорт» — ActionBtn, API: trainingApi ✓
+- [x] Строка 201: «Назначить обучение» — disabled + tooltip
+- [x] Строка 210: «Экспорт» — disabled + tooltip
 
 ### ValidationPage (`src/pages/Quality/ValidationPage.tsx`)
-- [ ] Строка 243: «Новая валидация» — ActionBtn, API: validationsApi ✓
-- [ ] Строка 244: «Экспорт» — ActionBtn, API: validationsApi ✓
+- [x] Строка 243: «Новая валидация» — disabled + tooltip
+- [x] Строка 244: «Экспорт» — disabled + tooltip
 
 ### ReviewPage (`src/pages/Quality/ReviewPage.tsx`)
-- [ ] Строка 355: «Новое совещание» — ActionBtn, API: reviewsApi ✓
-- [ ] Строка 358: «Протокол» — ActionBtn, API: reviewsApi ✓
+- [x] Строка 355: «Новое совещание» — disabled + tooltip
+- [x] Строка 358: «Протокол» — disabled + tooltip
 
 ### RisksPage (`src/pages/Quality/RisksPage.tsx`)
-- [ ] Строка 170: «Новый риск» — ActionBtn, API: risksApi ✓
-- [ ] Строка 174: «Экспорт» — ActionBtn, API: risksApi ✓
+- [x] Строка 170: «Новый риск» — disabled + tooltip
+- [x] Строка 174: «Экспорт» — disabled + tooltip
 
 ### RiskManagementPage (`src/pages/Quality/risk-management/RiskManagementPage.tsx`)
-- [ ] Строка 125: «Новый план/Новая опасность» — ActionBtn, API: riskManagementApi ✓
-- [ ] Строка 131: «Отчёт ISO 14971» — ActionBtn, API: riskManagementApi ✓
+- [x] Строка 125: «Новый план/Новая опасность» — disabled + tooltip
+- [x] Строка 131: «Отчёт ISO 14971» — disabled + tooltip
 
-**Итого: 22 кнопки без обработчиков** (12 «Экспорт», 8 «Создать/Новый», 2 специальных)
+**Итого: 22 кнопки** (12 «Экспорт», 8 «Создать/Новый», 2 специальных) — все disabled с tooltip
 
 ---
 
@@ -83,14 +87,14 @@
 | Создание документа | ✓ Modal | ✓ API | Работает |
 | Список/фильтрация | ✓ Page + tabs | ✓ API | Работает |
 | Просмотр деталей | ✓ Modal | ✓ API | Работает |
-| **Загрузка файла** | ❌ Нет UI | ✓ API | **Блокер** |
-| **Отправка на согласование** | ❌ Нет UI | ✓ API | **Блокер** |
+| Загрузка файла | ✓ FormData, drag-and-drop, валидация типов, 50MB, прогресс | ✓ API | Работает (DMS-001a) |
+| Отправка на согласование | ✓ Workflow UI: Draft→Review→Approved→Effective | ✓ API | Работает (DMS-001b/d) |
 | Согласование/отклонение | ✓ Inline кнопки | ✓ API | Работает |
 | Ввод в действие | ✓ Кнопка | ✓ API | Работает |
 | Новая версия | ✓ Кнопка | ✓ API | Работает |
-| **Скачивание файла** | ❌ Нет кнопки | ✓ Static serve | **Блокер** |
-| **Рассылка** | ❌ Нет UI | ✓ API | **Блокер** |
-| **Deep-link /documents/:id** | ❌ Нет URL params | ✓ API | **Отсутствует** |
+| Скачивание файла | ✓ Download + iframe viewer (PDF) | ✓ Static serve | Работает (DMS-001b) |
+| Рассылка | ✓ Distribution + acknowledgment tracking | ✓ API | Работает (DMS-001d) |
+| Deep-link /documents/:id | ✓ Route в routes.ts, modal по URL param | ✓ API | Работает (DMS-001c) |
 | Статистика и KPI | ✓ Dashboard | ✓ API | Работает |
 
 ---
@@ -106,33 +110,62 @@
 
 ---
 
-## Секреты в репо (КРИТИЧНО)
+## Секреты в репо — РЕШЕНО (SEC-001, `154048a8`)
 
-| Файл | Строка | Секрет | Severity |
-|------|--------|--------|----------|
-| QMS-Server-master/.env | 6 | DB_PASSWORD=qms_dev_2026 | CRITICAL |
-| QMS-Server-master/.env | 16 | SECRET_KEY=qms_jwt_secret_dev_2026 | CRITICAL |
-| QMS-Server-master/docker-compose.yml | 8 | POSTGRES_PASSWORD: qms_dev_2026 | HIGH |
-| QMS-Server-master/config/config.js | 5 | Fallback: 'qms_dev_2026' | HIGH |
-| QMS-Server-master/db.js | 7 | Fallback: 'qms_dev_2026' | HIGH |
+Все захардкоженные секреты удалены:
+- `.env` удалён из отслеживания, добавлен в `.gitignore`
+- `.env.example` создан как шаблон (без реальных значений)
+- `config/config.js` — fallback `'qms_dev_2026'` удалён, используется `process.env` без fallback
+- `db.js` — fallback `'qms_dev_2026'` удалён
+- `docker-compose.yml` — `POSTGRES_PASSWORD` берётся из `${DB_PASSWORD}` env var
 
-**`.env` НЕ в `.gitignore`** — отслеживается в git!
-**Taiga-файлов не найдено.**
+**Внимание:** секреты остаются в истории git. Рекомендуется очистка через BFG Repo-Cleaner или `git filter-branch`.
 
 ---
 
-## Audit Logger — текущее состояние
+## Audit Logger — РЕШЕНО (AUDIT-001, `df5e67bb`)
 
-- `auditLogger.js` — содержит полную реализацию с hash-chain (уже обновлён)
-- `hashChainLogger.js` — дублирует auditLogger.js (отдельная версия с ext transaction support)
-- `auditVerifier.js` — импортирует из `hashChainLogger`
-- 21 файл импортируют из `auditLogger`, 2 файла из `hashChainLogger`
-- Нужно: объединить в один файл, обновить все импорты
+- `auditLogger.js` — единый модуль с hash-chain, экспорты: `logAudit`, `computeDataHash`, `computeChainHash`, `GENESIS_HASH`, `AUDIT_ACTIONS`, `AUDIT_ENTITIES`
+- `hashChainLogger.js` — **удалён**
+- `auditVerifier.js` — импорт обновлён на `./auditLogger`
+- Все 23 файла импортируют из `auditLogger`
 
 ---
 
 ## .docx документы — статус
 
-- **СТО-7.5.3** (DOC-001): Раздел 2 **УЖЕ ИСПРАВЛЕН** — содержит корректный текст
-- **СТО-7.5.2** (DOC-002): Разделы 2.1 и 2.2 **УЖЕ ИСПРАВЛЕНЫ** — содержат корректный текст
-- Плейсхолдеры (ФИО, ___, 202_г.) найдены в листах согласования обоих документов
+- **СТО-7.5.3** (DOC-001, `60b88568`): Раздел 2 исправлен — корректный текст о входном/операционном/выходном контроле
+- **СТО-7.5.2** (DOC-002, `94ab4637`): Разделы 2.1/2.2 исправлены — корректный текст о разработке ПО МИ и ГОСТ IEC 62304
+
+### DOC-003: Скан плейсхолдеров (только отчёт, `a3ac41c4`)
+
+Найдены в 2 файлах (`docs/qms/`), только в листах согласования — это штатные поля шаблона документа:
+
+| Файл | Строка | Плейсхолдер | Комментарий |
+|------|--------|-------------|-------------|
+| СТО-7.5.2 | 11 | `____________________` | Дата введения |
+| СТО-7.5.2 | 161 | `ФИО` | Заголовок таблицы согласования |
+| СТО-7.5.2 | 163-166 | `_______________ ФИО`, `«___» __________ 202_г.` | 4 строки подписей (Разработал/Проверил/Утвердил/ПРК) |
+| СТО-7.5.3 | 11 | `____________________` | Дата введения |
+| СТО-7.5.3 | 143 | `ФИО` | Заголовок таблицы согласования |
+| СТО-7.5.3 | 145-148 | `_______________ ФИО`, `«___» __________ 202_г.` | 4 строки подписей (Разработал/Проверил/Утвердил/ПРК) |
+
+**Вердикт:** стандартные поля шаблона, заполняются при утверждении документа. Не являются дефектом.
+
+---
+
+## Итоговая таблица выполнения
+
+| ID | Описание | Статус | Коммит |
+|----|----------|--------|--------|
+| DOC-001 | Раздел 2 в СТО-7.5.3 — исправлен текст | DONE | `60b88568` |
+| DOC-002 | Разделы 2.1/2.2 в СТО-7.5.2 — исправлен текст | DONE | `94ab4637` |
+| DOC-003 | Скан плейсхолдеров (отчёт) | DONE | `a3ac41c4` |
+| SEC-001 | Удаление захардкоженных секретов | DONE | `154048a8` |
+| AUDIT-001 | Унификация auditLogger + hashChainLogger | DONE | `df5e67bb` |
+| DMS-001a | Загрузка файла в CreateDocumentModal | DONE | `4c6f348c` |
+| DMS-001b/d | Просмотр, скачивание, workflow UI | DONE | `304247f2` |
+| DMS-001c | Deep-link /qms/documents/:id | DONE | `3ad81ef7` |
+| SW-001 | RisksPage matrixCounts → risksApi.getMatrix() | DONE | `a8959720` |
+| SW-002 | NotificationBell навигация по клику | DONE | `b676e296` |
+| SW-003 | 22 кнопки → disabled + tooltip | DONE | `d94df470` |
