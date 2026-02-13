@@ -27,6 +27,16 @@ module.exports = {
     const transaction = await queryInterface.sequelize.transaction();
 
     try {
+      const tableExists = await queryInterface.sequelize.query(
+        `SELECT to_regclass('public.complaints') AS t`,
+        { type: Sequelize.QueryTypes.SELECT, transaction }
+      );
+      if (!tableExists?.[0]?.t) {
+        await transaction.commit();
+        console.log("ℹ️ Таблица complaints не найдена, миграция complaint-vigilance-sto822 пропущена");
+        return;
+      }
+
 
       // ═══ 1. VIGILANCE_REPORTS — уведомления регулятору ═══
       await queryInterface.createTable("vigilance_reports", {
@@ -155,9 +165,14 @@ module.exports = {
       await transaction.commit();
       console.log("✅ [complaint-vigilance-sto822] Миграция выполнена: vigilance_reports, complaint_attachments, complaint_follow_ups");
 
+
       // ─── Тип обращения (СТО-8.2.2 §4.1) ───
       await queryInterface.sequelize.query(
-        `CREATE TYPE "enum_complaints_complaintType" AS ENUM ('COMPLAINT', 'RECLAMATION', 'FEEDBACK')`,
+        `DO $$ BEGIN
+          CREATE TYPE "enum_complaints_complaintType" AS ENUM ('COMPLAINT', 'RECLAMATION', 'FEEDBACK');
+        EXCEPTION
+          WHEN duplicate_object THEN null;
+        END $$;`,
         { transaction }
       );
       await queryInterface.addColumn("complaints", "complaintType", {
@@ -210,7 +225,11 @@ module.exports = {
         type: Sequelize.STRING,
       }, { transaction });
       await queryInterface.sequelize.query(
-        `CREATE TYPE "enum_complaints_vigilanceStatus" AS ENUM ('NOT_REQUIRED', 'PENDING', 'SUBMITTED', 'ACKNOWLEDGED', 'CLOSED')`,
+        `DO $$ BEGIN
+          CREATE TYPE "enum_complaints_vigilanceStatus" AS ENUM ('NOT_REQUIRED', 'PENDING', 'SUBMITTED', 'ACKNOWLEDGED', 'CLOSED');
+        EXCEPTION
+          WHEN duplicate_object THEN null;
+        END $$;`,
         { transaction }
       );
       await queryInterface.addColumn("complaints", "vigilanceStatus", {
@@ -286,6 +305,17 @@ module.exports = {
     const transaction = await queryInterface.sequelize.transaction();
 
     try {
+
+      const tableExists = await queryInterface.sequelize.query(
+        `SELECT to_regclass('public.complaints') AS t`,
+        { type: queryInterface.sequelize.QueryTypes.SELECT, transaction }
+      );
+      if (!tableExists?.[0]?.t) {
+        await transaction.commit();
+        return;
+      }
+
+
       await queryInterface.dropTable("complaint_follow_ups", { transaction });
       await queryInterface.dropTable("complaint_attachments", { transaction });
       await queryInterface.dropTable("vigilance_reports", { transaction });
@@ -299,6 +329,7 @@ module.exports = {
 
 
     try {
+
       // Drop indexes BEFORE removing columns to avoid implicit cascade errors
       await queryInterface.removeIndex("complaints", "idx_complaint_vigilance_status", { transaction });
       await queryInterface.removeIndex("complaints", "idx_complaint_vigilance_deadline", { transaction });
