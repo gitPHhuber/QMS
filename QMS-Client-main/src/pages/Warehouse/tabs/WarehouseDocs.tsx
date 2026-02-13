@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   FileText, Calendar, Search, Plus,
   ArrowDownToLine, Printer, User
@@ -6,6 +6,7 @@ import {
 import { createDocument, fetchDocuments } from "src/api/warehouseApi";
 import { WarehouseDocument } from "src/types/WarehouseModels";
 import { formatDateTime } from "../utils";
+import toast from "react-hot-toast";
 
 export const WarehouseDocs: React.FC = () => {
   const [docs, setDocs] = useState<WarehouseDocument[]>([]);
@@ -18,7 +19,7 @@ export const WarehouseDocs: React.FC = () => {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [newDoc, setNewDoc] = useState({ number: "", type: "INCOME", comment: "" });
 
-  const loadDocuments = async () => {
+  const loadDocuments = useCallback(async () => {
       setLoading(true);
       try {
           const res = await fetchDocuments({
@@ -30,21 +31,21 @@ export const WarehouseDocs: React.FC = () => {
           setDocs(res.rows);
       } catch(e) { console.error(e); }
       finally { setLoading(false); }
-  };
+  }, [search, typeFilter, dateFrom]);
 
   useEffect(() => {
       const timer = setTimeout(loadDocuments, 500);
       return () => clearTimeout(timer);
-  }, [search, typeFilter, dateFrom]);
+  }, [loadDocuments]);
 
   const handleCreate = async () => {
-      if(!newDoc.number) return alert("Введите номер!");
+      if(!newDoc.number) return toast.error("Введите номер!");
       try {
           await createDocument({ ...newDoc, boxId: null });
           setIsCreateOpen(false);
           setNewDoc({ number: "", type: "INCOME", comment: "" });
           loadDocuments();
-      } catch(e) { alert("Ошибка"); }
+      } catch(e) { toast.error("Ошибка"); }
   };
 
 
