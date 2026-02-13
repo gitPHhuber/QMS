@@ -201,6 +201,31 @@ const timelineEvents: TimelineEvent[] = [
   { date: "07.02", code: "R-019",    text: "Новый риск поставки датчиков",      dotClass: "bg-asvo-purple", category: "risk" },
 ];
 
+const TimelinePanel: React.FC<{ events: TimelineEvent[] }> = ({ events }) => (
+  <div className="bg-asvo-surface-2 border border-asvo-border rounded-xl p-4">
+    <h3 className="text-sm font-semibold text-asvo-text mb-3">Последние события</h3>
+
+    <div className="relative space-y-4 pl-5">
+      <div className="absolute left-[7px] top-1 bottom-1 w-px bg-asvo-border" />
+
+      {events.map((evt, idx) => (
+        <div key={idx} className="relative flex items-start gap-3">
+          <div
+            className={`absolute -left-5 top-1 w-3.5 h-3.5 rounded-full border-2 border-asvo-surface-2 ${evt.dotClass}`}
+          />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-asvo-text-dim">{evt.date}</span>
+              <span className="text-xs font-semibold text-asvo-text">{evt.code}</span>
+            </div>
+            <p className="text-xs text-asvo-text-mid mt-0.5 truncate">{evt.text}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
 /* ------------------------------------------------------------------ */
 /*  Widgets data                                                      */
 /* ------------------------------------------------------------------ */
@@ -539,36 +564,7 @@ export const QmsDashboardPage: React.FC = () => {
           </div>
 
           {/* ---------- Timeline ---------- */}
-          <div className="bg-asvo-surface-2 border border-asvo-border rounded-xl p-4">
-            <h3 className="text-sm font-semibold text-asvo-text mb-3">
-              Последние события
-            </h3>
-
-            <div className="relative space-y-4 pl-5">
-              {/* Vertical line */}
-              <div className="absolute left-[7px] top-1 bottom-1 w-px bg-asvo-border" />
-
-              {timelineEvents.map((evt, idx) => (
-                <div key={idx} className="relative flex items-start gap-3">
-                  {/* Dot */}
-                  <div
-                    className={`absolute -left-5 top-1 w-3.5 h-3.5 rounded-full border-2 border-asvo-surface-2 ${evt.dotClass}`}
-                  />
-
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-asvo-text-dim">{evt.date}</span>
-                      <span className="text-xs font-semibold text-asvo-text">{evt.code}</span>
-                    </div>
-                    <p className="text-xs text-asvo-text-mid mt-0.5 truncate">
-                      {evt.text}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <TimelinePanel events={timelineEvents} />
         </div>
       )}
 
@@ -576,32 +572,7 @@ export const QmsDashboardPage: React.FC = () => {
       {role === "production_head" && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* ---------- Timeline (filtered) ---------- */}
-          <div className="bg-asvo-surface-2 border border-asvo-border rounded-xl p-4">
-            <h3 className="text-sm font-semibold text-asvo-text mb-3">
-              Последние события
-            </h3>
-
-            <div className="relative space-y-4 pl-5">
-              <div className="absolute left-[7px] top-1 bottom-1 w-px bg-asvo-border" />
-
-              {filteredEvents.map((evt, idx) => (
-                <div key={idx} className="relative flex items-start gap-3">
-                  <div
-                    className={`absolute -left-5 top-1 w-3.5 h-3.5 rounded-full border-2 border-asvo-surface-2 ${evt.dotClass}`}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-asvo-text-dim">{evt.date}</span>
-                      <span className="text-xs font-semibold text-asvo-text">{evt.code}</span>
-                    </div>
-                    <p className="text-xs text-asvo-text-mid mt-0.5 truncate">
-                      {evt.text}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <TimelinePanel events={filteredEvents} />
         </div>
       )}
 
