@@ -543,6 +543,9 @@ export const equipmentApi = {
 // ═══════════════════════════════════════════════════════════════
 
 export const reviewsApi = {
+  list: (params?: Record<string, any>) =>
+    $authHost.get("/api/reviews", { params }).then(r => r.data),
+
   getAll: (params?: Record<string, any>) =>
     $authHost.get("/api/reviews", { params }).then(r => r.data),
 
@@ -560,6 +563,9 @@ export const reviewsApi = {
 
   updateAction: (id: number, data: Record<string, any>) =>
     $authHost.put(`/api/reviews/actions/${id}`, data).then(r => r.data),
+
+  stats: () =>
+    $authHost.get("/api/reviews/stats").then(r => r.data),
 
   getStats: () =>
     $authHost.get("/api/reviews/stats").then(r => r.data),
