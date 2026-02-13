@@ -163,14 +163,6 @@ module.exports = {
       await queryInterface.addIndex("complaint_follow_ups", ["complaintId"], { transaction });
 
       // ─── Тип обращения (СТО-8.2.2 §4.1) ───
-      await queryInterface.sequelize.query(
-        `DO $$ BEGIN
-          CREATE TYPE "enum_complaints_complaintType" AS ENUM ('COMPLAINT', 'RECLAMATION', 'FEEDBACK');
-        EXCEPTION
-          WHEN duplicate_object THEN null;
-        END $$;`,
-        { transaction }
-      );
       await queryInterface.addColumn("complaints", "complaintType", {
         type: Sequelize.ENUM("COMPLAINT", "RECLAMATION", "FEEDBACK"),
         allowNull: false,
@@ -220,14 +212,6 @@ module.exports = {
       await queryInterface.addColumn("complaints", "vigilanceReportNumber", {
         type: Sequelize.STRING,
       }, { transaction });
-      await queryInterface.sequelize.query(
-        `DO $$ BEGIN
-          CREATE TYPE "enum_complaints_vigilanceStatus" AS ENUM ('NOT_REQUIRED', 'PENDING', 'SUBMITTED', 'ACKNOWLEDGED', 'CLOSED');
-        EXCEPTION
-          WHEN duplicate_object THEN null;
-        END $$;`,
-        { transaction }
-      );
       await queryInterface.addColumn("complaints", "vigilanceStatus", {
         type: Sequelize.ENUM("NOT_REQUIRED", "PENDING", "SUBMITTED", "ACKNOWLEDGED", "CLOSED"),
         defaultValue: "NOT_REQUIRED",
@@ -297,7 +281,7 @@ module.exports = {
     }
   },
 
-  async down(queryInterface) {
+  async down(queryInterface, Sequelize) {
     const transaction = await queryInterface.sequelize.transaction();
 
     try {
