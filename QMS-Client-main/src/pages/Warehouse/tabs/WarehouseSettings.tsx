@@ -74,8 +74,8 @@ export const WarehouseSettings: React.FC = () => {
             await saveLimit({
                 label: item.label,
                 min: val,
-                originType: item.originType,
-                originId: item.originId
+                originType: item.originType ?? undefined,
+                originId: item.originId ?? undefined
             });
             toast.success(`Лимит для "${item.label}" обновлен`);
             setItems(prev => prev.map(i => i.label === item.label ? { ...i, min: val } : i));
