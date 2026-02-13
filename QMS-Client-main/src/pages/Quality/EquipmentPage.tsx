@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Wrench,
   Plus,
@@ -16,8 +16,9 @@ import Badge from "../../components/qms/Badge";
 import Card from "../../components/qms/Card";
 import SectionTitle from "../../components/qms/SectionTitle";
 import Timeline from "../../components/qms/Timeline";
+import { equipmentApi } from "../../api/qmsApi";
 
-/* ─── mock data ─────────────────────────────────────────────────────── */
+/* ─── types ─────────────────────────────────────────────────────────── */
 
 interface EquipmentRow {
   [key: string]: unknown;
@@ -31,37 +32,6 @@ interface EquipmentRow {
   daysUntil: number;
   status: string;
 }
-
-const equipmentData: EquipmentRow[] = [
-  { id: "EQ-001", name: "Мультиметр Fluke 87V",      type: "Измерительное",   manufacturer: "Fluke",     serial: "FL87V-2024-0891",  lastCalibration: "10.01.2026", nextCalibration: "10.07.2026", daysUntil: 149,  status: "Исправно" },
-  { id: "EQ-005", name: "Осциллограф Rigol DS1104",   type: "Измерительное",   manufacturer: "Rigol",     serial: "RG-DS1104-2891",   lastCalibration: "15.12.2025", nextCalibration: "15.06.2026", daysUntil: 124,  status: "Исправно" },
-  { id: "EQ-008", name: "Паяльная станция JBC CD-2BE", type: "Технологическое", manufacturer: "JBC",       serial: "JBC-CD2-7721",     lastCalibration: "01.01.2026", nextCalibration: "01.04.2026", daysUntil: 49,   status: "Исправно" },
-  { id: "EQ-012", name: "Паяльная станция JBC DM-2A",  type: "Технологическое", manufacturer: "JBC",       serial: "JBC-DM2-4402",     lastCalibration: "15.09.2025", nextCalibration: "15.03.2026", daysUntil: 32,   status: "Калибровка" },
-  { id: "EQ-015", name: "Микроскоп Olympus SZX7",     type: "Контрольное",     manufacturer: "Olympus",   serial: "OL-SZX7-1823",     lastCalibration: "01.06.2025", nextCalibration: "01.12.2025", daysUntil: -72,  status: "Просрочено" },
-  { id: "EQ-020", name: "Климатическая камера",        type: "Испытательное",   manufacturer: "Binder",    serial: "BN-MK56-3301",     lastCalibration: "01.08.2025", nextCalibration: "01.02.2026", daysUntil: -10,  status: "Просрочено" },
-  { id: "EQ-025", name: "Весы аналитические",          type: "Измерительное",   manufacturer: "Sartorius", serial: "SAR-224-8812",      lastCalibration: "20.01.2026", nextCalibration: "20.07.2026", daysUntil: 159,  status: "Исправно" },
-];
-
-/* ─── passport (EQ-001) ─────────────────────────────────────────────── */
-
-const passportRows: { label: string; value: string }[] = [
-  { label: "Название",        value: "Мультиметр Fluke 87V" },
-  { label: "Инв.номер",       value: "EQ-001" },
-  { label: "Серийный",        value: "FL87V-2024-0891" },
-  { label: "Производитель",   value: "Fluke Corporation" },
-  { label: "Дата ввода",      value: "15.03.2024" },
-  { label: "Расположение",    value: "Лаборатория ОТК" },
-  { label: "Класс точности",  value: "0.05%" },
-  { label: "Ответственный",   value: "Чирков И.А." },
-];
-
-/* ─── calibration history ────────────────────────────────────────────── */
-
-const calibrationHistory = [
-  { date: "10.01.2026", title: "Калибровка выполнена. Результат: годен. Отклонение: 0.02%", color: "#2DD4A8" },
-  { date: "10.07.2025", title: "Калибровка выполнена. Результат: годен. Отклонение: 0.03%", color: "#2DD4A8" },
-  { date: "10.01.2025", title: "Калибровка выполнена. Результат: годен. Отклонение: 0.01%", color: "#2DD4A8" },
-];
 
 /* ─── helpers ────────────────────────────────────────────────────────── */
 
@@ -114,7 +84,153 @@ const columns = [
 /* ─── component ──────────────────────────────────────────────────────── */
 
 const EquipmentPage: React.FC = () => {
-  const [_selected] = useState<string | null>("EQ-001");
+  const [equipment, setEquipment] = useState<EquipmentRow[]>([]);
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selected, setSelected] = useState<any>(null);
+  const [calibrationHistory, setCalibrationHistory] = useState<
+    { date: string; title: string; color: string }[]
+  >([]);
+
+  /* ─── fetch data on mount ─── */
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const [equipmentRes, statsRes] = await Promise.all([
+          equipmentApi.getAll(),
+          equipmentApi.getStats(),
+        ]);
+
+        const rows: EquipmentRow[] = (equipmentRes.rows || []).map(
+          (item: any) => ({
+            id: item.equipmentNumber || item.id,
+            name: item.name,
+            type: item.type || "",
+            manufacturer: item.manufacturer || "",
+            serial: item.serialNumber || item.serial || "",
+            lastCalibration: item.lastCalibration
+              ? new Date(item.lastCalibration).toLocaleDateString("ru-RU")
+              : "—",
+            nextCalibration: item.nextCalibration
+              ? new Date(item.nextCalibration).toLocaleDateString("ru-RU")
+              : "—",
+            daysUntil: item.daysUntilCalibration ?? item.daysUntil ?? 0,
+            status: item.status || "",
+            _raw: item,
+          })
+        );
+
+        setEquipment(rows);
+        setStats(statsRes);
+
+        /* auto-select first row for passport / history */
+        if (rows.length > 0) {
+          loadEquipmentDetail((rows[0] as any)._raw?.id ?? rows[0].id);
+        }
+      } catch (err: any) {
+        console.error("Equipment fetch error:", err);
+        setError(
+          err?.response?.data?.message ||
+            err?.message ||
+            "Не удалось загрузить данные оборудования"
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  /* ─── load single equipment detail ─── */
+  const loadEquipmentDetail = async (id: number | string) => {
+    try {
+      const detail = await equipmentApi.getOne(Number(id));
+      setSelected(detail);
+
+      const history = (detail.calibrations || []).map((c: any) => ({
+        date: c.calibrationDate
+          ? new Date(c.calibrationDate).toLocaleDateString("ru-RU")
+          : "",
+        title: `Калибровка выполнена. Результат: ${c.result || "годен"}. Отклонение: ${c.deviation || "—"}`,
+        color: c.result === "не годен" ? "#F06060" : "#2DD4A8",
+      }));
+
+      setCalibrationHistory(history);
+    } catch (err) {
+      console.error("Equipment detail error:", err);
+    }
+  };
+
+  /* ─── passport rows from selected ─── */
+  const passportRows: { label: string; value: string }[] = selected
+    ? [
+        { label: "Название", value: selected.name || "—" },
+        {
+          label: "Инв.номер",
+          value: selected.equipmentNumber || selected.id?.toString() || "—",
+        },
+        { label: "Серийный", value: selected.serialNumber || selected.serial || "—" },
+        { label: "Производитель", value: selected.manufacturer || "—" },
+        {
+          label: "Дата ввода",
+          value: selected.commissionedAt
+            ? new Date(selected.commissionedAt).toLocaleDateString("ru-RU")
+            : selected.createdAt
+              ? new Date(selected.createdAt).toLocaleDateString("ru-RU")
+              : "—",
+        },
+        { label: "Расположение", value: selected.location || "—" },
+        { label: "Класс точности", value: selected.accuracyClass || "—" },
+        {
+          label: "Ответственный",
+          value: selected.responsiblePerson
+            ? `${selected.responsiblePerson.surname || ""} ${selected.responsiblePerson.name || ""}`.trim()
+            : "—",
+        },
+      ]
+    : [];
+
+  /* ─── KPI values from stats ─── */
+  const totalEquipment = stats?.totalEquipment ?? stats?.total ?? 0;
+  const onCalibration = stats?.onCalibration ?? stats?.calibrating ?? 0;
+  const overdue = stats?.overdue ?? stats?.overdueCalibration ?? 0;
+  const operational = stats?.operational ?? stats?.active ?? totalEquipment - onCalibration - overdue;
+
+  /* ─── loading state ─── */
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-asvo-bg flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-asvo-accent border-t-transparent rounded-full animate-spin" />
+          <span className="text-asvo-text-dim text-sm">Загрузка данных оборудования…</span>
+        </div>
+      </div>
+    );
+  }
+
+  /* ─── error state ─── */
+  if (error) {
+    return (
+      <div className="min-h-screen bg-asvo-bg flex items-center justify-center">
+        <div className="bg-asvo-surface-2 border border-red-500/30 rounded-xl p-6 max-w-md text-center space-y-3">
+          <AlertTriangle className="mx-auto text-[#F06060]" size={32} />
+          <h2 className="text-lg font-semibold text-asvo-text">Ошибка загрузки</h2>
+          <p className="text-asvo-text-mid text-sm">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-2 px-4 py-2 bg-asvo-accent text-white rounded-lg text-sm hover:opacity-90 transition"
+          >
+            Повторить
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-asvo-bg p-6 space-y-6">
@@ -138,10 +254,10 @@ const EquipmentPage: React.FC = () => {
       {/* KPI Row */}
       <KpiRow
         items={[
-          { label: "Всего оборудования", value: 56, icon: <Boxes size={18} />,          color: "#4A90E8" },
-          { label: "На калибровке",       value: 4,  icon: <Clock size={18} />,           color: "#E8A830" },
-          { label: "Просрочено",          value: 2,  icon: <AlertTriangle size={18} />,   color: "#F06060" },
-          { label: "Исправно",            value: 48, icon: <CheckCircle2 size={18} />,    color: "#2DD4A8" },
+          { label: "Всего оборудования", value: totalEquipment, icon: <Boxes size={18} />,          color: "#4A90E8" },
+          { label: "На калибровке",       value: onCalibration,  icon: <Clock size={18} />,           color: "#E8A830" },
+          { label: "Просрочено",          value: overdue,        icon: <AlertTriangle size={18} />,   color: "#F06060" },
+          { label: "Исправно",            value: operational,    icon: <CheckCircle2 size={18} />,    color: "#2DD4A8" },
         ]}
       />
 
@@ -160,29 +276,41 @@ const EquipmentPage: React.FC = () => {
 
       {/* Data table */}
       <SectionTitle>Реестр оборудования</SectionTitle>
-      <DataTable<EquipmentRow> columns={columns} data={equipmentData} />
+      <DataTable<EquipmentRow> columns={columns} data={equipment} />
 
-      {/* Passport + History for EQ-001 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {/* Equipment passport */}
-        <Card>
-          <SectionTitle>Паспорт оборудования &mdash; EQ-001</SectionTitle>
-          <div className="divide-y divide-asvo-border">
-            {passportRows.map((r) => (
-              <div key={r.label} className="flex justify-between py-2.5 text-[13px]">
-                <span className="text-asvo-text-mid">{r.label}</span>
-                <span className="text-asvo-text font-medium">{r.value}</span>
-              </div>
-            ))}
-          </div>
-        </Card>
+      {/* Passport + History for selected equipment */}
+      {selected && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          {/* Equipment passport */}
+          <Card>
+            <SectionTitle>
+              Паспорт оборудования &mdash;{" "}
+              {selected.equipmentNumber || selected.id}
+            </SectionTitle>
+            <div className="divide-y divide-asvo-border">
+              {passportRows.map((r) => (
+                <div key={r.label} className="flex justify-between py-2.5 text-[13px]">
+                  <span className="text-asvo-text-mid">{r.label}</span>
+                  <span className="text-asvo-text font-medium">{r.value}</span>
+                </div>
+              ))}
+            </div>
+          </Card>
 
-        {/* Calibration history */}
-        <Card>
-          <SectionTitle>История калибровок &mdash; EQ-001</SectionTitle>
-          <Timeline events={calibrationHistory} />
-        </Card>
-      </div>
+          {/* Calibration history */}
+          <Card>
+            <SectionTitle>
+              История калибровок &mdash;{" "}
+              {selected.equipmentNumber || selected.id}
+            </SectionTitle>
+            {calibrationHistory.length > 0 ? (
+              <Timeline events={calibrationHistory} />
+            ) : (
+              <p className="text-asvo-text-dim text-sm">Нет записей о калибровках</p>
+            )}
+          </Card>
+        </div>
+      )}
     </div>
   );
 };

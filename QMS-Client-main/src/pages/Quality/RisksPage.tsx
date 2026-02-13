@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Shield, Plus, Grid3X3, Download, AlertTriangle,
-  Search, TrendingUp,
+  Search, TrendingUp, Loader2,
 } from 'lucide-react';
 import KpiRow from '../../components/qms/KpiRow';
 import ActionBtn from '../../components/qms/ActionBtn';
 import Badge from '../../components/qms/Badge';
 import DataTable from '../../components/qms/DataTable';
 import SectionTitle from '../../components/qms/SectionTitle';
+import { risksApi } from '../../api/qmsApi';
 
 /* ───── types ───── */
 interface RiskRow {
@@ -23,19 +24,7 @@ interface RiskRow {
   [key: string]: unknown;
 }
 
-/* ───── mock data ───── */
-const RISKS: RiskRow[] = [
-  { id: 'R-019', title: 'Задержка поставки датчиков',  category: 'Поставщик',    p: 3, s: 4, level: 12, riskClass: 'HIGH',     owner: 'Холтобин А.',  status: 'Оценка' },
-  { id: 'R-018', title: 'Отказ паяльной станции',       category: 'Оборудование', p: 2, s: 5, level: 10, riskClass: 'HIGH',     owner: 'Чирков И.',    status: 'Мониторинг' },
-  { id: 'R-015', title: 'Изменение требований IEC',     category: 'Регуляторный', p: 4, s: 5, level: 20, riskClass: 'CRITICAL', owner: 'Костюков И.',  status: 'Обработка' },
-  { id: 'R-012', title: 'Текучесть кадров ОТК',         category: 'Персонал',     p: 3, s: 3, level: 9,  riskClass: 'MEDIUM',   owner: 'Яровой Е.',   status: 'Мониторинг' },
-  { id: 'R-010', title: 'Дефект пресс-формы',           category: 'Процесс',      p: 2, s: 4, level: 8,  riskClass: 'MEDIUM',   owner: 'Омельченко А.', status: 'Снижен' },
-  { id: 'R-008', title: 'Кибер-атака на ERP',           category: 'Кибер',        p: 1, s: 5, level: 5,  riskClass: 'MEDIUM',   owner: 'Холтобин А.',  status: 'Принят' },
-  { id: 'R-005', title: 'Задержка сертификации',         category: 'Регуляторный', p: 5, s: 4, level: 20, riskClass: 'CRITICAL', owner: 'Костюков И.',  status: 'Оценка' },
-];
-
-/* ───── matrix data (5×5) ───── */
-// matrixCounts[p][s] = count of risks
+/* ───── matrix data (5×5) — still mock until matrix API is wired ───── */
 const matrixCounts: Record<number, Record<number, number>> = {
   5: { 1: 0, 2: 0, 3: 1, 4: 2, 5: 0 },
   4: { 1: 0, 2: 0, 3: 1, 4: 0, 5: 0 },
@@ -127,18 +116,46 @@ const RisksPage: React.FC = () => {
   const [showMatrix, setShowMatrix] = useState(true);
   const [search, setSearch] = useState('');
 
-  const filtered = RISKS.filter(
+  /* ───── API state ───── */
+  const [risks, setRisks] = useState<RiskRow[]>([]);
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  /* ───── Fetch data on mount ───── */
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const [risksRes, statsRes] = await Promise.all([
+          risksApi.getAll(),
+          risksApi.getStats(),
+        ]);
+        setRisks(risksRes.rows ?? []);
+        setStats(statsRes);
+      } catch (e: any) {
+        console.error('RisksPage fetch error:', e);
+        setError(e?.response?.data?.message || 'Ошибка загрузки реестра рисков');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const filtered = risks.filter(
     (r) =>
-      r.title.toLowerCase().includes(search.toLowerCase()) ||
-      r.id.toLowerCase().includes(search.toLowerCase()),
+      r.title?.toLowerCase().includes(search.toLowerCase()) ||
+      r.id?.toString().toLowerCase().includes(search.toLowerCase()),
   );
 
-  /* ───── KPI ───── */
+  /* ───── KPI from stats ───── */
   const kpis = [
-    { label: 'Всего рисков',         value: 34, color: '#A06AE8', icon: <Shield size={18} /> },
-    { label: 'Критических',           value: 5,  color: '#F06060', icon: <AlertTriangle size={18} /> },
-    { label: 'Высоких',               value: 12, color: '#E87040', icon: <TrendingUp size={18} /> },
-    { label: 'Низких / Приемлемых',   value: 17, color: '#2DD4A8', icon: <Shield size={18} /> },
+    { label: 'Всего рисков',         value: stats?.total       ?? 0, color: '#A06AE8', icon: <Shield size={18} /> },
+    { label: 'Критических',           value: stats?.critical    ?? 0, color: '#F06060', icon: <AlertTriangle size={18} /> },
+    { label: 'Высоких',               value: stats?.high        ?? 0, color: '#E87040', icon: <TrendingUp size={18} /> },
+    { label: 'Низких / Приемлемых',   value: stats?.low         ?? 0, color: '#2DD4A8', icon: <Shield size={18} /> },
   ];
 
   return (
@@ -181,8 +198,26 @@ const RisksPage: React.FC = () => {
         </div>
       </div>
 
+      {/* ── Loading state ── */}
+      {loading && (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="animate-spin text-asvo-accent" size={32} />
+          <span className="ml-3 text-asvo-text-dim text-sm">Загрузка рисков...</span>
+        </div>
+      )}
+
+      {/* ── Error state ── */}
+      {!loading && error && (
+        <div className="bg-[#F06060]/10 border border-[#F06060]/30 rounded-xl p-4 flex items-center gap-3">
+          <AlertTriangle className="text-[#F06060] shrink-0" size={20} />
+          <span className="text-[#F06060] text-sm">{error}</span>
+        </div>
+      )}
+
       {/* ── Table ── */}
-      <DataTable columns={columns} data={filtered} />
+      {!loading && !error && (
+        <DataTable columns={columns} data={filtered} />
+      )}
 
       {/* ── 5×5 Risk Matrix ── */}
       {showMatrix && (

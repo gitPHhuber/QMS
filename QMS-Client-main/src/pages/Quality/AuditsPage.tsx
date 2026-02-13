@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   ClipboardCheck,
   Plus,
@@ -19,8 +19,10 @@ import ProgressBar from "../../components/qms/ProgressBar";
 import SectionTitle from "../../components/qms/SectionTitle";
 import Card from "../../components/qms/Card";
 
+import { internalAuditsApi } from "../../api/qmsApi";
+
 /* ------------------------------------------------------------------ */
-/*  Mock data                                                          */
+/*  Types                                                               */
 /* ------------------------------------------------------------------ */
 
 interface AuditRow {
@@ -35,52 +37,11 @@ interface AuditRow {
   result: string;
 }
 
-const AUDITS: AuditRow[] = [
-  { id: "AUD-012", type: "Внутренний", process: "Закупки (п.7.4)",       auditor: "Костюков И.",   date: "10.02.2026", status: "in_progress", findings: 4, result: "\u2014" },
-  { id: "AUD-011", type: "Внутренний", process: "Производство (п.7.5)",  auditor: "Холтобин А.",   date: "25.01.2026", status: "completed",   findings: 6, result: "Соответствует" },
-  { id: "AUD-010", type: "Внешний",    process: "СМК (полный)",          auditor: "Bureau Veritas", date: "15.01.2026", status: "completed",   findings: 2, result: "Соответствует" },
-  { id: "AUD-009", type: "Внутренний", process: "NC/CAPA (п.8.3\u20138.5)", auditor: "Яровой Е.",  date: "10.12.2025", status: "completed",   findings: 5, result: "Условно" },
-  { id: "AUD-008", type: "Поставщика", process: "SUP-012",              auditor: "Костюков И.",   date: "01.12.2025", status: "completed",   findings: 8, result: "Не соответствует" },
-  { id: "AUD-007", type: "Внутренний", process: "Документы (п.4.2)",    auditor: "Омельченко А.", date: "15.11.2025", status: "completed",   findings: 3, result: "Соответствует" },
-];
-
 /* ---- Annual plan grid ---- */
 
 const MONTHS = ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"];
 
-const ISO_PROCESSES = [
-  "4.2 Документы",
-  "7.1 Планирование",
-  "7.4 Закупки",
-  "7.5 Производство",
-  "8.2 Мониторинг",
-  "8.3 NC",
-  "8.5 CAPA",
-  "6.2 Персонал",
-];
-
 type CellState = "empty" | "planned" | "done";
-
-// Seeded annual plan matrix  (row = process, col = month)
-const PLAN_GRID: CellState[][] = [
-  /* 4.2 */ ["done","empty","planned","empty","empty","empty","done","empty","empty","planned","empty","empty"],
-  /* 7.1 */ ["empty","done","empty","empty","planned","empty","empty","done","empty","empty","planned","empty"],
-  /* 7.4 */ ["empty","empty","done","empty","empty","planned","empty","empty","done","empty","empty","planned"],
-  /* 7.5 */ ["done","empty","empty","done","empty","empty","planned","empty","empty","done","empty","empty"],
-  /* 8.2 */ ["empty","planned","empty","empty","done","empty","empty","planned","empty","empty","done","empty"],
-  /* 8.3 */ ["empty","empty","empty","done","empty","empty","done","empty","planned","empty","empty","done"],
-  /* 8.5 */ ["empty","empty","planned","empty","empty","done","empty","empty","empty","planned","empty","done"],
-  /* 6.2 */ ["planned","empty","empty","empty","done","empty","empty","empty","done","empty","empty","planned"],
-];
-
-/* ---- Findings classification ---- */
-
-const FINDINGS = [
-  { label: "Критические",    count: 3,  pct: 15, color: "red"   as const },
-  { label: "Значительные",   count: 8,  pct: 40, color: "amber" as const },
-  { label: "Незначительные", count: 18, pct: 70, color: "blue"  as const },
-  { label: "Наблюдения",     count: 5,  pct: 30, color: "accent" as const },
-];
 
 /* ---- Status badge mapping ---- */
 
@@ -115,15 +76,6 @@ interface FollowUpRow {
   daysLeft: number;
   correctiveAction: string;
 }
-
-const FOLLOW_UPS: FollowUpRow[] = [
-  { auditId: "AUD-012", finding: "Отсутствие входного контроля PCB", type: "Значительное", responsible: "Яровой Е.", dueDate: "10.03.2026", status: "OPEN", daysLeft: 28, correctiveAction: "Разработать чек-лист входного контроля" },
-  { auditId: "AUD-012", finding: "Нет записей о квалификации поставщика ЭКБ", type: "Незначительное", responsible: "Костюков И.", dueDate: "28.02.2026", status: "IN_PROGRESS", daysLeft: 16, correctiveAction: "Провести аудит поставщика" },
-  { auditId: "AUD-011", finding: "Просрочены калибровки 2 паяльных станций", type: "Значительное", responsible: "Чирков И.", dueDate: "15.02.2026", status: "IN_PROGRESS", daysLeft: 3, correctiveAction: "Калибровка JBC и HAKKO" },
-  { auditId: "AUD-009", finding: "NC-045 не закрыт в срок (> 30 дн)", type: "Критическое", responsible: "Костюков И.", dueDate: "05.02.2026", status: "OVERDUE", daysLeft: -7, correctiveAction: "Эскалация в CAPA-019" },
-  { auditId: "AUD-009", finding: "Неполные записи root cause analysis", type: "Незначительное", responsible: "Яровой Е.", dueDate: "01.02.2026", status: "CLOSED", daysLeft: 0, correctiveAction: "Обновлён шаблон RCA" },
-  { auditId: "AUD-008", finding: "SUP-012: отсутствует сертификат ISO 9001", type: "Критическое", responsible: "Холтобин А.", dueDate: "01.02.2026", status: "ESCALATED", daysLeft: -11, correctiveAction: "Замена поставщика (ECR-2026-005)" },
-];
 
 const FOLLOW_STATUS_CFG: Record<FollowUpStatus, { label: string; color: string; bg: string }> = {
   OPEN:        { label: "Открыто",    color: "#4A90E8", bg: "rgba(74,144,232,0.12)" },
@@ -164,6 +116,181 @@ const cellCls: Record<CellState, string> = {
 const AuditsPage: React.FC = () => {
   const [tab, setTab] = useState("registry");
 
+  /* ---- API state ---- */
+  const [plans, setPlans] = useState<any[]>([]);
+  const [schedules, setSchedules] = useState<any[]>([]);
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  /* ---- Fetch data ---- */
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [plansRes, schedulesRes, statsRes] = await Promise.all([
+        internalAuditsApi.getPlans(),
+        internalAuditsApi.getSchedules(),
+        internalAuditsApi.getStats(),
+      ]);
+      setPlans(plansRes.rows ?? []);
+      setSchedules(schedulesRes.rows ?? []);
+      setStats(statsRes);
+    } catch (e: any) {
+      setError(e.response?.data?.message || e.message || "Ошибка загрузки данных аудитов");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  /* ---- Derive audit rows from schedules ---- */
+  const auditRows: AuditRow[] = schedules.map((s: any) => ({
+    id: s.number || s.id?.toString() || "",
+    type: s.type || "Внутренний",
+    process: s.process || s.clause || "",
+    auditor: s.auditor?.name
+      ? `${s.auditor.surname || ""} ${s.auditor.name?.charAt(0) || ""}.`.trim()
+      : s.auditorName || "",
+    date: s.scheduledDate
+      ? new Date(s.scheduledDate).toLocaleDateString("ru-RU")
+      : "",
+    status: s.status?.toLowerCase() as AuditRow["status"] || "planned",
+    findings: s.findingsCount ?? s.findings?.length ?? 0,
+    result: s.result || "\u2014",
+  }));
+
+  /* ---- Derive annual plan grid from plans ---- */
+  const planProcesses: string[] = plans.map(
+    (p: any) => p.process || p.clause || p.title || ""
+  );
+
+  const planGrid: CellState[][] = plans.map((p: any) => {
+    if (p.grid && Array.isArray(p.grid)) return p.grid as CellState[];
+    if (p.months && Array.isArray(p.months)) {
+      return MONTHS.map((_m, idx) => {
+        const monthVal = p.months[idx];
+        if (monthVal === "done" || monthVal === "completed") return "done" as CellState;
+        if (monthVal === "planned" || monthVal === "scheduled") return "planned" as CellState;
+        return "empty" as CellState;
+      });
+    }
+    // Derive from schedules associated with this plan
+    const row: CellState[] = Array(12).fill("empty");
+    if (p.schedules && Array.isArray(p.schedules)) {
+      p.schedules.forEach((sch: any) => {
+        const d = sch.scheduledDate ? new Date(sch.scheduledDate) : null;
+        if (d) {
+          const mIdx = d.getMonth();
+          const st = sch.status?.toLowerCase();
+          row[mIdx] = st === "completed" || st === "done" ? "done" : "planned";
+        }
+      });
+    }
+    return row;
+  });
+
+  /* ---- Derive findings from stats ---- */
+  const findingsData: { label: string; count: number; pct: number; color: "red" | "amber" | "blue" | "accent" }[] =
+    stats?.findings
+      ? stats.findings.map((f: any) => ({
+          label: f.label || f.type || "",
+          count: Number(f.count) || 0,
+          pct: Number(f.pct) || 0,
+          color: f.color || "blue",
+        }))
+      : stats?.bySeverity
+        ? stats.bySeverity.map((f: any) => {
+            const total = stats.bySeverity.reduce(
+              (sum: number, x: any) => sum + Number(x.count),
+              0
+            );
+            const count = Number(f.count) || 0;
+            const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+            const colorMap: Record<string, "red" | "amber" | "blue" | "accent"> = {
+              critical: "red",
+              major: "amber",
+              minor: "blue",
+              observation: "accent",
+            };
+            const labelMap: Record<string, string> = {
+              critical: "Критические",
+              major: "Значительные",
+              minor: "Незначительные",
+              observation: "Наблюдения",
+            };
+            const key = (f.severity || f.type || "").toLowerCase();
+            return {
+              label: labelMap[key] || f.severity || f.type || "",
+              count,
+              pct,
+              color: colorMap[key] || "blue",
+            };
+          })
+        : [];
+
+  /* ---- Derive follow-up rows from stats or schedules ---- */
+  const followUpRows: FollowUpRow[] = (stats?.followUps || stats?.followups || []).map(
+    (f: any) => ({
+      auditId: f.auditId || f.auditNumber || "",
+      finding: f.finding || f.description || "",
+      type: f.type || f.severity || "",
+      responsible: f.responsible || f.assignedTo?.name
+        ? `${f.assignedTo?.surname || ""} ${f.assignedTo?.name?.charAt(0) || ""}.`.trim()
+        : "",
+      dueDate: f.dueDate
+        ? new Date(f.dueDate).toLocaleDateString("ru-RU")
+        : "",
+      status: (f.status || "OPEN") as FollowUpStatus,
+      daysLeft: f.daysLeft ?? (f.dueDate
+        ? Math.ceil((new Date(f.dueDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+        : 0),
+      correctiveAction: f.correctiveAction || f.action || "",
+    })
+  );
+
+  /* ---- KPI values from stats ---- */
+  const kpiItems = stats
+    ? [
+        {
+          label: "Всего аудитов",
+          value: stats.totalAudits ?? stats.total ?? schedules.length,
+          icon: <ClipboardCheck size={18} />,
+          color: "#4A90E8",
+        },
+        {
+          label: "Выполнено",
+          value: stats.completedAudits ?? stats.completed ?? 0,
+          icon: <CheckCircle2 size={18} />,
+          color: "#2DD4A8",
+        },
+        {
+          label: "Замечаний",
+          value: stats.totalFindings ?? stats.findingsCount ?? 0,
+          icon: <AlertTriangle size={18} />,
+          color: "#E8A830",
+        },
+        {
+          label: "Соответствие",
+          value: stats.conformance
+            ? `${stats.conformance}%`
+            : stats.conformanceRate
+              ? `${stats.conformanceRate}%`
+              : "\u2014",
+          icon: <BarChart3 size={18} />,
+          color: "#2DD4A8",
+        },
+      ]
+    : [
+        { label: "Всего аудитов", value: 0, icon: <ClipboardCheck size={18} />, color: "#4A90E8" },
+        { label: "Выполнено",     value: 0, icon: <CheckCircle2 size={18} />,   color: "#2DD4A8" },
+        { label: "Замечаний",     value: 0, icon: <AlertTriangle size={18} />,   color: "#E8A830" },
+        { label: "Соответствие",  value: "\u2014", icon: <BarChart3 size={18} />,    color: "#2DD4A8" },
+      ];
+
   /* ---- columns for DataTable ---- */
 
   const columns = [
@@ -193,7 +320,7 @@ const AuditsPage: React.FC = () => {
       label: "Статус",
       align: "center" as const,
       render: (r: AuditRow) => {
-        const s = STATUS_CFG[r.status];
+        const s = STATUS_CFG[r.status] || STATUS_CFG.planned;
         return <Badge color={s.color} bg={s.bg}>{s.label}</Badge>;
       },
     },
@@ -237,91 +364,120 @@ const AuditsPage: React.FC = () => {
       </div>
 
       {/* KPI Row */}
-      <KpiRow
-        items={[
-          { label: "Всего аудитов", value: 18, icon: <ClipboardCheck size={18} />, color: "#4A90E8" },
-          { label: "Выполнено",     value: 12, icon: <CheckCircle2 size={18} />,   color: "#2DD4A8" },
-          { label: "Замечаний",     value: 34, icon: <AlertTriangle size={18} />,   color: "#E8A830" },
-          { label: "Соответствие",  value: "92%", icon: <BarChart3 size={18} />,    color: "#2DD4A8" },
-        ]}
-      />
+      <KpiRow items={kpiItems} />
 
       {/* Tab Bar */}
       <TabBar tabs={TABS} active={tab} onChange={setTab} />
 
+      {/* ---- Error State ---- */}
+      {error && (
+        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 flex items-center gap-3">
+          <AlertTriangle className="text-red-400 flex-shrink-0" size={18} />
+          <span className="text-red-400 text-[13px] flex-1">{error}</span>
+          <ActionBtn variant="secondary" onClick={fetchData}>
+            Повторить
+          </ActionBtn>
+        </div>
+      )}
+
+      {/* ---- Loading State ---- */}
+      {loading && !error && (
+        <div className="flex items-center justify-center py-20">
+          <div className="w-8 h-8 border-2 border-asvo-accent/30 border-t-asvo-accent rounded-full animate-spin" />
+        </div>
+      )}
+
       {/* ---- TAB: Registry ---- */}
-      {tab === "registry" && <DataTable columns={columns} data={AUDITS} />}
+      {!loading && !error && tab === "registry" && (
+        <DataTable columns={columns} data={auditRows} />
+      )}
 
       {/* ---- TAB: Annual Plan ---- */}
-      {tab === "plan" && (
+      {!loading && !error && tab === "plan" && (
         <Card>
           <SectionTitle>Годовой план аудитов 2026</SectionTitle>
 
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr>
-                  <th className="text-left text-[10px] font-semibold text-asvo-text-dim uppercase tracking-wider px-2 py-2 w-40">
-                    Процесс
-                  </th>
-                  {MONTHS.map((m) => (
-                    <th key={m} className="text-center text-[10px] font-semibold text-asvo-text-dim uppercase tracking-wider px-1 py-2">
-                      {m}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {ISO_PROCESSES.map((proc, ri) => (
-                  <tr key={proc} className="border-t border-asvo-border/40">
-                    <td className="px-2 py-2 text-[12px] text-asvo-text-mid whitespace-nowrap">{proc}</td>
-                    {PLAN_GRID[ri].map((cell, ci) => (
-                      <td key={ci} className="px-1 py-2 text-center">
-                        <div className={`w-4 h-4 rounded-[3px] mx-auto ${cellCls[cell]}`} />
-                      </td>
+          {planProcesses.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-asvo-text-dim">
+              <Calendar size={40} className="mb-3 opacity-30" />
+              <p className="text-[13px]">Нет данных годового плана</p>
+            </div>
+          ) : (
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr>
+                      <th className="text-left text-[10px] font-semibold text-asvo-text-dim uppercase tracking-wider px-2 py-2 w-40">
+                        Процесс
+                      </th>
+                      {MONTHS.map((m) => (
+                        <th key={m} className="text-center text-[10px] font-semibold text-asvo-text-dim uppercase tracking-wider px-1 py-2">
+                          {m}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {planProcesses.map((proc, ri) => (
+                      <tr key={proc + ri} className="border-t border-asvo-border/40">
+                        <td className="px-2 py-2 text-[12px] text-asvo-text-mid whitespace-nowrap">{proc}</td>
+                        {(planGrid[ri] || Array(12).fill("empty")).map((cell: CellState, ci: number) => (
+                          <td key={ci} className="px-1 py-2 text-center">
+                            <div className={`w-4 h-4 rounded-[3px] mx-auto ${cellCls[cell] || cellCls.empty}`} />
+                          </td>
+                        ))}
+                      </tr>
                     ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                  </tbody>
+                </table>
+              </div>
 
-          {/* Legend */}
-          <div className="flex items-center gap-5 mt-4 text-[11px] text-asvo-text-dim">
-            <span className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded-sm bg-asvo-blue-dim border border-asvo-blue/30" /> Запланирован
-            </span>
-            <span className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded-sm bg-asvo-accent-dim border border-asvo-accent/30" /> Выполнен
-            </span>
-            <span className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded-sm bg-asvo-surface border border-asvo-border" /> Пусто
-            </span>
-          </div>
+              {/* Legend */}
+              <div className="flex items-center gap-5 mt-4 text-[11px] text-asvo-text-dim">
+                <span className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded-sm bg-asvo-blue-dim border border-asvo-blue/30" /> Запланирован
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded-sm bg-asvo-accent-dim border border-asvo-accent/30" /> Выполнен
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded-sm bg-asvo-surface border border-asvo-border" /> Пусто
+                </span>
+              </div>
+            </>
+          )}
         </Card>
       )}
 
       {/* ---- TAB: Findings ---- */}
-      {tab === "findings" && (
+      {!loading && !error && tab === "findings" && (
         <Card>
           <SectionTitle>Классификация замечаний</SectionTitle>
 
-          <div className="space-y-4">
-            {FINDINGS.map((f) => (
-              <div key={f.label} className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-[13px] text-asvo-text">{f.label}</span>
-                  <span className="text-[13px] font-semibold text-asvo-text-mid">{f.count} ({f.pct}%)</span>
+          {findingsData.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-asvo-text-dim">
+              <AlertTriangle size={40} className="mb-3 opacity-30" />
+              <p className="text-[13px]">Нет данных о замечаниях</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {findingsData.map((f) => (
+                <div key={f.label} className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[13px] text-asvo-text">{f.label}</span>
+                    <span className="text-[13px] font-semibold text-asvo-text-mid">{f.count} ({f.pct}%)</span>
+                  </div>
+                  <ProgressBar value={f.pct} color={f.color} />
                 </div>
-                <ProgressBar value={f.pct} color={f.color} />
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </Card>
       )}
 
       {/* ---- TAB: Follow-up ---- */}
-      {tab === "followup" && (
+      {!loading && !error && tab === "followup" && (
         <DataTable
           columns={[
             {
@@ -369,7 +525,7 @@ const AuditsPage: React.FC = () => {
               label: "Статус",
               align: "center" as const,
               render: (r: FollowUpRow) => {
-                const s = FOLLOW_STATUS_CFG[r.status];
+                const s = FOLLOW_STATUS_CFG[r.status] || FOLLOW_STATUS_CFG.OPEN;
                 return <Badge color={s.color} bg={s.bg}>{s.label}</Badge>;
               },
             },
@@ -378,7 +534,7 @@ const AuditsPage: React.FC = () => {
               label: "Дней",
               align: "center" as const,
               render: (r: FollowUpRow) => {
-                if (r.status === "CLOSED") return <span className="text-asvo-text-dim">\u2014</span>;
+                if (r.status === "CLOSED") return <span className="text-asvo-text-dim">{"\u2014"}</span>;
                 const isOverdue = r.daysLeft < 0;
                 return (
                   <span className={`text-[12px] font-semibold ${isOverdue ? "text-[#F06060]" : r.daysLeft <= 5 ? "text-[#E8A830]" : "text-asvo-text-mid"}`}>
@@ -388,7 +544,7 @@ const AuditsPage: React.FC = () => {
               },
             },
           ]}
-          data={FOLLOW_UPS}
+          data={followUpRows}
         />
       )}
 

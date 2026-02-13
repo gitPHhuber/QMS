@@ -1,23 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   FileText, Plus, Shield, AlertTriangle, CheckCircle,
   Search, Eye, ChevronRight, Activity, ClipboardList,
-  Scale, Link2,
+  Scale, Link2, Loader2,
 } from 'lucide-react';
 import KpiRow from '../../components/qms/KpiRow';
 import ActionBtn from '../../components/qms/ActionBtn';
 import Badge from '../../components/qms/Badge';
 import DataTable from '../../components/qms/DataTable';
 import SectionTitle from '../../components/qms/SectionTitle';
+import {
+  riskManagementApi,
+  RmpStatus,
+  LifecyclePhase,
+  HazardCategory,
+  HazardStatus,
+  RiskClass,
+  ControlType,
+  RiskManagementPlanShort,
+  HazardShort,
+  TraceabilityMatrixRow,
+} from '../../api/qmsApi';
 
-/* ───── types ───── */
-type RmpStatus = 'DRAFT' | 'REVIEW' | 'APPROVED' | 'EFFECTIVE' | 'REVISION' | 'ARCHIVED';
-type HazardStatus = 'IDENTIFIED' | 'ANALYZED' | 'CONTROLLED' | 'VERIFIED' | 'ACCEPTED' | 'MONITORING';
-type RiskClass = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
-type ControlType = 'INHERENT_SAFETY' | 'PROTECTIVE' | 'INFORMATION';
-
+/* ───── row interfaces for tables ───── */
 interface PlanRow {
-  id: string;
+  id: number;
   planNumber: string;
   title: string;
   product: string;
@@ -29,7 +36,7 @@ interface PlanRow {
 }
 
 interface HazardRow {
-  id: string;
+  id: number;
   number: string;
   category: string;
   description: string;
@@ -73,12 +80,26 @@ const HAZARDS: HazardRow[] = [
   { id: '6', number: 'HAZ-006', category: 'BIOLOGICAL', description: "Bionesovmestimost' materiala elektroda", harm: 'Allergicheskaya reaktsiya', p: 2, s: 3, level: 6, riskClass: 'MEDIUM', residualClass: 'LOW', status: 'VERIFIED', controlCount: 2 },
 ];
 
-const TRACE_MATRIX: TraceRow[] = [
-  { id: '1', hazardNum: 'HAZ-001', hazardDesc: 'Elektricheskiy udar', initialRisk: 'HIGH (2x5=10)', controlType: 'INHERENT_SAFETY', controlDesc: 'Dvoinaya izolyatsiya IEC 60601-1', verifResult: 'PASS', residualRisk: 'LOW (1x5=5)', braResult: '-' },
-  { id: '2', hazardNum: 'HAZ-002', hazardDesc: 'Oshibka SpO2', initialRisk: 'HIGH (3x4=12)', controlType: 'PROTECTIVE', controlDesc: 'Alarmy pri otkloneniyakh > 3%', verifResult: 'PASS', residualRisk: 'MEDIUM (2x4=8)', braResult: 'Pol\'za > Risk' },
-  { id: '3', hazardNum: 'HAZ-004', hazardDesc: 'Oshibka podklyucheniya', initialRisk: 'CRITICAL (4x4=16)', controlType: 'INFORMATION', controlDesc: 'Tsvetovaya markirovka + IFU', verifResult: 'PASS', residualRisk: 'MEDIUM (2x4=8)', braResult: 'Pol\'za > Risk' },
-  { id: '4', hazardNum: 'HAZ-004', hazardDesc: 'Oshibka podklyucheniya', initialRisk: 'CRITICAL (4x4=16)', controlType: 'INHERENT_SAFETY', controlDesc: 'Assimetrichniy raz\'yom', verifResult: 'PASS', residualRisk: 'MEDIUM (2x4=8)', braResult: '-' },
-];
+interface BenefitRiskRow {
+  id: number;
+  hazard: string;
+  residualRisk: string;
+  benefit: string;
+  conclusion: string;
+  outweighs: boolean;
+  [key: string]: unknown;
+}
+
+
+interface StatsData {
+  totalPlans: number;
+  totalHazards: number;
+  totalControls: number;
+  verifiedControls: number;
+  totalBenefitRisk: number;
+  hazardsByCategory?: Array<{ category: string; count: number }>;
+  [key: string]: unknown;
+}
 
 /* ───── status / class colors ───── */
 const rmpStatusColors: Record<RmpStatus, { color: string; bg: string }> = {
@@ -128,8 +149,109 @@ const controlTypeColors: Record<ControlType, { color: string; bg: string }> = {
   INFORMATION:     { color: '#E8A830', bg: 'rgba(232,168,48,0.14)' },
 };
 
+const hazardCategoryColors: Record<string, string> = {
+  ENERGY:          '#F06060',
+  SOFTWARE:        '#A06AE8',
+  MECHANICAL:      '#E87040',
+  USE_ERROR:       '#E8A830',
+  ELECTROMAGNETIC: '#4A90E8',
+  BIOLOGICAL:      '#36B5E0',
+  CHEMICAL:        '#2DD4A8',
+  OPERATIONAL:     '#8899AB',
+  INFORMATION:     '#E8A830',
+  ENVIRONMENTAL:   '#6ABF69',
+  THERMAL:         '#E87040',
+  RADIATION:       '#F06060',
+};
+
 /* ───── tabs ───── */
 type TabKey = 'plans' | 'hazards' | 'traceability' | 'benefit-risk';
+
+/* ───── data mapping helpers ───── */
+function mapPlan(p: RiskManagementPlanShort): PlanRow {
+  return {
+    id: p.id,
+    planNumber: p.planNumber,
+    title: p.title,
+    product: p.productName,
+    phase: p.lifecyclePhase,
+    status: p.status,
+    hazardCount: p.hazards?.length ?? 0,
+    version: p.version,
+  };
+}
+
+function mapHazard(h: HazardShort): HazardRow {
+  return {
+    id: h.id,
+    number: h.hazardNumber,
+    category: h.hazardCategory,
+    description: h.hazardDescription,
+    harm: h.harm,
+    p: h.probabilityOfOccurrence,
+    s: h.severityOfHarm,
+    level: h.riskLevel,
+    riskClass: h.riskClass,
+    residualClass: h.residualRiskClass,
+    status: h.status,
+    controlCount: 0,
+  };
+}
+
+function mapTraceRow(t: TraceabilityMatrixRow): TraceRow[] {
+  if (!t.controlMeasures || t.controlMeasures.length === 0) {
+    const iRisk = t.initialRisk;
+    const rRisk = t.residualRisk;
+    return [{
+      id: `${t.hazardId}-0`,
+      hazardNum: t.hazardNumber,
+      hazardDesc: t.hazardDescription,
+      initialRisk: `${iRisk.class} (${iRisk.probability}x${iRisk.severity}=${iRisk.level})`,
+      controlType: 'INHERENT_SAFETY' as ControlType,
+      controlDesc: '-',
+      verifResult: '-',
+      residualRisk: rRisk.class
+        ? `${rRisk.class} (${rRisk.probability ?? '?'}x${rRisk.severity ?? '?'}=${rRisk.level ?? '?'})`
+        : '-',
+      braResult: t.benefitRiskAnalysis
+        ? (t.benefitRiskAnalysis.benefitOutweighsRisk ? "Pol'za > Risk" : "Risk > Pol'za")
+        : '-',
+    }];
+  }
+
+  return t.controlMeasures.map((cm, idx) => {
+    const iRisk = t.initialRisk;
+    const rRisk = t.residualRisk;
+    return {
+      id: `${t.hazardId}-${idx}`,
+      hazardNum: t.hazardNumber,
+      hazardDesc: t.hazardDescription,
+      initialRisk: `${iRisk.class} (${iRisk.probability}x${iRisk.severity}=${iRisk.level})`,
+      controlType: cm.type,
+      controlDesc: cm.description,
+      verifResult: cm.verificationResult,
+      residualRisk: rRisk.class
+        ? `${rRisk.class} (${rRisk.probability ?? '?'}x${rRisk.severity ?? '?'}=${rRisk.level ?? '?'})`
+        : '-',
+      braResult: t.benefitRiskAnalysis
+        ? (t.benefitRiskAnalysis.benefitOutweighsRisk ? "Pol'za > Risk" : "Risk > Pol'za")
+        : '-',
+    };
+  });
+}
+
+function mapBenefitRisk(bra: any): BenefitRiskRow {
+  return {
+    id: bra.id,
+    hazard: bra.hazard
+      ? `${bra.hazard.hazardNumber ?? 'HAZ-???'} — ${bra.hazard.hazardDescription ?? bra.hazardDescription ?? ''}`
+      : `BRA-${bra.id}`,
+    residualRisk: bra.residualRiskClass ?? bra.residualRisk ?? 'MEDIUM',
+    benefit: bra.intendedBenefit ?? bra.benefit ?? '',
+    conclusion: bra.conclusion ?? '',
+    outweighs: bra.benefitOutweighsRisk ?? false,
+  };
+}
 
 /* ───── plan table columns ───── */
 const planColumns = [
@@ -333,14 +455,88 @@ const RiskManagementPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabKey>('plans');
   const [search, setSearch] = useState('');
 
-  /* ───── KPI ───── */
+  /* ───── data state ───── */
+  const [plans, setPlans] = useState<PlanRow[]>([]);
+  const [hazards, setHazards] = useState<HazardRow[]>([]);
+  const [traceability, setTraceability] = useState<TraceRow[]>([]);
+  const [benefitRisk, setBenefitRisk] = useState<BenefitRiskRow[]>([]);
+  const [stats, setStats] = useState<StatsData | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  /* ───── fetch stats on mount ───── */
+  useEffect(() => {
+    riskManagementApi.getStats()
+      .then((data) => setStats(data))
+      .catch(() => {/* stats are non-critical, silently ignore */});
+  }, []);
+
+  /* ───── fetch tab data when activeTab changes ───── */
+  const fetchTabData = useCallback(async (tab: TabKey) => {
+    setLoading(true);
+    setError(null);
+    try {
+      switch (tab) {
+        case 'plans': {
+          const res = await riskManagementApi.getPlans({ search: search || undefined });
+          setPlans((res.rows ?? []).map(mapPlan));
+          break;
+        }
+        case 'hazards': {
+          const res = await riskManagementApi.getHazards({ search: search || undefined });
+          setHazards((res.rows ?? []).map(mapHazard));
+          break;
+        }
+        case 'traceability': {
+          const res = await riskManagementApi.getTraceability({ search: search || undefined });
+          const rows: TraceRow[] = (res.rows ?? []).flatMap((t: TraceabilityMatrixRow) => mapTraceRow(t));
+          setTraceability(rows);
+          break;
+        }
+        case 'benefit-risk': {
+          const res = await riskManagementApi.getBenefitRisk({ search: search || undefined });
+          setBenefitRisk((res.rows ?? []).map(mapBenefitRisk));
+          break;
+        }
+      }
+    } catch (err: any) {
+      setError(err?.response?.data?.message ?? err?.message ?? 'Oshibka zagruzki dannykh');
+    } finally {
+      setLoading(false);
+    }
+  }, [search]);
+
+  useEffect(() => {
+    fetchTabData(activeTab);
+  }, [activeTab, fetchTabData]);
+
+  /* ───── KPI from stats ───── */
   const kpis = [
-    { label: 'Plany RMP',              value: 3,  color: '#A06AE8', icon: <FileText size={18} /> },
-    { label: 'Opasnostey',             value: 49, color: '#F06060', icon: <AlertTriangle size={18} /> },
-    { label: 'Mer upravleniya',        value: 87, color: '#4A90E8', icon: <Shield size={18} /> },
-    { label: 'Verifitsirovano',        value: 64, color: '#2DD4A8', icon: <CheckCircle size={18} /> },
-    { label: 'Benefit-Risk analizov',  value: 12, color: '#E8A830', icon: <Scale size={18} /> },
+    { label: 'Plany RMP',              value: stats?.totalPlans ?? 0,        color: '#A06AE8', icon: <FileText size={18} /> },
+    { label: 'Opasnostey',             value: stats?.totalHazards ?? 0,      color: '#F06060', icon: <AlertTriangle size={18} /> },
+    { label: 'Mer upravleniya',        value: stats?.totalControls ?? 0,     color: '#4A90E8', icon: <Shield size={18} /> },
+    { label: 'Verifitsirovano',        value: stats?.verifiedControls ?? 0,  color: '#2DD4A8', icon: <CheckCircle size={18} /> },
+    { label: 'Benefit-Risk analizov',  value: stats?.totalBenefitRisk ?? 0,  color: '#E8A830', icon: <Scale size={18} /> },
   ];
+
+  /* ───── hazard category summary derived from hazards data ───── */
+  const hazardCategorySummary: Array<{ cat: string; count: number; color: string }> =
+    stats?.hazardsByCategory
+      ? stats.hazardsByCategory.map((item) => ({
+          cat: item.category,
+          count: Number(item.count),
+          color: hazardCategoryColors[item.category] ?? '#8899AB',
+        }))
+      : Object.entries(
+          hazards.reduce<Record<string, number>>((acc, h) => {
+            acc[h.category] = (acc[h.category] ?? 0) + 1;
+            return acc;
+          }, {})
+        ).map(([cat, count]) => ({
+          cat,
+          count,
+          color: hazardCategoryColors[cat] ?? '#8899AB',
+        }));
 
   const tabs: { key: TabKey; label: string; icon: React.ReactNode }[] = [
     { key: 'plans',        label: 'Plany RMP',             icon: <FileText size={15} /> },
@@ -351,7 +547,7 @@ const RiskManagementPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-asvo-bg p-6 space-y-6">
-      {/* ── Header ── */}
+      {/* -- Header -- */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-lg" style={{ background: 'rgba(160,106,232,0.12)' }}>
@@ -376,10 +572,10 @@ const RiskManagementPage: React.FC = () => {
         </div>
       </div>
 
-      {/* ── KPI Row ── */}
+      {/* -- KPI Row -- */}
       <KpiRow items={kpis} />
 
-      {/* ── Tabs ── */}
+      {/* -- Tabs -- */}
       <div className="flex gap-1 bg-asvo-surface border border-asvo-border rounded-xl p-1">
         {tabs.map(tab => (
           <button
@@ -397,7 +593,7 @@ const RiskManagementPage: React.FC = () => {
         ))}
       </div>
 
-      {/* ── Search ── */}
+      {/* -- Search -- */}
       <div className="flex gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-asvo-text-dim" size={16} />
@@ -411,50 +607,72 @@ const RiskManagementPage: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Content by tab ── */}
-      {activeTab === 'plans' && (
+      {/* -- Error state -- */}
+      {error && (
+        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 flex items-center gap-3">
+          <AlertTriangle className="text-red-400 shrink-0" size={20} />
+          <div>
+            <p className="text-red-400 text-sm font-medium">Oshibka zagruzki</p>
+            <p className="text-red-400/70 text-xs">{error}</p>
+          </div>
+          <button
+            onClick={() => fetchTabData(activeTab)}
+            className="ml-auto text-xs text-red-400 border border-red-400/30 rounded px-3 py-1 hover:bg-red-400/10 transition-colors"
+          >
+            Povtorit'
+          </button>
+        </div>
+      )}
+
+      {/* -- Loading state -- */}
+      {loading && (
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="animate-spin text-asvo-accent" size={32} />
+          <span className="ml-3 text-asvo-text-dim text-sm">Zagruzka...</span>
+        </div>
+      )}
+
+      {/* -- Content by tab -- */}
+      {!loading && activeTab === 'plans' && (
         <>
           <SectionTitle>Plany menedzhmenta riskov (ISO 14971 &sect;4.4)</SectionTitle>
-          <DataTable columns={planColumns} data={PLANS} />
+          <DataTable columns={planColumns} data={plans} />
         </>
       )}
 
-      {activeTab === 'hazards' && (
+      {!loading && activeTab === 'hazards' && (
         <>
           <SectionTitle>Analiz opasnostey (ISO 14971 &sect;5)</SectionTitle>
-          <DataTable columns={hazardColumns} data={HAZARDS} />
+          <DataTable columns={hazardColumns} data={hazards} />
 
           {/* Hazard category summary */}
-          <SectionTitle>Opasnosti po kategoriyam</SectionTitle>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
-            {[
-              { cat: 'ENERGY', count: 4, color: '#F06060' },
-              { cat: 'SOFTWARE', count: 6, color: '#A06AE8' },
-              { cat: 'MECHANICAL', count: 3, color: '#E87040' },
-              { cat: 'USE_ERROR', count: 8, color: '#E8A830' },
-              { cat: 'ELECTROMAGNETIC', count: 3, color: '#4A90E8' },
-              { cat: 'BIOLOGICAL', count: 2, color: '#36B5E0' },
-            ].map(item => (
-              <div
-                key={item.cat}
-                className="bg-asvo-surface border border-asvo-border rounded-lg p-3 flex items-center gap-2"
-              >
-                <div className="w-2 h-2 rounded-full" style={{ background: item.color }} />
-                <span className="text-asvo-text-mid text-xs flex-1">{item.cat}</span>
-                <span className="text-asvo-text font-bold text-sm">{item.count}</span>
+          {hazardCategorySummary.length > 0 && (
+            <>
+              <SectionTitle>Opasnosti po kategoriyam</SectionTitle>
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
+                {hazardCategorySummary.map(item => (
+                  <div
+                    key={item.cat}
+                    className="bg-asvo-surface border border-asvo-border rounded-lg p-3 flex items-center gap-2"
+                  >
+                    <div className="w-2 h-2 rounded-full" style={{ background: item.color }} />
+                    <span className="text-asvo-text-mid text-xs flex-1">{item.cat}</span>
+                    <span className="text-asvo-text font-bold text-sm">{item.count}</span>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </>
+          )}
         </>
       )}
 
-      {activeTab === 'traceability' && (
+      {!loading && activeTab === 'traceability' && (
         <>
           <SectionTitle>Matritsa proslezhivayemosti mer upravleniya (ISO 14971 &sect;7-8)</SectionTitle>
           <p className="text-asvo-text-dim text-xs mb-3">
             Polnaya tsepochka: Opasnost' &rarr; Iskhodnyy risk &rarr; Mera upravleniya &rarr; Verifikatsiya &rarr; Rezidual'nyy risk &rarr; Benefit/Risk
           </p>
-          <DataTable columns={traceColumns} data={TRACE_MATRIX} />
+          <DataTable columns={traceColumns} data={traceability} />
 
           {/* Control type priority legend */}
           <div className="bg-asvo-surface border border-asvo-border rounded-xl p-4 mt-4">
@@ -477,7 +695,7 @@ const RiskManagementPage: React.FC = () => {
         </>
       )}
 
-      {activeTab === 'benefit-risk' && (
+      {!loading && activeTab === 'benefit-risk' && (
         <>
           <SectionTitle>Analiz pol'zy/riska (ISO 14971 &sect;6.5)</SectionTitle>
           <p className="text-asvo-text-dim text-xs mb-3">
@@ -485,39 +703,19 @@ const RiskManagementPage: React.FC = () => {
           </p>
 
           <div className="space-y-3">
-            {[
-              {
-                id: 'BRA-001',
-                hazard: 'HAZ-002 — Oshibka SpO2',
-                residualRisk: 'MEDIUM',
-                benefit: 'Nepreryvnyy monitoring SpO2 dlya rannego obnaruzheniya gipoksii',
-                conclusion: 'Klinicheskaya pol\'za (ranneye obnaruzheniye gipoksii) znachitel\'no prevyshayet rezidual\'nyy risk oshibki +/- 3%',
-                outweighs: true,
-              },
-              {
-                id: 'BRA-002',
-                hazard: 'HAZ-004 — Nepravil\'noye podklyucheniye',
-                residualRisk: 'MEDIUM',
-                benefit: 'Nepreryvnyy monitoring EKG dlya diagnostiki aritmiy',
-                conclusion: 'Pol\'za EKG-monitoringa kriticheskikh patsiyentov prevyshayet risk pri uslovii informirovaniya',
-                outweighs: true,
-              },
-              {
-                id: 'BRA-003',
-                hazard: 'HAZ-007 — Peregrev termoprintera',
-                residualRisk: 'HIGH',
-                benefit: 'Pechat\' EKG na meste',
-                conclusion: 'Pol\'za pechati ne pereveshivayet risk ozhoga — trebuyetsya dopolnitel\'naya mera',
-                outweighs: false,
-              },
-            ].map(bra => (
+            {benefitRisk.length === 0 && (
+              <div className="bg-asvo-surface border border-asvo-border rounded-xl p-8 text-center">
+                <p className="text-asvo-text-dim text-sm">Net dannykh</p>
+              </div>
+            )}
+            {benefitRisk.map(bra => (
               <div
                 key={bra.id}
                 className="bg-asvo-surface border border-asvo-border rounded-xl p-4"
               >
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-asvo-accent text-sm">{bra.id}</span>
+                    <span className="font-mono text-asvo-accent text-sm">BRA-{String(bra.id).padStart(3, '0')}</span>
                     <ChevronRight size={14} className="text-asvo-text-dim" />
                     <span className="text-asvo-text text-sm">{bra.hazard}</span>
                   </div>

@@ -226,6 +226,18 @@ export const ncApi = {
 
   getStats: (): Promise<NcCapaStats> =>
     $authHost.get("/api/nc/stats").then(r => r.data),
+
+  linkRisk: (ncId: number, data: { riskId: number }) =>
+    $authHost.post(`/api/nc/${ncId}/link-risk`, data).then(r => r.data),
+
+  unlinkRisk: (ncId: number, data: { riskId: number }) =>
+    $authHost.delete(`/api/nc/${ncId}/link-risk`, { data }).then(r => r.data),
+
+  getOverdueEscalation: () =>
+    $authHost.get("/api/nc/escalation/overdue").then(r => r.data),
+
+  checkEscalation: () =>
+    $authHost.post("/api/nc/escalation/check").then(r => r.data),
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -263,6 +275,15 @@ export const risksApi = {
 
   acceptRisk: (riskId: number, data: { decision: string }) =>
     $authHost.post(`/api/risks/${riskId}/accept`, data).then(r => r.data),
+
+  completeMitigation: (mitigationId: number) =>
+    $authHost.put(`/api/risks/mitigation/${mitigationId}/complete`).then(r => r.data),
+
+  verifyMitigation: (mitigationId: number, data: Record<string, any>) =>
+    $authHost.put(`/api/risks/mitigation/${mitigationId}/verify`, data).then(r => r.data),
+
+  getLinkedNCs: (riskId: number) =>
+    $authHost.get(`/api/risks/${riskId}/nonconformities`).then(r => r.data),
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -470,6 +491,36 @@ export const internalAuditsApi = {
 
   getStats: () =>
     $authHost.get("/api/internal-audits/stats").then(r => r.data),
+
+  getChecklists: (params?: Record<string, any>) =>
+    $authHost.get("/api/internal-audits/checklists", { params }).then(r => r.data),
+
+  seedChecklists: () =>
+    $authHost.post("/api/internal-audits/checklists/seed").then(r => r.data),
+
+  createChecklist: (data: Record<string, any>) =>
+    $authHost.post("/api/internal-audits/checklists", data).then(r => r.data),
+
+  getChecklistByClause: (clause: string) =>
+    $authHost.get(`/api/internal-audits/checklists/${clause}`).then(r => r.data),
+
+  getChecklistResponses: (scheduleId: number) =>
+    $authHost.get(`/api/internal-audits/schedules/${scheduleId}/checklist-responses`).then(r => r.data),
+
+  initChecklist: (scheduleId: number, data: Record<string, any>) =>
+    $authHost.post(`/api/internal-audits/schedules/${scheduleId}/checklist-init`, data).then(r => r.data),
+
+  bulkUpdateResponses: (scheduleId: number, data: Record<string, any>) =>
+    $authHost.put(`/api/internal-audits/schedules/${scheduleId}/checklist-responses`, data).then(r => r.data),
+
+  updateResponse: (id: number, data: Record<string, any>) =>
+    $authHost.put(`/api/internal-audits/checklist-responses/${id}`, data).then(r => r.data),
+
+  createCapaFromFinding: (findingId: number) =>
+    $authHost.post(`/api/internal-audits/findings/${findingId}/create-capa`).then(r => r.data),
+
+  distributeReport: (scheduleId: number) =>
+    $authHost.post(`/api/internal-audits/schedules/${scheduleId}/distribute-report`).then(r => r.data),
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -594,6 +645,15 @@ export const complaintsApi = {
 
   getStats: () =>
     $authHost.get("/api/complaints/stats").then(r => r.data),
+
+  submitVigilance: (id: number, data: Record<string, any>) =>
+    $authHost.post(`/api/complaints/${id}/vigilance/submit`, data).then(r => r.data),
+
+  acknowledgeVigilance: (id: number, data: Record<string, any>) =>
+    $authHost.post(`/api/complaints/${id}/vigilance/acknowledge`, data).then(r => r.data),
+
+  getOverdueVigilance: () =>
+    $authHost.get("/api/complaints/vigilance/overdue").then(r => r.data),
 };
 
 // ═══════════════════════════════════════════════════════════════

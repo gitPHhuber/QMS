@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   Bell,
   AlertTriangle,
@@ -10,7 +10,9 @@ import {
   GitBranch,
   ClipboardCheck,
   CheckCircle2,
+  Loader2,
 } from "lucide-react";
+import { notificationsApi } from "../api/qmsApi";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -33,14 +35,14 @@ interface NotificationItem {
   severity: NotificationSeverity;
   link?: string;
   isRead: boolean;
-  createdAt: string; // relative time label
+  createdAt: string;
 }
 
 /* ------------------------------------------------------------------ */
 /*  Icon & color config by type                                        */
 /* ------------------------------------------------------------------ */
 
-const TYPE_CONFIG: Record<NotificationType, { icon: React.ElementType; color: string }> = {
+const TYPE_CONFIG: Record<string, { icon: React.ElementType; color: string }> = {
   CAPA_OVERDUE:           { icon: AlertTriangle,       color: "#F06060" },
   CAPA_ASSIGNED:          { icon: CheckCircle2,        color: "#4A90E8" },
   DOCUMENT_PENDING:       { icon: FileText,            color: "#E8A830" },
@@ -61,31 +63,61 @@ const SEVERITY_DOT: Record<NotificationSeverity, string> = {
   INFO:     "bg-[#4A90E8]",
 };
 
-/* ------------------------------------------------------------------ */
-/*  Mock notifications                                                 */
-/* ------------------------------------------------------------------ */
-
-const MOCK_NOTIFICATIONS: NotificationItem[] = [
-  { id: 1, type: "CAPA_OVERDUE",           severity: "CRITICAL", title: "CAPA-019 просрочена на 3 дня",                     message: "Требуется немедленное внимание",                          link: "/qms/capa",           isRead: false, createdAt: "10 мин назад" },
-  { id: 2, type: "DOCUMENT_PENDING",       severity: "WARNING",  title: "2 документа ожидают согласования",                 message: "СТО-045 и ИИ-012 требуют вашего решения",                link: "/qms/documents",      isRead: false, createdAt: "1 час назад" },
-  { id: 3, type: "CALIBRATION_DUE",        severity: "WARNING",  title: "Калибровка EQ-003 через 5 дней",                  message: "Осциллограф Rigol DS1104 — срок 17.02.2026",              link: "/qms/equipment",      isRead: false, createdAt: "2 часа назад" },
-  { id: 4, type: "NC_CREATED",             severity: "INFO",     title: "Назначен ответственным за NC-051",                 message: "Сбой ПО при калибровке DensiBot v2",                      link: "/qms/nonconformity",  isRead: false, createdAt: "3 часа назад" },
-  { id: 5, type: "COMPLAINT_RECEIVED",     severity: "CRITICAL", title: "Получена рекламация CMP-2026-005",                message: "AXR-100: некорректные показания после 6 мес",             link: "/qms/complaints",     isRead: false, createdAt: "вчера" },
-  { id: 6, type: "TRAINING_EXPIRED",       severity: "WARNING",  title: "Обучение IPC-A-610 истекло",                      message: "Омельченко А.Г. — требуется переаттестация",              link: "/qms/training",       isRead: true,  createdAt: "вчера" },
-  { id: 7, type: "CHANGE_REQUEST_PENDING", severity: "INFO",     title: "ECR-2026-004 ожидает одобрения",                  message: "Обновление алгоритма BMD v2.1",                           link: "/qms/change-control", isRead: true,  createdAt: "2 дня назад" },
-  { id: 8, type: "AUDIT_UPCOMING",         severity: "INFO",     title: "Аудит AUD-013 запланирован на 20.02",             message: "Внутренний аудит процесса 8.2 Мониторинг",               link: "/qms/audits",         isRead: true,  createdAt: "3 дня назад" },
-];
-
 /* ================================================================== */
 /*  NotificationBell Component                                         */
 /* ================================================================== */
 
 const NotificationBell: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [loading, setLoading] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
+  // Fetch unread count periodically
+  const fetchCount = useCallback(async () => {
+    try {
+      const data = await notificationsApi.getCount();
+      setUnreadCount(data.count ?? 0);
+    } catch {
+      // silently ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCount();
+    const interval = setInterval(fetchCount, 30_000);
+    return () => clearInterval(interval);
+  }, [fetchCount]);
+
+  // Fetch full list when dropdown opens
+  const fetchNotifications = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await notificationsApi.getAll({ limit: 20 });
+      const rows: NotificationItem[] = (data.rows ?? data ?? []).map((n: any) => ({
+        id: n.id,
+        type: n.type || "GENERAL",
+        title: n.title || "",
+        message: n.message || "",
+        severity: n.severity || "INFO",
+        link: n.link,
+        isRead: n.isRead ?? false,
+        createdAt: n.createdAt
+          ? new Date(n.createdAt).toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
+          : "",
+      }));
+      setNotifications(rows);
+    } catch {
+      // keep existing
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) fetchNotifications();
+  }, [isOpen, fetchNotifications]);
 
   // Close on outside click
   useEffect(() => {
@@ -98,14 +130,30 @@ const NotificationBell: React.FC = () => {
     return () => document.removeEventListener("mousedown", handleClick);
   }, [isOpen]);
 
-  const markAllRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+  const markAllRead = async () => {
+    try {
+      await notificationsApi.markAllRead();
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+      setUnreadCount(0);
+    } catch {
+      // fallback local
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+      setUnreadCount(0);
+    }
   };
 
-  const markRead = (id: number) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
-    );
+  const markRead = async (id: number) => {
+    try {
+      await notificationsApi.markRead(id);
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
+      );
+      setUnreadCount((c) => Math.max(0, c - 1));
+    } catch {
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
+      );
+    }
   };
 
   return (
@@ -141,44 +189,54 @@ const NotificationBell: React.FC = () => {
 
           {/* Notification list */}
           <div className="overflow-y-auto max-h-[440px]">
-            {notifications.map((n) => {
-              const cfg = TYPE_CONFIG[n.type];
-              const Icon = cfg.icon;
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 size={20} className="animate-spin text-slate-400" />
+              </div>
+            ) : notifications.length === 0 ? (
+              <div className="flex items-center justify-center py-8 text-xs text-slate-500">
+                Нет уведомлений
+              </div>
+            ) : (
+              notifications.map((n) => {
+                const cfg = TYPE_CONFIG[n.type] || TYPE_CONFIG.GENERAL;
+                const Icon = cfg.icon;
 
-              return (
-                <button
-                  key={n.id}
-                  onClick={() => markRead(n.id)}
-                  className={`w-full flex items-start gap-3 px-4 py-3 text-left transition-colors border-b border-slate-700/30 ${
-                    !n.isRead
-                      ? "bg-slate-800/60 hover:bg-slate-700/50"
-                      : "hover:bg-slate-800/30"
-                  }`}
-                >
-                  {/* Icon */}
-                  <div
-                    className="mt-0.5 flex items-center justify-center w-8 h-8 rounded-lg shrink-0"
-                    style={{ background: `${cfg.color}1A` }}
+                return (
+                  <button
+                    key={n.id}
+                    onClick={() => markRead(n.id)}
+                    className={`w-full flex items-start gap-3 px-4 py-3 text-left transition-colors border-b border-slate-700/30 ${
+                      !n.isRead
+                        ? "bg-slate-800/60 hover:bg-slate-700/50"
+                        : "hover:bg-slate-800/30"
+                    }`}
                   >
-                    <Icon size={16} style={{ color: cfg.color }} />
-                  </div>
-
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      {!n.isRead && (
-                        <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${SEVERITY_DOT[n.severity]}`} />
-                      )}
-                      <span className={`text-[12px] font-semibold truncate ${!n.isRead ? "text-white" : "text-slate-300"}`}>
-                        {n.title}
-                      </span>
+                    {/* Icon */}
+                    <div
+                      className="mt-0.5 flex items-center justify-center w-8 h-8 rounded-lg shrink-0"
+                      style={{ background: `${cfg.color}1A` }}
+                    >
+                      <Icon size={16} style={{ color: cfg.color }} />
                     </div>
-                    <p className="text-[11px] text-slate-400 mt-0.5 truncate">{n.message}</p>
-                    <span className="text-[10px] text-slate-500 mt-1 block">{n.createdAt}</span>
-                  </div>
-                </button>
-              );
-            })}
+
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        {!n.isRead && (
+                          <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${SEVERITY_DOT[n.severity] || SEVERITY_DOT.INFO}`} />
+                        )}
+                        <span className={`text-[12px] font-semibold truncate ${!n.isRead ? "text-white" : "text-slate-300"}`}>
+                          {n.title}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-400 mt-0.5 truncate">{n.message}</p>
+                      <span className="text-[10px] text-slate-500 mt-1 block">{n.createdAt}</span>
+                    </div>
+                  </button>
+                );
+              })
+            )}
           </div>
         </div>
       )}
