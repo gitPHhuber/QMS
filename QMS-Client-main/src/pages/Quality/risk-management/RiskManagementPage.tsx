@@ -122,13 +122,13 @@ const RiskManagementPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <ActionBtn icon={<Plus size={15} />}>
+          <ActionBtn icon={<Plus size={15} />} disabled title="Будет доступно в следующем спринте">
             {activeTab === 'plans' ? 'Noviy plan' :
              activeTab === 'hazards' ? 'Novaya opasnost\'' :
              activeTab === 'traceability' ? 'Novaya mera' :
              'Noviy analiz'}
           </ActionBtn>
-          <ActionBtn variant="secondary" color="#A06AE8" icon={<Eye size={15} />}>
+          <ActionBtn variant="secondary" color="#A06AE8" icon={<Eye size={15} />} disabled title="Будет доступно в следующем спринте">
             Otchyot ISO 14971
           </ActionBtn>
         </div>

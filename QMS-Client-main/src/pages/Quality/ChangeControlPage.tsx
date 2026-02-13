@@ -303,8 +303,8 @@ const ChangeControlPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <ActionBtn variant="primary" icon={<Plus size={15} />}>+ Новый ECR</ActionBtn>
-          <ActionBtn variant="secondary" icon={<Download size={15} />}>Экспорт</ActionBtn>
+          <ActionBtn variant="primary" icon={<Plus size={15} />} disabled title="Будет доступно в следующем спринте">+ Новый ECR</ActionBtn>
+          <ActionBtn variant="secondary" icon={<Download size={15} />} disabled title="Будет доступно в следующем спринте">Экспорт</ActionBtn>
         </div>
       </div>
 

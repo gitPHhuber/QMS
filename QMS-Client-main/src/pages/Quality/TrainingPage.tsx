@@ -198,7 +198,7 @@ const TrainingPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <ActionBtn variant="primary" icon={<Plus size={15} />}>+ Назначить обучение</ActionBtn>
+          <ActionBtn variant="primary" icon={<Plus size={15} />} disabled title="Будет доступно в следующем спринте">+ Назначить обучение</ActionBtn>
           <ActionBtn
             variant="secondary"
             color="#A06AE8"
@@ -207,7 +207,7 @@ const TrainingPage: React.FC = () => {
           >
             Матрица компетенций
           </ActionBtn>
-          <ActionBtn variant="secondary" icon={<Download size={15} />}>Экспорт</ActionBtn>
+          <ActionBtn variant="secondary" icon={<Download size={15} />} disabled title="Будет доступно в следующем спринте">Экспорт</ActionBtn>
         </div>
       </div>
 

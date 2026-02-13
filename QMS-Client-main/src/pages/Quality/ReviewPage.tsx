@@ -352,10 +352,10 @@ const ReviewPage: React.FC = () => {
       />
 
       <div className="flex items-center gap-3">
-        <ActionBtn variant="primary" icon={<Plus size={15} />}>
+        <ActionBtn variant="primary" icon={<Plus size={15} />} disabled title="Будет доступно в следующем спринте">
           + Новое совещание
         </ActionBtn>
-        <ActionBtn variant="secondary" icon={<FileText size={15} />}>
+        <ActionBtn variant="secondary" icon={<FileText size={15} />} disabled title="Будет доступно в следующем спринте">
           Протокол
         </ActionBtn>
       </div>

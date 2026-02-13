@@ -263,13 +263,13 @@ const EquipmentPage: React.FC = () => {
 
       {/* Action buttons */}
       <div className="flex items-center gap-3">
-        <ActionBtn variant="primary" icon={<Plus size={15} />}>
+        <ActionBtn variant="primary" icon={<Plus size={15} />} disabled title="Будет доступно в следующем спринте">
           + Добавить оборудование
         </ActionBtn>
-        <ActionBtn variant="secondary" color="#4A90E8" icon={<CalendarClock size={15} />}>
+        <ActionBtn variant="secondary" color="#4A90E8" icon={<CalendarClock size={15} />} disabled title="Будет доступно в следующем спринте">
           График калибровки
         </ActionBtn>
-        <ActionBtn variant="secondary" icon={<Download size={15} />}>
+        <ActionBtn variant="secondary" icon={<Download size={15} />} disabled title="Будет доступно в следующем спринте">
           Экспорт
         </ActionBtn>
       </div>
