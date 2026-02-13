@@ -52,15 +52,6 @@ const getAll = async (req, res, next) => {
 
 const getOne = async (req, res, next) => {
   try {
-
-    const risk = await RiskRegister.findByPk(req.params.id, {
-      include: [
-        { model: RiskAssessment, as: "assessments", order: [["assessmentDate", "DESC"]] },
-        { model: RiskMitigation, as: "mitigations", order: [["createdAt", "ASC"]], include: [{ model: Capa, as: "capa", attributes: ["id", "number", "status", "title"] }] },
-        { model: User, as: "owner", attributes: ["id", "name", "surname"] },
-      ],
-    });
-
     const includes = [
       { model: RiskAssessment, as: "assessments", order: [["assessmentDate", "DESC"]] },
       { model: RiskMitigation, as: "mitigations", order: [["createdAt", "ASC"]] },
