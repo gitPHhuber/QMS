@@ -24,6 +24,7 @@ const MODULE_DIRS = {
   'qms.changes':    'qms-change',
   'qms.validation': 'qms-validation',
   'qms.product':    'qms-product',
+  'qms.dashboard':  'qms-dashboard',
   'wms.warehouse':  'wms',
 };
 

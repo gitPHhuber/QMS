@@ -2,59 +2,261 @@
  * CapaPage.tsx — Реестр CAPA
  * Dark theme, ASVO-QMS design system
  * ISO 13485 §8.5.2/§8.5.3 — Корректирующие и предупреждающие действия
+ *
+ * Подключён к API /api/nc/capa и /api/nc/stats
  */
 
-import React from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   CheckCircle2, Plus, Download, Grid3X3,
+  AlertTriangle, RefreshCw, Clock, Activity,
 } from "lucide-react";
-import Badge from "src/components/qms/Badge";
-import StatusDot from "src/components/qms/StatusDot";
-import ProgressBar from "src/components/qms/ProgressBar";
 
-/* ─── Mock data ──────────────────────────────────────────────── */
+import { capaApi, ncApi } from "../../api/qmsApi";
+import type { CapaShort, CapaStatus, NcCapaStats } from "../../api/qmsApi";
 
-interface CapaRow {
-  id: string;
-  title: string;
-  type: "Корректирующее" | "Предупреждающее";
-  nc: string;
-  status: string;
-  statusVariant: "nc" | "capa" | "risk" | "audit" | "closed" | "sop";
-  progress: number;
-  progressColor: "red" | "amber" | "blue" | "accent" | "purple";
-  responsible: string;
-  due: string;
-}
+import Badge from "../../components/qms/Badge";
+import KpiRow from "../../components/qms/KpiRow";
+import ActionBtn from "../../components/qms/ActionBtn";
+import DataTable from "../../components/qms/DataTable";
 
-const capaRows: CapaRow[] = [
-  { id: "CAPA-049", title: "Чек-лист верификации пайки SMD", type: "Корректирующее", nc: "NC-089", status: "Инициировано", statusVariant: "audit", progress: 10, progressColor: "blue", responsible: "Костюков И.", due: "20.02.2026" },
-  { id: "CAPA-047", title: "Внедрение чек-листа монтажа", type: "Корректирующее", nc: "NC-085", status: "Выполнение", statusVariant: "capa", progress: 70, progressColor: "amber", responsible: "Омельченко А.", due: "20.02.2026" },
-  { id: "CAPA-045", title: "Замена поставщика PCB", type: "Корректирующее", nc: "NC-082", status: "Проверка", statusVariant: "risk", progress: 90, progressColor: "accent", responsible: "Холтобин А.", due: "15.02.2026" },
-  { id: "CAPA-042", title: "Обновление IQ/OQ для пресса", type: "Предупреждающее", nc: "\u2014", status: "Закрыто", statusVariant: "closed", progress: 100, progressColor: "accent", responsible: "Костюков И.", due: "01.02.2026" },
-  { id: "CAPA-041", title: "Замена клея на участке сборки", type: "Корректирующее", nc: "NC-078", status: "Просрочено", statusVariant: "nc", progress: 45, progressColor: "red", responsible: "Яровой Е.", due: "28.01.2026" },
-  { id: "CAPA-038", title: "Калибровка мультиметров", type: "Предупреждающее", nc: "\u2014", status: "Просрочено", statusVariant: "nc", progress: 60, progressColor: "red", responsible: "Чирков И.", due: "01.02.2026" },
-];
+/* ─── Constants & Maps ───────────────────────────────────────── */
 
-const d8Steps = [
-  { d: "D1", label: "Команда", done: true },
-  { d: "D2", label: "Описание", done: true },
-  { d: "D3", label: "Сдерживание", done: true },
-  { d: "D4", label: "Root Cause", done: true },
-  { d: "D5", label: "Действия", done: false },
-  { d: "D6", label: "Внедрение", done: false },
-  { d: "D7", label: "Предотвращение", done: false },
-  { d: "D8", label: "Закрытие", done: false },
-];
+const STATUS_LABELS: Record<CapaStatus, string> = {
+  INITIATED:     "Инициировано",
+  INVESTIGATING: "Расследование",
+  PLANNING:      "Планирование",
+  PLAN_APPROVED: "План утверждён",
+  IMPLEMENTING:  "Выполнение",
+  VERIFYING:     "Проверка",
+  EFFECTIVE:     "Эффективно",
+  INEFFECTIVE:   "Неэффективно",
+  CLOSED:        "Закрыто",
+};
+
+const STATUS_VARIANT: Record<CapaStatus, "nc" | "capa" | "risk" | "audit" | "closed" | "sop" | "training"> = {
+  INITIATED:     "audit",
+  INVESTIGATING: "audit",
+  PLANNING:      "risk",
+  PLAN_APPROVED: "risk",
+  IMPLEMENTING:  "capa",
+  VERIFYING:     "training",
+  EFFECTIVE:     "sop",
+  INEFFECTIVE:   "nc",
+  CLOSED:        "closed",
+};
+
+const TYPE_LABELS: Record<string, string> = {
+  CORRECTIVE:  "Корректирующее",
+  PREVENTIVE:  "Предупреждающее",
+};
 
 const typeBadge: Record<string, { color: string; bg: string }> = {
-  "Корректирующее":    { color: "#E8A830", bg: "rgba(232,168,48,0.12)" },
-  "Предупреждающее":   { color: "#4A90E8", bg: "rgba(74,144,232,0.12)" },
+  CORRECTIVE:  { color: "#E8A830", bg: "rgba(232,168,48,0.12)" },
+  PREVENTIVE:  { color: "#4A90E8", bg: "rgba(74,144,232,0.12)" },
 };
+
+const PRIORITY_LABELS: Record<string, string> = {
+  LOW:      "Низкий",
+  MEDIUM:   "Средний",
+  HIGH:     "Высокий",
+  CRITICAL: "Критический",
+};
+
+const PRIORITY_VARIANT: Record<string, "closed" | "capa" | "nc" | "risk"> = {
+  LOW:      "closed",
+  MEDIUM:   "capa",
+  HIGH:     "nc",
+  CRITICAL: "nc",
+};
+
+const d8Steps = [
+  { d: "D1", label: "Команда",        done: true },
+  { d: "D2", label: "Описание",       done: true },
+  { d: "D3", label: "Сдерживание",    done: true },
+  { d: "D4", label: "Root Cause",     done: true },
+  { d: "D5", label: "Действия",       done: false },
+  { d: "D6", label: "Внедрение",      done: false },
+  { d: "D7", label: "Предотвращение", done: false },
+  { d: "D8", label: "Закрытие",       done: false },
+];
+
+/* ─── Helpers ────────────────────────────────────────────────── */
+
+function formatDate(dateStr: string | null): string {
+  if (!dateStr) return "\u2014";
+  return new Date(dateStr).toLocaleDateString("ru-RU");
+}
+
+function formatPerson(person: { name: string; surname: string } | null): string {
+  if (!person) return "\u2014";
+  return `${person.surname} ${person.name.charAt(0)}.`;
+}
+
+function sumByStatus(stats: NcCapaStats, ...statuses: string[]): number {
+  return stats.capaByStatus
+    .filter((s) => statuses.includes(s.status))
+    .reduce((acc, s) => acc + Number(s.count), 0);
+}
 
 /* ─── Component ──────────────────────────────────────────────── */
 
 export const CapaPage: React.FC = () => {
+  /* ── State ── */
+  const [data, setData] = useState<CapaShort[]>([]);
+  const [stats, setStats] = useState<NcCapaStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  /* ── Fetch data ── */
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [capaResult, statsResult] = await Promise.all([
+        capaApi.getAll({}),
+        ncApi.getStats(),
+      ]);
+      setData(capaResult.rows);
+      setStats(statsResult);
+    } catch (e: any) {
+      setError(e.response?.data?.message || e.message || "Ошибка загрузки CAPA");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  /* ── KPI items from stats ── */
+  const totalCapa = stats
+    ? stats.capaByStatus.reduce((sum, s) => sum + Number(s.count), 0)
+    : 0;
+
+  const activeCapa = stats
+    ? sumByStatus(stats, "INITIATED", "INVESTIGATING", "PLANNING", "PLAN_APPROVED", "IMPLEMENTING", "VERIFYING")
+    : 0;
+
+  const overdueCapa = stats ? stats.overdueCapa : 0;
+
+  const effectiveCapa = stats
+    ? sumByStatus(stats, "EFFECTIVE", "CLOSED")
+    : 0;
+
+  const kpiItems = [
+    { label: "Всего CAPA",    value: totalCapa,     color: "#4A90E8",  icon: <CheckCircle2 size={18} /> },
+    { label: "Активных",      value: activeCapa,    color: "#E8A830",  icon: <Activity size={18} /> },
+    { label: "Просрочено",    value: overdueCapa,   color: "#F06060",  icon: <AlertTriangle size={18} /> },
+    { label: "Эффективных",   value: effectiveCapa, color: "#2DD4A8",  icon: <Clock size={18} /> },
+  ];
+
+  /* ── Table columns ── */
+  const columns = [
+    {
+      key: "number",
+      label: "ID",
+      width: "110px",
+      render: (row: CapaShort) => (
+        <span className="font-mono text-[12px] font-bold text-asvo-accent">
+          {row.number}
+        </span>
+      ),
+    },
+    {
+      key: "title",
+      label: "Название",
+      render: (row: CapaShort) => (
+        <span className="text-asvo-text text-[13px]">{row.title}</span>
+      ),
+    },
+    {
+      key: "type",
+      label: "Тип",
+      width: "160px",
+      render: (row: CapaShort) => {
+        const tp = typeBadge[row.type] || typeBadge.CORRECTIVE;
+        return (
+          <Badge color={tp.color} bg={tp.bg}>
+            {TYPE_LABELS[row.type] || row.type}
+          </Badge>
+        );
+      },
+    },
+    {
+      key: "nonconformity",
+      label: "NC",
+      width: "110px",
+      render: (row: CapaShort) =>
+        row.nonconformity ? (
+          <span className="text-[12px] font-mono font-semibold text-asvo-accent cursor-pointer hover:underline">
+            {row.nonconformity.number}
+          </span>
+        ) : (
+          <span className="text-[12px] text-asvo-text-dim">{"\u2014"}</span>
+        ),
+    },
+    {
+      key: "status",
+      label: "Статус",
+      width: "140px",
+      render: (row: CapaShort) => {
+        const variant = STATUS_VARIANT[row.status] || "closed";
+        return (
+          <Badge variant={variant}>
+            {STATUS_LABELS[row.status] || row.status}
+          </Badge>
+        );
+      },
+    },
+    {
+      key: "priority",
+      label: "Приоритет",
+      width: "130px",
+      render: (row: CapaShort) => {
+        const variant = PRIORITY_VARIANT[row.priority] || "closed";
+        return (
+          <Badge variant={variant}>
+            {PRIORITY_LABELS[row.priority] || row.priority}
+          </Badge>
+        );
+      },
+    },
+    {
+      key: "assignedTo",
+      label: "Ответственный",
+      width: "150px",
+      render: (row: CapaShort) => (
+        <span className="text-asvo-text-mid text-[12px]">
+          {formatPerson(row.assignedTo)}
+        </span>
+      ),
+    },
+    {
+      key: "dueDate",
+      label: "Срок",
+      width: "110px",
+      render: (row: CapaShort) => {
+        const isOverdue =
+          row.dueDate &&
+          new Date(row.dueDate) < new Date() &&
+          row.status !== "CLOSED" &&
+          row.status !== "EFFECTIVE";
+        return (
+          <span
+            className={`text-[12px] ${
+              isOverdue ? "text-red-400 font-semibold" : "text-asvo-text-mid"
+            }`}
+          >
+            {formatDate(row.dueDate)}
+          </span>
+        );
+      },
+    },
+  ];
+
+  /* ── Render ── */
   return (
     <div className="min-h-screen bg-asvo-bg p-6 space-y-6">
       {/* ── Header ──────────────────────────────────────────── */}
@@ -70,83 +272,54 @@ export const CapaPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 bg-asvo-accent text-asvo-bg rounded-lg text-sm font-semibold hover:brightness-110 transition">
-            <Plus size={16} />
+          <ActionBtn variant="primary" icon={<Plus size={16} />}>
             Создать CAPA
-          </button>
-          <button className="flex items-center gap-2 px-4 py-2 border border-asvo-border text-asvo-text-mid rounded-lg text-sm font-medium hover:border-asvo-text-dim transition">
-            <Download size={16} />
+          </ActionBtn>
+          <ActionBtn variant="secondary" icon={<Download size={16} />}>
             Экспорт
-          </button>
+          </ActionBtn>
+          <ActionBtn variant="secondary" icon={<RefreshCw size={14} />} onClick={fetchData}>
+            Обновить
+          </ActionBtn>
         </div>
       </div>
 
       {/* ── KPI Cards ───────────────────────────────────────── */}
-      <div className="grid grid-cols-4 gap-4">
-        {[
-          { label: "Всего CAPA", value: 49, cls: "text-asvo-blue" },
-          { label: "Активных", value: 15, cls: "text-asvo-amber" },
-          { label: "Просрочено", value: 4, cls: "text-asvo-red" },
-          { label: "Эффективных", value: 31, cls: "text-asvo-accent" },
-        ].map((kpi) => (
-          <div key={kpi.label} className="bg-asvo-surface-2 border border-asvo-border rounded-xl p-4">
-            <div className={`text-2xl font-bold ${kpi.cls}`}>{kpi.value}</div>
-            <div className="text-xs text-asvo-text-dim mt-1">{kpi.label}</div>
-          </div>
-        ))}
-      </div>
+      <KpiRow items={kpiItems} />
 
-      {/* ── Table ────────────────────────────────────────────── */}
-      <div className="bg-asvo-surface-2 border border-asvo-border rounded-xl overflow-hidden">
-        <table className="w-full">
-          <thead>
-            <tr className="bg-asvo-surface border-b border-asvo-border">
-              {["ID", "Название", "Тип", "NC", "Статус", "Прогресс", "Ответственный", "Срок"].map((col) => (
-                <th key={col} className="text-left px-4 py-3 text-[11px] font-semibold text-asvo-text-dim uppercase tracking-wider">
-                  {col}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {capaRows.map((row) => {
-              const tp = typeBadge[row.type];
-              return (
-                <tr
-                  key={row.id}
-                  className="border-b border-asvo-border/30 hover:bg-asvo-surface-3 transition-colors cursor-pointer"
-                >
-                  <td className="px-4 py-3 text-sm font-mono font-bold text-asvo-accent">{row.id}</td>
-                  <td className="px-4 py-3 text-sm text-asvo-text">{row.title}</td>
-                  <td className="px-4 py-3">
-                    <Badge color={tp.color} bg={tp.bg}>{row.type}</Badge>
-                  </td>
-                  <td className="px-4 py-3">
-                    {row.nc !== "\u2014" ? (
-                      <span className="text-sm font-mono font-semibold text-asvo-accent cursor-pointer hover:underline">
-                        {row.nc}
-                      </span>
-                    ) : (
-                      <span className="text-sm text-asvo-text-dim">{row.nc}</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <Badge variant={row.statusVariant}>{row.status}</Badge>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="w-24">
-                      <ProgressBar value={row.progress} color={row.progressColor} />
-                      <div className="text-[10px] text-asvo-text-dim text-right mt-0.5">{row.progress}%</div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-asvo-text-mid">{row.responsible}</td>
-                  <td className="px-4 py-3 text-sm text-asvo-text-mid">{row.due}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      {/* ── Error State ── */}
+      {error && (
+        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 flex items-center gap-3">
+          <AlertTriangle className="text-red-400 flex-shrink-0" size={18} />
+          <span className="text-red-400 text-[13px] flex-1">{error}</span>
+          <ActionBtn variant="secondary" onClick={fetchData}>
+            Повторить
+          </ActionBtn>
+        </div>
+      )}
+
+      {/* ── Loading State ── */}
+      {loading && !error && (
+        <div className="flex items-center justify-center py-20">
+          <div className="w-8 h-8 border-2 border-asvo-accent/30 border-t-asvo-accent rounded-full animate-spin" />
+        </div>
+      )}
+
+      {/* ── Empty State ── */}
+      {!loading && !error && data.length === 0 && (
+        <div className="text-center py-16">
+          <CheckCircle2 className="mx-auto text-asvo-text-dim mb-3" size={48} />
+          <p className="text-asvo-text-mid text-[14px]">CAPA не найдены</p>
+          <p className="text-asvo-text-dim text-[12px] mt-1">
+            Создайте первое корректирующее/предупреждающее действие
+          </p>
+        </div>
+      )}
+
+      {/* ── Data Table ── */}
+      {!loading && !error && data.length > 0 && (
+        <DataTable<CapaShort> columns={columns} data={data} />
+      )}
 
       {/* ── 8D Workflow ──────────────────────────────────────── */}
       <div className="bg-asvo-surface-2 border border-asvo-border rounded-xl p-5">
