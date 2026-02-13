@@ -24,15 +24,6 @@ interface RiskRow {
   [key: string]: unknown;
 }
 
-/* ───── matrix data (5×5) — still mock until matrix API is wired ───── */
-const matrixCounts: Record<number, Record<number, number>> = {
-  5: { 1: 0, 2: 0, 3: 1, 4: 2, 5: 0 },
-  4: { 1: 0, 2: 0, 3: 1, 4: 0, 5: 0 },
-  3: { 1: 0, 2: 0, 3: 1, 4: 0, 5: 0 },
-  2: { 1: 0, 2: 0, 3: 0, 4: 1, 5: 1 },
-  1: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 1 },
-};
-
 const severityLabels = ['1-Незначит.', '2-Малая', '3-Средняя', '4-Значит.', '5-Катастроф.'];
 
 /** color of a cell based on P×S value */
@@ -119,6 +110,7 @@ const RisksPage: React.FC = () => {
   /* ───── API state ───── */
   const [risks, setRisks] = useState<RiskRow[]>([]);
   const [stats, setStats] = useState<any>(null);
+  const [matrixCounts, setMatrixCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -128,12 +120,14 @@ const RisksPage: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
-        const [risksRes, statsRes] = await Promise.all([
+        const [risksRes, statsRes, matrixRes] = await Promise.all([
           risksApi.getAll(),
           risksApi.getStats(),
+          risksApi.getMatrix(),
         ]);
         setRisks(risksRes.rows ?? []);
         setStats(statsRes);
+        setMatrixCounts(matrixRes.cellCounts ?? {});
       } catch (e: any) {
         console.error('RisksPage fetch error:', e);
         setError(e?.response?.data?.message || 'Ошибка загрузки реестра рисков');
@@ -248,7 +242,7 @@ const RisksPage: React.FC = () => {
                   </div>
                   {[1, 2, 3, 4, 5].map((s) => {
                     const val = p * s;
-                    const cnt = matrixCounts[p]?.[s] ?? 0;
+                    const cnt = matrixCounts[`${p}-${s}`] ?? 0;
                     return (
                       <div
                         key={`${p}-${s}`}
