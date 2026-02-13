@@ -4,9 +4,6 @@
  * Dark-theme dashboard с реальными данными из API
  */
 
-<<<<<<< HEAD
-import React, { useEffect, useState } from "react";
-=======
 import React, { useState, useEffect, useMemo } from "react";
 
  * QmsDashboardPage.tsx — Главный дашборд ASVO-QMS
@@ -16,7 +13,6 @@ import React, { useState, useEffect, useMemo } from "react";
 
 import React, { useState, useEffect } from "react";
 
->>>>>>> origin/main
 import {
   FileText,
   AlertTriangle,
@@ -34,15 +30,11 @@ import {
   CheckCircle2,
   Circle,
   Activity,
-<<<<<<< HEAD
-  Info,
-=======
 
   Crosshair,
 
   Loader2,
 
->>>>>>> origin/main
 } from "lucide-react";
 
 import ProcessMap from "../../components/qms/ProcessMap";
@@ -59,10 +51,6 @@ import {
 } from "recharts";
 import TabBar from "../../components/qms/TabBar";
 
-<<<<<<< HEAD
-import { reviewsApi } from "../../api/qmsApi";
-
-=======
 import {
   dashboardApi,
   type DashboardSummary,
@@ -81,7 +69,6 @@ import {
   reviewsApi,
 
 } from "../../api/qmsApi";
->>>>>>> origin/main
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -104,70 +91,6 @@ interface TrendPoint {
   capa: number;
 }
 
-<<<<<<< HEAD
-interface DocApprovalItem {
-  code: string;
-  title: string;
-  days: number;
-  status: "overdue" | "pending";
-}
-
-interface DocsApprovalData {
-  awaitingReview: number;
-  overdue: number;
-  avgApprovalDays: number;
-  docs: DocApprovalItem[];
-}
-
-interface NextAuditData {
-  code: string;
-  title: string;
-  scope: string;
-  plannedDate: string;
-  daysUntil: number;
-  leadAuditor: string;
-  type: "internal" | "external";
-}
-
-interface ManagementReviewItem {
-  item: string;
-  ready: boolean;
-}
-
-interface ManagementReviewData {
-  nextReviewDate: string;
-  daysUntil: number;
-  readiness: ManagementReviewItem[];
-  completionPct: number;
-}
-
-interface MesMetricsData {
-  defectRate: number;
-  defectRateTrend: number;
-  yieldRate: number;
-  productionToday: number;
-  productionTarget: number;
-  lineStatus: "running" | "stopped" | "maintenance";
-}
-
-interface QualityObjectivesStatusData {
-  achieved: number;
-  atRisk: number;
-  overdue: number;
-  total: number;
-}
-
-
-interface TimelineEvent {
-  date: string;
-  code: string;
-  text: string;
-  dotClass: string;
-  category: "nc" | "doc" | "capa" | "audit" | "risk" | "equipment";
-}
-
-=======
->>>>>>> origin/main
 /* ------------------------------------------------------------------ */
 /*  Constants                                                          */
 /* ------------------------------------------------------------------ */
@@ -216,165 +139,6 @@ const riskCellColor = (likelihood: number, severity: number): string => {
   return                   "bg-asvo-red-dim    text-asvo-red";
 };
 
-<<<<<<< HEAD
-/* ------------------------------------------------------------------ */
-/*  Timeline data                                                     */
-/* ------------------------------------------------------------------ */
-
-const timelineEvents: TimelineEvent[] = [
-  { date: "11.02", code: "NC-091",   text: "Дефект покрытия DEXA-200",          dotClass: "bg-asvo-red",    category: "nc" },
-  { date: "10.02", code: "DOC-247",  text: "Обновлена СТО-045",                 dotClass: "bg-asvo-blue",   category: "doc" },
-  { date: "09.02", code: "CAPA-047", text: "Верификация чек-листа пайки",       dotClass: "bg-asvo-amber",  category: "capa" },
-  { date: "08.02", code: "AUD-012",  text: "Старт аудита закупок",              dotClass: "bg-asvo-blue",   category: "audit" },
-  { date: "07.02", code: "R-019",    text: "Новый риск поставки датчиков",      dotClass: "bg-asvo-purple", category: "risk" },
-];
-
-const TimelinePanel: React.FC<{ events: TimelineEvent[] }> = ({ events }) => (
-  <div className="bg-asvo-surface-2 border border-asvo-border rounded-xl p-4">
-    <h3 className="text-sm font-semibold text-asvo-text mb-3">Последние события</h3>
-
-    <div className="relative space-y-4 pl-5">
-      <div className="absolute left-[7px] top-1 bottom-1 w-px bg-asvo-border" />
-
-      {events.map((evt, idx) => (
-        <div key={idx} className="relative flex items-start gap-3">
-          <div
-            className={`absolute -left-5 top-1 w-3.5 h-3.5 rounded-full border-2 border-asvo-surface-2 ${evt.dotClass}`}
-          />
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-asvo-text-dim">{evt.date}</span>
-              <span className="text-xs font-semibold text-asvo-text">{evt.code}</span>
-            </div>
-            <p className="text-xs text-asvo-text-mid mt-0.5 truncate">{evt.text}</p>
-          </div>
-        </div>
-      ))}
-    </div>
-  </div>
-);
-
-/* ------------------------------------------------------------------ */
-/*  Widgets data                                                      */
-/* ------------------------------------------------------------------ */
-
-const overdueCapas: { code: string; text: string; days: number }[] = [
-  { code: "CAPA-041", text: "Замена клея",     days: 14 },
-  { code: "CAPA-038", text: "Калибровка",      days: 7 },
-  { code: "CAPA-035", text: "Поставщик PCB",   days: 3 },
-];
-
-const calibrations: { code: string; name: string; days: number }[] = [
-  { code: "EQ-001", name: "Мультиметр Fluke 87V",        days: 3 },
-  { code: "EQ-005", name: "Осциллограф Rigol DS1104",     days: 7 },
-  { code: "EQ-012", name: "Паяльная станция JBC",         days: 14 },
-];
-
-const trainingDepts: { dept: string; pct: number; barClass: string }[] = [
-  { dept: "Производство", pct: 87, barClass: "bg-asvo-accent" },
-  { dept: "ОТК",          pct: 72, barClass: "bg-asvo-blue" },
-  { dept: "Закупки",      pct: 45, barClass: "bg-asvo-amber" },
-  { dept: "Склад",        pct: 23, barClass: "bg-asvo-red" },
-];
-
-/* ------------------------------------------------------------------ */
-/*  New mock data                                                     */
-/* ------------------------------------------------------------------ */
-
-const supplierStatus: SupplierStatusItem[] = [
-  { status: "Одобрен",       count: 12, colorClass: "bg-asvo-accent" },
-  { status: "Условный",      count: 3,  colorClass: "bg-asvo-amber" },
-  { status: "На переоценке", count: 2,  colorClass: "bg-asvo-blue" },
-  { status: "Заблокирован",  count: 1,  colorClass: "bg-asvo-red" },
-];
-
-const capaEfficiency: CapaEfficiencyData = {
-  closedOnTime: 42,
-  closedLate: 8,
-  total: 50,
-  avgCloseDays: 18,
-  effectivenessRate: 84,
-};
-
-const complaints: ComplaintsData = {
-  open: 3,
-  investigating: 1,
-  closedThisMonth: 5,
-  avgResponseDays: 4.2,
-};
-
-const trendData: TrendPoint[] = [
-  { month: "Мар", nc: 5,  capa: 3 },
-  { month: "Апр", nc: 7,  capa: 4 },
-  { month: "Май", nc: 4,  capa: 2 },
-  { month: "Июн", nc: 8,  capa: 5 },
-  { month: "Июл", nc: 6,  capa: 3 },
-  { month: "Авг", nc: 9,  capa: 6 },
-  { month: "Сен", nc: 5,  capa: 4 },
-  { month: "Окт", nc: 7,  capa: 5 },
-  { month: "Ноя", nc: 4,  capa: 3 },
-  { month: "Дек", nc: 6,  capa: 4 },
-  { month: "Янв", nc: 8,  capa: 5 },
-  { month: "Фев", nc: 3,  capa: 2 },
-];
-
-const docsApproval: DocsApprovalData = {
-  awaitingReview: 5,
-  overdue: 2,
-  avgApprovalDays: 3.4,
-  docs: [
-    { code: "SOP-012", title: "Процедура входного контроля", days: 5, status: "overdue" },
-    { code: "WI-034",  title: "Инструкция пайки BGA",       days: 2, status: "pending" },
-    { code: "FRM-019", title: "Форма протокола испытаний",   days: 1, status: "pending" },
-  ],
-};
-
-const nextAudit: NextAuditData = {
-  code: "IA-2026-004",
-  title: "Аудит процесса закупок",
-  scope: "ISO 13485 п.7.4 — Закупки",
-  plannedDate: "28.02.2026",
-  daysUntil: 16,
-  leadAuditor: "Костюков И.",
-  type: "internal",
-};
-
-const managementReviewChecklist: ManagementReviewData = {
-  nextReviewDate: "15.03.2026",
-  daysUntil: 31,
-  readiness: [
-    { item: "Результаты аудитов",          ready: true },
-    { item: "Обратная связь потребителей",  ready: true },
-    { item: "Показатели процессов",         ready: false },
-    { item: "Статус CAPA",                  ready: true },
-    { item: "Предупреждающие действия",     ready: false },
-    { item: "Изменения в СМК",             ready: true },
-    { item: "Рекомендации по улучшению",    ready: false },
-    { item: "Регуляторные изменения",       ready: true },
-  ],
-  completionPct: 62.5,
-};
-
-const mesMetrics: MesMetricsData = {
-  defectRate: 2.3,
-  defectRateTrend: -0.5,
-  yieldRate: 97.7,
-  productionToday: 48,
-  productionTarget: 60,
-  lineStatus: "running",
-};
-
-/* ------------------------------------------------------------------ */
-/*  Helpers                                                            */
-/* ------------------------------------------------------------------ */
-
-const supplierTotal = supplierStatus.reduce((s, i) => s + i.count, 0);
-const supplierApprovedPct = Math.round(
-  (supplierStatus[0].count / supplierTotal) * 100,
-);
-
-=======
->>>>>>> origin/main
 const effColor = (rate: number): string => {
   if (rate >= 80) return "text-[#2DD4A8]";
   if (rate >= 60) return "text-[#E8A830]";
@@ -574,39 +338,6 @@ const TrendTooltipContent: React.FC<{
 
 export const QmsDashboardPage: React.FC = () => {
   const [role, setRole] = useState<DashboardRole>("quality_manager");
-<<<<<<< HEAD
-  const [qualityObjectivesStatus, setQualityObjectivesStatus] = useState<QualityObjectivesStatusData>({
-    achieved: 0,
-    atRisk: 0,
-    overdue: 0,
-    total: 0,
-  });
-
-  useEffect(() => {
-    let mounted = true;
-
-    reviewsApi
-      .getDashboard()
-      .then((data) => {
-        if (!mounted) return;
-        const status = data?.qualityObjectivesStatus;
-        setQualityObjectivesStatus({
-          achieved: Number(status?.achieved || 0),
-          atRisk: Number(status?.atRisk || 0),
-          overdue: Number(status?.overdue || 0),
-          total: Number(status?.total || 0),
-        });
-      })
-      .catch(() => {
-        if (!mounted) return;
-        setQualityObjectivesStatus({ achieved: 0, atRisk: 0, overdue: 0, total: 0 });
-      });
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
-=======
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [trends, setTrends] = useState<DashboardTrends | null>(null);
   const [loading, setLoading] = useState(true);
@@ -1044,7 +775,6 @@ export const QmsDashboardPage: React.FC = () => {
   /* ---------------------------------------------------------------- */
   /*  Visibility helper                                                */
   /* ---------------------------------------------------------------- */
->>>>>>> origin/main
 
   const show = (qm: boolean, ph: boolean, dir: boolean): boolean => {
     switch (role) {
@@ -1297,9 +1027,6 @@ export const QmsDashboardPage: React.FC = () => {
           </div>
 
           {/* ---------- Timeline ---------- */}
-<<<<<<< HEAD
-          <TimelinePanel events={timelineEvents} />
-=======
           <div className="bg-asvo-surface-2 border border-asvo-border rounded-xl p-4">
             <h3 className="text-sm font-semibold text-asvo-text mb-3">
               Последние события
@@ -1350,17 +1077,12 @@ export const QmsDashboardPage: React.FC = () => {
               </div>
             )}
           </div>
->>>>>>> origin/main
         </div>
       )}
 
       {/* Timeline for production_head (no risk matrix) */}
       {role === "production_head" && filteredEvents.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-<<<<<<< HEAD
-          {/* ---------- Timeline (filtered) ---------- */}
-          <TimelinePanel events={filteredEvents} />
-=======
           <div className="bg-asvo-surface-2 border border-asvo-border rounded-xl p-4">
 
             <h3 className="text-sm font-semibold text-asvo-text mb-3">Последние события</h3>
@@ -1408,7 +1130,6 @@ export const QmsDashboardPage: React.FC = () => {
               </div>
             )}
           </div>
->>>>>>> origin/main
         </div>
       )}
 
@@ -1674,46 +1395,8 @@ export const QmsDashboardPage: React.FC = () => {
           </div>
         )}
 
-<<<<<<< HEAD
-        {/* ---------- Widget: Статус целей качества ---------- */}
-        {show(true, false, true) && (
-          <div className="bg-asvo-surface-2 border border-asvo-border rounded-xl p-4">
-            <h3 className="text-sm font-semibold text-asvo-text mb-3 flex items-center gap-2">
-              <Target size={14} className="text-asvo-text-dim" />
-              Статус целей качества
-            </h3>
-
-            <div className="space-y-2 mb-3">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-[#2DD4A8]">Достигнуто</span>
-                <span className="font-semibold text-asvo-text">{qualityObjectivesStatus.achieved}</span>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-[#E8A830]">В риске</span>
-                <span className="font-semibold text-asvo-text">{qualityObjectivesStatus.atRisk}</span>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-[#F06060]">Просрочено</span>
-                <span className="font-semibold text-asvo-text">{qualityObjectivesStatus.overdue}</span>
-              </div>
-            </div>
-
-            <p
-              className="text-[10px] text-asvo-text-dim leading-4"
-              title="Критерии: достигнуто — факт выполнения/статус COMPLETED(ACHIEVED); в риске — дедлайн в ближайшие 30 дней без завершения; просрочено — дедлайн прошел или статус OVERDUE."
-            >
-              <Info size={11} className="inline mr-1" />
-              Критерии: «достигнуто» — выполнено; «в риске» — дедлайн ≤ 30 дней; «просрочено» — дедлайн прошёл.
-            </p>
-          </div>
-        )}
-
-        {/* ---------- Widget: Обучение по отделам ---------- */}
-        {show(true, true, true) && (
-=======
         {/* ---------- Widget: Обучение ---------- */}
         {show(true, true, true) && summary?.training && (
->>>>>>> origin/main
           <div className="bg-asvo-surface-2 border border-asvo-border rounded-xl p-4">
 
             <h3 className="text-sm font-semibold text-asvo-text mb-3">Обучение</h3>
