@@ -3,12 +3,13 @@
  * Dark-theme dashboard с реальными данными из API
  */
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { AlertTriangle, Loader2 } from "lucide-react";
 
 import TabBar from "../../../components/qms/TabBar";
 import ProcessMap from "../../../components/qms/ProcessMap";
 import { dashboardApi, type DashboardSummary, type DashboardTrends } from "../../../api/qmsApi";
+import CreateObjectiveModal from "./CreateObjectiveModal";
 
 import type { DashboardRole } from "./types";
 import { roleTabs } from "./constants";
@@ -38,6 +39,16 @@ export const QmsDashboardPage: React.FC = () => {
   const [trends, setTrends] = useState<DashboardTrends | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showObjectiveModal, setShowObjectiveModal] = useState(false);
+
+  const reload = useCallback(() => {
+    setLoading(true);
+    setError(null);
+    Promise.all([dashboardApi.getSummary(), dashboardApi.getTrends()])
+      .then(([s, t]) => { setSummary(s); setTrends(t); })
+      .catch(e => setError(e?.response?.data?.message || e.message || "Ошибка загрузки дашборда"))
+      .finally(() => setLoading(false));
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -150,6 +161,13 @@ export const QmsDashboardPage: React.FC = () => {
 
       {/* Process Map */}
       <ProcessMap />
+
+      {/* Objective Modal */}
+      <CreateObjectiveModal
+        isOpen={showObjectiveModal}
+        onClose={() => setShowObjectiveModal(false)}
+        onCreated={reload}
+      />
     </div>
   );
 };

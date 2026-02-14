@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Shield, Plus, Grid3X3, Download, AlertTriangle,
   Search, TrendingUp, Loader2,
@@ -9,6 +9,8 @@ import Badge from '../../components/qms/Badge';
 import DataTable from '../../components/qms/DataTable';
 import SectionTitle from '../../components/qms/SectionTitle';
 import { risksApi } from '../../api/qmsApi';
+import CreateRiskModal from './CreateRiskModal';
+import RiskDetailModal from './RiskDetailModal';
 
 /* ───── types ───── */
 interface RiskRow {
@@ -114,29 +116,34 @@ const RisksPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  /* ───── Modal state ───── */
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [detailRiskId, setDetailRiskId] = useState<number | null>(null);
+
   /* ───── Fetch data on mount ───── */
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const [risksRes, statsRes, matrixRes] = await Promise.all([
-          risksApi.getAll(),
-          risksApi.getStats(),
-          risksApi.getMatrix(),
-        ]);
-        setRisks(risksRes.rows ?? []);
-        setStats(statsRes);
-        setMatrixCounts(matrixRes.cellCounts ?? {});
-      } catch (e: any) {
-        console.error('RisksPage fetch error:', e);
-        setError(e?.response?.data?.message || 'Ошибка загрузки реестра рисков');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [risksRes, statsRes, matrixRes] = await Promise.all([
+        risksApi.getAll(),
+        risksApi.getStats(),
+        risksApi.getMatrix(),
+      ]);
+      setRisks(risksRes.rows ?? []);
+      setStats(statsRes);
+      setMatrixCounts(matrixRes.cellCounts ?? {});
+    } catch (e: any) {
+      console.error('RisksPage fetch error:', e);
+      setError(e?.response?.data?.message || 'Ошибка загрузки реестра рисков');
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const filtered = risks.filter(
     (r) =>
@@ -167,7 +174,7 @@ const RisksPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <ActionBtn icon={<Plus size={15} />} disabled title="Будет доступно в следующем спринте">Новый риск</ActionBtn>
+          <ActionBtn icon={<Plus size={15} />} onClick={() => setShowCreateModal(true)}>Новый риск</ActionBtn>
           <ActionBtn variant="secondary" color="#A06AE8" icon={<Grid3X3 size={15} />} onClick={() => setShowMatrix((v) => !v)}>
             Матрица рисков
           </ActionBtn>
@@ -210,7 +217,7 @@ const RisksPage: React.FC = () => {
 
       {/* ── Table ── */}
       {!loading && !error && (
-        <DataTable columns={columns} data={filtered} />
+        <DataTable columns={columns} data={filtered} onRowClick={(row) => setDetailRiskId(Number(row.id))} />
       )}
 
       {/* ── 5×5 Risk Matrix ── */}
@@ -257,6 +264,21 @@ const RisksPage: React.FC = () => {
             </div>
           </div>
         </>
+      )}
+      {/* Modals */}
+      <CreateRiskModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onCreated={fetchData}
+      />
+
+      {detailRiskId !== null && (
+        <RiskDetailModal
+          riskId={detailRiskId}
+          isOpen={true}
+          onClose={() => setDetailRiskId(null)}
+          onAction={fetchData}
+        />
       )}
     </div>
   );

@@ -18,6 +18,8 @@ import Card from "../../components/qms/Card";
 import SectionTitle from "../../components/qms/SectionTitle";
 import ProgressBar from "../../components/qms/ProgressBar";
 import { validationsApi } from "../../api/qmsApi";
+import CreateValidationModal from "./CreateValidationModal";
+import ValidationDetailModal from "./ValidationDetailModal";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                               */
@@ -103,29 +105,32 @@ const ValidationPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  /* ---- fetch data on mount ---- */
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [detailValidationId, setDetailValidationId] = useState<number | null>(null);
+
+  /* ---- fetch data ---- */
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const [validationsRes, statsRes] = await Promise.all([
+        validationsApi.getAll(),
+        validationsApi.getStats(),
+      ]);
+
+      setValidations(validationsRes.rows ?? []);
+      setStats(statsRes);
+    } catch (err: any) {
+      console.error("Failed to load validation data:", err);
+      setError(err?.response?.data?.message || err?.message || "Ошибка загрузки данных");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const [validationsRes, statsRes] = await Promise.all([
-          validationsApi.getAll(),
-          validationsApi.getStats(),
-        ]);
-
-        setValidations(validationsRes.rows ?? []);
-        setStats(statsRes);
-      } catch (err: any) {
-        console.error("Failed to load validation data:", err);
-        setError(err?.response?.data?.message || err?.message || "Ошибка загрузки данных");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchData();
   }, []);
 
@@ -240,7 +245,7 @@ const ValidationPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <ActionBtn variant="primary" icon={<Plus size={15} />} disabled title="Будет доступно в следующем спринте">+ Новая валидация</ActionBtn>
+          <ActionBtn variant="primary" icon={<Plus size={15} />} onClick={() => setShowCreateModal(true)}>+ Новая валидация</ActionBtn>
           <ActionBtn variant="secondary" icon={<Download size={15} />} disabled title="Будет доступно в следующем спринте">Экспорт</ActionBtn>
         </div>
       </div>
@@ -257,7 +262,11 @@ const ValidationPage: React.FC = () => {
       />
 
       {/* Data Table */}
-      <DataTable columns={columns} data={validations} />
+      <DataTable
+        columns={columns}
+        data={validations}
+        onRowClick={(row: ValidationRow) => setDetailValidationId(Number(row.id))}
+      />
 
       {/* Progress IQ -> OQ -> PQ */}
       <Card>
@@ -304,6 +313,22 @@ const ValidationPage: React.FC = () => {
           )}
         </div>
       </Card>
+
+      {/* Modals */}
+      <CreateValidationModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onCreated={fetchData}
+      />
+
+      {detailValidationId !== null && (
+        <ValidationDetailModal
+          validationId={detailValidationId}
+          isOpen={detailValidationId !== null}
+          onClose={() => setDetailValidationId(null)}
+          onAction={fetchData}
+        />
+      )}
     </div>
   );
 };

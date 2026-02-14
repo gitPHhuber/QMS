@@ -20,6 +20,9 @@ import KpiRow from "../../components/qms/KpiRow";
 import ActionBtn from "../../components/qms/ActionBtn";
 import DataTable from "../../components/qms/DataTable";
 
+import CreateCapaModal from "./CreateCapaModal";
+import CapaDetailModal from "./CapaDetailModal";
+
 /* ─── Constants & Maps ───────────────────────────────────────── */
 
 const STATUS_LABELS: Record<CapaStatus, string> = {
@@ -107,6 +110,9 @@ export const CapaPage: React.FC = () => {
   const [stats, setStats] = useState<NcCapaStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [detailCapaId, setDetailCapaId] = useState<number | null>(null);
 
   /* ── Fetch data ── */
   const fetchData = useCallback(async () => {
@@ -272,7 +278,7 @@ export const CapaPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          <ActionBtn variant="primary" icon={<Plus size={16} />}>
+          <ActionBtn variant="primary" icon={<Plus size={16} />} onClick={() => setShowCreateModal(true)}>
             Создать CAPA
           </ActionBtn>
           <ActionBtn variant="secondary" icon={<Download size={16} />}>
@@ -318,7 +324,7 @@ export const CapaPage: React.FC = () => {
 
       {/* ── Data Table ── */}
       {!loading && !error && data.length > 0 && (
-        <DataTable<CapaShort> columns={columns} data={data} />
+        <DataTable<CapaShort> columns={columns} data={data} onRowClick={(row) => setDetailCapaId(row.id)} />
       )}
 
       {/* ── 8D Workflow ──────────────────────────────────────── */}
@@ -356,6 +362,22 @@ export const CapaPage: React.FC = () => {
           ))}
         </div>
       </div>
+
+      {/* Modals */}
+      <CreateCapaModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onCreated={fetchData}
+      />
+
+      {detailCapaId !== null && (
+        <CapaDetailModal
+          capaId={detailCapaId}
+          isOpen={true}
+          onClose={() => setDetailCapaId(null)}
+          onAction={fetchData}
+        />
+      )}
     </div>
   );
 };

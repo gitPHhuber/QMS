@@ -20,6 +20,8 @@ import SectionTitle from "../../components/qms/SectionTitle";
 import Card from "../../components/qms/Card";
 
 import { internalAuditsApi } from "../../api/qmsApi";
+import CreateAuditModal from "./CreateAuditModal";
+import AuditDetailModal from "./AuditDetailModal";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                               */
@@ -115,6 +117,10 @@ const cellCls: Record<CellState, string> = {
 
 const AuditsPage: React.FC = () => {
   const [tab, setTab] = useState("registry");
+
+  /* ---- Modal state ---- */
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [detailAuditId, setDetailAuditId] = useState<number | null>(null);
 
   /* ---- API state ---- */
   const [plans, setPlans] = useState<any[]>([]);
@@ -358,7 +364,7 @@ const AuditsPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <ActionBtn variant="primary" icon={<Plus size={15} />} disabled title="Будет доступно в следующем спринте">+ Новый аудит</ActionBtn>
+          <ActionBtn variant="primary" icon={<Plus size={15} />} onClick={() => setShowCreateModal(true)}>+ Новый аудит</ActionBtn>
           <ActionBtn variant="secondary" icon={<Download size={15} />} disabled title="Будет доступно в следующем спринте">Экспорт</ActionBtn>
         </div>
       </div>
@@ -389,7 +395,14 @@ const AuditsPage: React.FC = () => {
 
       {/* ---- TAB: Registry ---- */}
       {!loading && !error && tab === "registry" && (
-        <DataTable columns={columns} data={auditRows} />
+        <DataTable
+          columns={columns}
+          data={auditRows}
+          onRowClick={(row: AuditRow) => {
+            const numId = Number(row.id) || schedules.find((s: any) => (s.number || String(s.id)) === row.id)?.id;
+            if (numId) setDetailAuditId(numId);
+          }}
+        />
       )}
 
       {/* ---- TAB: Annual Plan ---- */}
@@ -556,6 +569,22 @@ const AuditsPage: React.FC = () => {
             <p className="text-[13px]">Раздел отчётов находится в разработке</p>
           </div>
         </Card>
+      )}
+
+      {/* ---- Modals ---- */}
+      <CreateAuditModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onCreated={fetchData}
+      />
+
+      {detailAuditId !== null && (
+        <AuditDetailModal
+          auditId={detailAuditId}
+          isOpen={detailAuditId !== null}
+          onClose={() => setDetailAuditId(null)}
+          onAction={fetchData}
+        />
       )}
     </div>
   );

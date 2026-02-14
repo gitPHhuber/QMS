@@ -19,6 +19,8 @@ import DataTable from "../../components/qms/DataTable";
 import Card from "../../components/qms/Card";
 import SectionTitle from "../../components/qms/SectionTitle";
 import { changeRequestsApi } from "../../api/qmsApi";
+import CreateChangeModal from "./CreateChangeModal";
+import ChangeDetailModal from "./ChangeDetailModal";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                               */
@@ -40,6 +42,7 @@ type ChangeStatus =
 
 interface ChangeRow {
   [key: string]: unknown;
+  id: number;
   ecr: string;
   date: string;
   type: ChangeType;
@@ -222,11 +225,18 @@ const columns = [
 const ChangeControlPage: React.FC = () => {
   const [tab, setTab] = useState("registry");
 
+  /* ---- Modal state ---- */
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [detailChangeId, setDetailChangeId] = useState<number | null>(null);
+
   /* ---- API state ---- */
   const [changes, setChanges] = useState<ChangeRow[]>([]);
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const refreshData = () => setRefreshKey((k) => k + 1);
 
   /* ---- Fetch data on mount ---- */
   useEffect(() => {
@@ -244,6 +254,7 @@ const ChangeControlPage: React.FC = () => {
         if (cancelled) return;
 
         const rows: ChangeRow[] = (allResult.rows ?? []).map((r: any) => ({
+          id: r.id,
           ecr: r.ecr ?? r.number ?? `ECR-${r.id}`,
           date: r.date ?? (r.createdAt ? new Date(r.createdAt).toLocaleDateString("ru-RU") : "\u2014"),
           type: r.type ?? "DESIGN",
@@ -275,7 +286,7 @@ const ChangeControlPage: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [refreshKey]);
 
   /* ---- KPI (driven by stats from API) ---- */
   const kpis = [
@@ -303,7 +314,7 @@ const ChangeControlPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <ActionBtn variant="primary" icon={<Plus size={15} />} disabled title="Будет доступно в следующем спринте">+ Новый ECR</ActionBtn>
+          <ActionBtn variant="primary" icon={<Plus size={15} />} onClick={() => setShowCreateModal(true)}>+ Новый ECR</ActionBtn>
           <ActionBtn variant="secondary" icon={<Download size={15} />} disabled title="Будет доступно в следующем спринте">Экспорт</ActionBtn>
         </div>
       </div>
@@ -342,7 +353,13 @@ const ChangeControlPage: React.FC = () => {
       )}
 
       {/* ---- TAB: Registry ---- */}
-      {!loading && !error && tab === "registry" && <DataTable columns={columns} data={changes} />}
+      {!loading && !error && tab === "registry" && (
+        <DataTable
+          columns={columns}
+          data={changes}
+          onRowClick={(row: ChangeRow) => setDetailChangeId(row.id)}
+        />
+      )}
 
       {/* ---- TAB: Workflow ---- */}
       {!loading && !error && tab === "workflow" && (
@@ -446,6 +463,22 @@ const ChangeControlPage: React.FC = () => {
             <p className="text-[13px]">Раздел аналитики находится в разработке</p>
           </div>
         </Card>
+      )}
+
+      {/* ---- Modals ---- */}
+      <CreateChangeModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onCreated={refreshData}
+      />
+
+      {detailChangeId !== null && (
+        <ChangeDetailModal
+          changeId={detailChangeId}
+          isOpen={true}
+          onClose={() => setDetailChangeId(null)}
+          onAction={refreshData}
+        />
       )}
     </div>
   );
