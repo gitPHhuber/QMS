@@ -104,7 +104,8 @@ const App = observer(() => {
       hasRestoredPath.current = false;
       initialPathRef.current = null;
     }
-  }, [auth.isAuthenticated, auth.user, user, navigate, location.pathname]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [auth.isAuthenticated, auth.user]);
 
 
   if (auth.isLoading || isUserLoading) {

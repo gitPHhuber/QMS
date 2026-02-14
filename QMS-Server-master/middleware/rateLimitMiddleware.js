@@ -89,7 +89,7 @@ function rateLimit({
 // Pre-configured limiters
 const apiLimiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || "900000"),
-  max: parseInt(process.env.RATE_LIMIT_MAX || "100"),
+  max: parseInt(process.env.RATE_LIMIT_MAX || "500"),
 });
 
 const authLimiter = rateLimit({

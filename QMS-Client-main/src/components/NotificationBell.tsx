@@ -88,7 +88,9 @@ const NotificationBell: React.FC = () => {
 
   useEffect(() => {
     fetchCount();
-    const interval = setInterval(fetchCount, 30_000);
+    const interval = setInterval(() => {
+      if (!document.hidden) fetchCount();
+    }, 60_000);
     return () => clearInterval(interval);
   }, [fetchCount]);
 
