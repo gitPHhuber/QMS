@@ -18,6 +18,7 @@ import Card from "../../components/qms/Card";
 import SectionTitle from "../../components/qms/SectionTitle";
 import Timeline from "../../components/qms/Timeline";
 import { equipmentApi } from "../../api/qmsApi";
+import { useExport } from "../../hooks/useExport";
 import CreateEquipmentModal from "./CreateEquipmentModal";
 import EquipmentDetailModal from "./EquipmentDetailModal";
 
@@ -98,7 +99,7 @@ const EquipmentPage: React.FC = () => {
     { date: string; title: string; color: string }[]
   >([]);
   const [showCalibrationSchedule, setShowCalibrationSchedule] = useState(false);
-  const [exporting, setExporting] = useState(false);
+  const { exporting, doExport } = useExport();
 
   /* ─── fetch data on mount ─── */
   useEffect(() => {
@@ -280,23 +281,7 @@ const EquipmentPage: React.FC = () => {
           variant="secondary"
           icon={exporting ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />}
           disabled={exporting}
-          onClick={async () => {
-            setExporting(true);
-            try {
-              const { $authHost } = await import("../../api/index");
-              const res = await $authHost.get("/api/export/equipment", { responseType: "blob" });
-              const url = window.URL.createObjectURL(new Blob([res.data]));
-              const a = document.createElement("a");
-              a.href = url;
-              a.download = `Equipment_Export_${new Date().toISOString().slice(0, 10)}.xlsx`;
-              a.click();
-              window.URL.revokeObjectURL(url);
-            } catch {
-              alert("Ошибка экспорта");
-            } finally {
-              setExporting(false);
-            }
-          }}
+          onClick={() => doExport("equipment", "Equipment_Export")}
         >
           Экспорт
         </ActionBtn>

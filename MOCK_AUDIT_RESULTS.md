@@ -29,54 +29,56 @@
 
 ## Кнопки без обработчиков — РЕШЕНО (SW-003, `d94df470`)
 
-Все 22 кнопки получили `disabled title="Будет доступно в следующем спринте"`.
-Функциональность отложена на следующий спринт по дизайну, не является дефектом.
+~~Изначально все 22 кнопки были `disabled` с tooltip "Будет доступно в следующем спринте".~~
 
-### AuditsPage (`src/pages/Quality/AuditsPage.tsx`)
-- [x] Строка 361: «Новый аудит» — disabled + tooltip
-- [x] Строка 362: «Экспорт» — disabled + tooltip
+**Обновлено 2026-02-14:** Все 22 кнопки полностью функциональны — подключены к Create-модалкам и Export через `useExport` хук + backend `/api/export/*`.
 
-### ChangeControlPage (`src/pages/Quality/ChangeControlPage.tsx`)
-- [x] Строка 306: «Новый ECR» — disabled + tooltip
-- [x] Строка 307: «Экспорт» — disabled + tooltip
+### AuditsPage — `CreateAuditModal` + `useExport`
+- [x] «Новый аудит» — работает (CreateAuditModal)
+- [x] «Экспорт» — работает (useExport → /api/export/audits)
 
-### ComplaintsPage (`src/pages/Quality/ComplaintsPage.tsx`)
-- [x] Строка 334: «Новая рекламация» — disabled + tooltip
-- [x] Строка 335: «Экспорт» — disabled + tooltip
+### ChangeControlPage — `CreateChangeModal` + `useExport`
+- [x] «Новый ECR» — работает (CreateChangeModal)
+- [x] «Экспорт» — работает (useExport → /api/export/changes)
 
-### EquipmentPage (`src/pages/Quality/EquipmentPage.tsx`)
-- [x] Строка 266: «Добавить оборудование» — disabled + tooltip
-- [x] Строка 269: «График калибровки» — disabled + tooltip
-- [x] Строка 272: «Экспорт» — disabled + tooltip
+### ComplaintsPage — `CreateComplaintModal` + `useExport`
+- [x] «Новая рекламация» — работает (CreateComplaintModal)
+- [x] «Экспорт» — работает (useExport → /api/export/complaints)
 
-### ProductRegistryPage (`src/pages/Quality/ProductRegistryPage.tsx`)
-- [x] Строка 227: «Новое изделие» — disabled + tooltip
-- [x] Строка 230: «Экспорт» — disabled + tooltip
+### EquipmentPage — `CreateEquipmentModal` + `useExport`
+- [x] «Добавить оборудование» — работает (CreateEquipmentModal)
+- [x] «График калибровки» — работает (showCalibrationSchedule toggle)
+- [x] «Экспорт» — работает (useExport → /api/export/equipment)
 
-### SuppliersPage (`src/pages/Quality/SuppliersPage.tsx`)
-- [x] Строка 218: «Новый поставщик» — disabled + tooltip
+### ProductRegistryPage — `CreateProductModal` + `useExport`
+- [x] «Новое изделие» — работает (CreateProductModal)
+- [x] «Экспорт» — работает (useExport → /api/export/products)
 
-### TrainingPage (`src/pages/Quality/TrainingPage.tsx`)
-- [x] Строка 201: «Назначить обучение» — disabled + tooltip
-- [x] Строка 210: «Экспорт» — disabled + tooltip
+### SuppliersPage — `CreateSupplierModal` + `useExport`
+- [x] «Новый поставщик» — работает (CreateSupplierModal)
+- [x] «Экспорт» — работает (useExport → /api/export/suppliers)
 
-### ValidationPage (`src/pages/Quality/ValidationPage.tsx`)
-- [x] Строка 243: «Новая валидация» — disabled + tooltip
-- [x] Строка 244: «Экспорт» — disabled + tooltip
+### TrainingPage — `CreateTrainingModal` + `useExport`
+- [x] «Назначить обучение» — работает (CreateTrainingModal)
+- [x] «Экспорт» — работает (useExport → /api/export/training)
 
-### ReviewPage (`src/pages/Quality/ReviewPage.tsx`)
-- [x] Строка 355: «Новое совещание» — disabled + tooltip
-- [x] Строка 358: «Протокол» — disabled + tooltip
+### ValidationPage — `CreateValidationModal` + `useExport`
+- [x] «Новая валидация» — работает (CreateValidationModal)
+- [x] «Экспорт» — работает (useExport → /api/export/validation)
 
-### RisksPage (`src/pages/Quality/RisksPage.tsx`)
-- [x] Строка 170: «Новый риск» — disabled + tooltip
-- [x] Строка 174: «Экспорт» — disabled + tooltip
+### ReviewPage — `CreateReviewModal` + `useExport`
+- [x] «Новое совещание» — работает (CreateReviewModal)
+- [x] «Протокол» — работает (useExport → /api/export/reviews)
 
-### RiskManagementPage (`src/pages/Quality/risk-management/RiskManagementPage.tsx`)
-- [x] Строка 125: «Новый план/Новая опасность» — disabled + tooltip
-- [x] Строка 131: «Отчёт ISO 14971» — disabled + tooltip
+### RisksPage — `CreateRiskModal` + `useExport`
+- [x] «Новый риск» — работает (CreateRiskModal)
+- [x] «Экспорт» — работает (useExport → /api/export/risks)
 
-**Итого: 22 кнопки** (12 «Экспорт», 8 «Создать/Новый», 2 специальных) — все disabled с tooltip
+### RiskManagementPage — `CreatePlanModal` + inline export
+- [x] «Новый план/Новая опасность» — работает (CreatePlanModal)
+- [x] «Отчёт ISO 14971» — работает (/api/risk-management/export/report)
+
+**Итого: 22/22 кнопок функциональны** (12 «Экспорт», 8 «Создать/Новый», 2 специальных)
 
 ---
 

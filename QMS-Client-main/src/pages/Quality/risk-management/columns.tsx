@@ -12,40 +12,40 @@ import {
 export const planColumns = [
   {
     key: 'planNumber',
-    label: 'Nomer',
+    label: 'Номер',
     width: '130px',
     render: (r: PlanRow) => <span className="font-mono text-asvo-accent">{r.planNumber}</span>,
   },
   {
     key: 'title',
-    label: 'Nazvaniye',
+    label: 'Название',
     render: (r: PlanRow) => <span className="text-asvo-text">{r.title}</span>,
   },
   {
     key: 'product',
-    label: 'Produkt',
+    label: 'Продукт',
     render: (r: PlanRow) => <span className="text-asvo-text-mid">{r.product}</span>,
   },
   {
     key: 'phase',
-    label: 'Faza',
+    label: 'Фаза',
     render: (r: PlanRow) => <span className="text-asvo-text-mid">{r.phase}</span>,
   },
   {
     key: 'hazardCount',
-    label: 'Opasnostey',
+    label: 'Опасностей',
     align: 'center' as const,
     render: (r: PlanRow) => <span className="text-asvo-text font-mono">{r.hazardCount}</span>,
   },
   {
     key: 'version',
-    label: 'Versiya',
+    label: 'Версия',
     align: 'center' as const,
     render: (r: PlanRow) => <span className="text-asvo-text-dim">v{r.version}</span>,
   },
   {
     key: 'status',
-    label: 'Status',
+    label: 'Статус',
     align: 'center' as const,
     render: (r: PlanRow) => {
       const c = rmpStatusColors[r.status];
@@ -63,18 +63,18 @@ export const hazardColumns = [
   },
   {
     key: 'category',
-    label: 'Kategoriya',
+    label: 'Категория',
     width: '120px',
     render: (r: HazardRow) => <span className="text-asvo-text-mid text-xs">{r.category}</span>,
   },
   {
     key: 'description',
-    label: 'Opasnost\'',
+    label: 'Опасность',
     render: (r: HazardRow) => <span className="text-asvo-text">{r.description}</span>,
   },
   {
     key: 'harm',
-    label: 'Vred',
+    label: 'Вред',
     render: (r: HazardRow) => <span className="text-[#F06060] text-xs">{r.harm}</span>,
   },
   {
@@ -86,7 +86,7 @@ export const hazardColumns = [
   },
   {
     key: 'riskClass',
-    label: 'Klass',
+    label: 'Класс',
     align: 'center' as const,
     width: '80px',
     render: (r: HazardRow) => {
@@ -96,7 +96,7 @@ export const hazardColumns = [
   },
   {
     key: 'residualClass',
-    label: 'Rezid.',
+    label: 'Резид.',
     align: 'center' as const,
     width: '80px',
     render: (r: HazardRow) => {
@@ -107,14 +107,14 @@ export const hazardColumns = [
   },
   {
     key: 'controlCount',
-    label: 'Mery',
+    label: 'Меры',
     align: 'center' as const,
     width: '60px',
     render: (r: HazardRow) => <span className="font-mono text-asvo-text">{r.controlCount}</span>,
   },
   {
     key: 'status',
-    label: 'Status',
+    label: 'Статус',
     align: 'center' as const,
     width: '120px',
     render: (r: HazardRow) => {
@@ -127,18 +127,18 @@ export const hazardColumns = [
 export const traceColumns = [
   {
     key: 'hazardNum',
-    label: 'Opasnost\'',
+    label: 'Опасность',
     width: '90px',
     render: (r: TraceRow) => <span className="font-mono text-asvo-accent">{r.hazardNum}</span>,
   },
   {
     key: 'hazardDesc',
-    label: 'Opisaniye',
+    label: 'Описание',
     render: (r: TraceRow) => <span className="text-asvo-text text-xs">{r.hazardDesc}</span>,
   },
   {
     key: 'initialRisk',
-    label: 'Iskhodnyy risk',
+    label: 'Исходный риск',
     align: 'center' as const,
     width: '120px',
     render: (r: TraceRow) => {
@@ -149,7 +149,7 @@ export const traceColumns = [
   },
   {
     key: 'controlType',
-    label: 'Tip mery',
+    label: 'Тип меры',
     align: 'center' as const,
     width: '120px',
     render: (r: TraceRow) => {
@@ -159,12 +159,12 @@ export const traceColumns = [
   },
   {
     key: 'controlDesc',
-    label: 'Mera upravleniya',
+    label: 'Мера управления',
     render: (r: TraceRow) => <span className="text-asvo-text text-xs">{r.controlDesc}</span>,
   },
   {
     key: 'verifResult',
-    label: 'Verifikatsiya',
+    label: 'Верификация',
     align: 'center' as const,
     width: '100px',
     render: (r: TraceRow) => {
@@ -181,7 +181,7 @@ export const traceColumns = [
   },
   {
     key: 'residualRisk',
-    label: 'Rezid. risk',
+    label: 'Резид. риск',
     align: 'center' as const,
     width: '120px',
     render: (r: TraceRow) => {
@@ -192,7 +192,7 @@ export const traceColumns = [
   },
   {
     key: 'braResult',
-    label: 'Pol\'za/Risk',
+    label: 'Польза/Риск',
     align: 'center' as const,
     width: '100px',
     render: (r: TraceRow) => {

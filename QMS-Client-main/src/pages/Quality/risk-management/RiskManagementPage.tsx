@@ -20,10 +20,10 @@ import { mapPlan, mapHazard, mapTraceRow, mapBenefitRisk } from './mappers';
 import CreatePlanModal from './CreatePlanModal';
 
 const tabs: { key: TabKey; label: string; icon: React.ReactNode }[] = [
-  { key: 'plans',        label: 'Plany RMP',             icon: <FileText size={15} /> },
-  { key: 'hazards',      label: 'Analiz opasnostey',     icon: <AlertTriangle size={15} /> },
-  { key: 'traceability', label: 'Matritsa proslezh.',    icon: <Link2 size={15} /> },
-  { key: 'benefit-risk', label: 'Pol\'za / Risk',        icon: <Scale size={15} /> },
+  { key: 'plans',        label: 'Планы РМР',             icon: <FileText size={15} /> },
+  { key: 'hazards',      label: 'Анализ опасностей',     icon: <AlertTriangle size={15} /> },
+  { key: 'traceability', label: 'Матрица прослеж.',      icon: <Link2 size={15} /> },
+  { key: 'benefit-risk', label: 'Польза / Риск',         icon: <Scale size={15} /> },
 ];
 
 const RiskManagementPage: React.FC = () => {
@@ -74,7 +74,7 @@ const RiskManagementPage: React.FC = () => {
         }
       }
     } catch (err: any) {
-      setError(err?.response?.data?.message ?? err?.message ?? 'Oshibka zagruzki dannykh');
+      setError(err?.response?.data?.message ?? err?.message ?? 'Ошибка загрузки данных');
     } finally {
       setLoading(false);
     }
@@ -85,11 +85,11 @@ const RiskManagementPage: React.FC = () => {
   }, [activeTab, fetchTabData]);
 
   const kpis = [
-    { label: 'Plany RMP',              value: stats?.totalPlans ?? 0,        color: '#A06AE8', icon: <FileText size={18} /> },
-    { label: 'Opasnostey',             value: stats?.totalHazards ?? 0,      color: '#F06060', icon: <AlertTriangle size={18} /> },
-    { label: 'Mer upravleniya',        value: stats?.totalControls ?? 0,     color: '#4A90E8', icon: <Shield size={18} /> },
-    { label: 'Verifitsirovano',        value: stats?.verifiedControls ?? 0,  color: '#2DD4A8', icon: <CheckCircle size={18} /> },
-    { label: 'Benefit-Risk analizov',  value: stats?.totalBenefitRisk ?? 0,  color: '#E8A830', icon: <Scale size={18} /> },
+    { label: 'Планы РМР',              value: stats?.totalPlans ?? 0,        color: '#A06AE8', icon: <FileText size={18} /> },
+    { label: 'Опасностей',              value: stats?.totalHazards ?? 0,      color: '#F06060', icon: <AlertTriangle size={18} /> },
+    { label: 'Мер управления',          value: stats?.totalControls ?? 0,     color: '#4A90E8', icon: <Shield size={18} /> },
+    { label: 'Верифицировано',           value: stats?.verifiedControls ?? 0,  color: '#2DD4A8', icon: <CheckCircle size={18} /> },
+    { label: 'Benefit-Risk анализов',    value: stats?.totalBenefitRisk ?? 0,  color: '#E8A830', icon: <Scale size={18} /> },
   ];
 
   const hazardCategorySummary: Array<{ cat: string; count: number; color: string }> =
@@ -119,17 +119,17 @@ const RiskManagementPage: React.FC = () => {
             <FileText className="text-[#A06AE8]" size={24} />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-asvo-text">Fayl menedzhmenta riska</h1>
-            <p className="text-asvo-text-dim text-sm">ISO 14971:2019 &mdash; Primeneniye menedzhmenta riska k meditsinskim izdeliyam</p>
+            <h1 className="text-2xl font-bold text-asvo-text">Файл менеджмента риска</h1>
+            <p className="text-asvo-text-dim text-sm">ISO 14971:2019 &mdash; Применение менеджмента риска к медицинским изделиям</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
           <ActionBtn icon={<Plus size={15} />} onClick={() => setShowCreatePlanModal(true)}>
-            {activeTab === 'plans' ? 'Noviy plan' :
-             activeTab === 'hazards' ? 'Novaya opasnost\'' :
-             activeTab === 'traceability' ? 'Novaya mera' :
-             'Noviy analiz'}
+            {activeTab === 'plans' ? 'Новый план' :
+             activeTab === 'hazards' ? 'Новая опасность' :
+             activeTab === 'traceability' ? 'Новая мера' :
+             'Новый анализ'}
           </ActionBtn>
           <ActionBtn
             variant="secondary"
@@ -148,13 +148,13 @@ const RiskManagementPage: React.FC = () => {
                 a.click();
                 window.URL.revokeObjectURL(url);
               } catch (e: any) {
-                setError(e?.response?.data?.message || 'Oshibka generatsii otchyota');
+                setError(e?.response?.data?.message || 'Ошибка генерации отчёта');
               } finally {
                 setExportingReport(false);
               }
             }}
           >
-            Otchyot ISO 14971
+            Отчёт ISO 14971
           </ActionBtn>
         </div>
       </div>
@@ -187,7 +187,7 @@ const RiskManagementPage: React.FC = () => {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Poisk po ID, nazvaniyu ili opisaniyu..."
+            placeholder="Поиск по ID, названию или описанию..."
             className="w-full pl-10 pr-4 py-2 bg-asvo-surface-2 border border-asvo-border rounded-lg text-asvo-text placeholder:text-asvo-text-dim focus:border-asvo-accent/50 focus:outline-none text-sm"
           />
         </div>
@@ -198,14 +198,14 @@ const RiskManagementPage: React.FC = () => {
         <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 flex items-center gap-3">
           <AlertTriangle className="text-red-400 shrink-0" size={20} />
           <div>
-            <p className="text-red-400 text-sm font-medium">Oshibka zagruzki</p>
+            <p className="text-red-400 text-sm font-medium">Ошибка загрузки</p>
             <p className="text-red-400/70 text-xs">{error}</p>
           </div>
           <button
             onClick={() => fetchTabData(activeTab)}
             className="ml-auto text-xs text-red-400 border border-red-400/30 rounded px-3 py-1 hover:bg-red-400/10 transition-colors"
           >
-            Povtorit'
+            Повторить
           </button>
         </div>
       )}
@@ -214,14 +214,14 @@ const RiskManagementPage: React.FC = () => {
       {loading && (
         <div className="flex items-center justify-center py-16">
           <Loader2 className="animate-spin text-asvo-accent" size={32} />
-          <span className="ml-3 text-asvo-text-dim text-sm">Zagruzka...</span>
+          <span className="ml-3 text-asvo-text-dim text-sm">Загрузка...</span>
         </div>
       )}
 
       {/* Plans tab */}
       {!loading && activeTab === 'plans' && (
         <>
-          <SectionTitle>Plany menedzhmenta riskov (ISO 14971 &sect;4.4)</SectionTitle>
+          <SectionTitle>Планы менеджмента рисков (ISO 14971 &sect;4.4)</SectionTitle>
           <DataTable columns={planColumns} data={plans} />
         </>
       )}
@@ -229,12 +229,12 @@ const RiskManagementPage: React.FC = () => {
       {/* Hazards tab */}
       {!loading && activeTab === 'hazards' && (
         <>
-          <SectionTitle>Analiz opasnostey (ISO 14971 &sect;5)</SectionTitle>
+          <SectionTitle>Анализ опасностей (ISO 14971 &sect;5)</SectionTitle>
           <DataTable columns={hazardColumns} data={hazards} />
 
           {hazardCategorySummary.length > 0 && (
             <>
-              <SectionTitle>Opasnosti po kategoriyam</SectionTitle>
+              <SectionTitle>Опасности по категориям</SectionTitle>
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
                 {hazardCategorySummary.map(item => (
                   <div
@@ -255,26 +255,26 @@ const RiskManagementPage: React.FC = () => {
       {/* Traceability tab */}
       {!loading && activeTab === 'traceability' && (
         <>
-          <SectionTitle>Matritsa proslezhivayemosti mer upravleniya (ISO 14971 &sect;7-8)</SectionTitle>
+          <SectionTitle>Матрица прослеживаемости мер управления (ISO 14971 &sect;7-8)</SectionTitle>
           <p className="text-asvo-text-dim text-xs mb-3">
-            Polnaya tsepochka: Opasnost' &rarr; Iskhodnyy risk &rarr; Mera upravleniya &rarr; Verifikatsiya &rarr; Rezidual'nyy risk &rarr; Benefit/Risk
+            Полная цепочка: Опасность &rarr; Исходный риск &rarr; Мера управления &rarr; Верификация &rarr; Резидуальный риск &rarr; Benefit/Risk
           </p>
           <DataTable columns={traceColumns} data={traceability} />
 
           <div className="bg-asvo-surface border border-asvo-border rounded-xl p-4 mt-4">
-            <h4 className="text-xs font-semibold text-asvo-text mb-2">Prioritet mer po ISO 14971</h4>
+            <h4 className="text-xs font-semibold text-asvo-text mb-2">Приоритет мер по ISO 14971</h4>
             <div className="flex gap-6">
               <div className="flex items-center gap-2">
                 <Badge color="#2DD4A8" bg="rgba(45,212,168,0.14)">1</Badge>
-                <span className="text-asvo-text-mid text-xs">Bezopasnyy po suti dizayn (&sect;7.2)</span>
+                <span className="text-asvo-text-mid text-xs">Безопасный по сути дизайн (&sect;7.2)</span>
               </div>
               <div className="flex items-center gap-2">
                 <Badge color="#4A90E8" bg="rgba(74,144,232,0.14)">2</Badge>
-                <span className="text-asvo-text-mid text-xs">Zashchitnyye mery (&sect;7.3)</span>
+                <span className="text-asvo-text-mid text-xs">Защитные меры (&sect;7.3)</span>
               </div>
               <div className="flex items-center gap-2">
                 <Badge color="#E8A830" bg="rgba(232,168,48,0.14)">3</Badge>
-                <span className="text-asvo-text-mid text-xs">Informatsiya dlya bezopasnosti (&sect;7.4)</span>
+                <span className="text-asvo-text-mid text-xs">Информация для безопасности (&sect;7.4)</span>
               </div>
             </div>
           </div>
@@ -284,15 +284,15 @@ const RiskManagementPage: React.FC = () => {
       {/* Benefit-risk tab */}
       {!loading && activeTab === 'benefit-risk' && (
         <>
-          <SectionTitle>Analiz pol'zy/riska (ISO 14971 &sect;6.5)</SectionTitle>
+          <SectionTitle>Анализ пользы/риска (ISO 14971 &sect;6.5)</SectionTitle>
           <p className="text-asvo-text-dim text-xs mb-3">
-            Otsenka obosnovannosti ostatochnogo riska s tochki zreniya klinicheskoy pol'zy
+            Оценка обоснованности остаточного риска с точки зрения клинической пользы
           </p>
 
           <div className="space-y-3">
             {benefitRisk.length === 0 && (
               <div className="bg-asvo-surface border border-asvo-border rounded-xl p-8 text-center">
-                <p className="text-asvo-text-dim text-sm">Net dannykh</p>
+                <p className="text-asvo-text-dim text-sm">Нет данных</p>
               </div>
             )}
             {benefitRisk.map(bra => (
@@ -311,21 +311,21 @@ const RiskManagementPage: React.FC = () => {
                       color={riskClassColors[bra.residualRisk as RiskClass]?.color}
                       bg={riskClassColors[bra.residualRisk as RiskClass]?.bg}
                     >
-                      Rezid: {bra.residualRisk}
+                      Резид: {bra.residualRisk}
                     </Badge>
                     <Badge
                       color={bra.outweighs ? '#2DD4A8' : '#F06060'}
                       bg={bra.outweighs ? 'rgba(45,212,168,0.14)' : 'rgba(240,96,96,0.14)'}
                     >
-                      {bra.outweighs ? 'Pol\'za > Risk' : 'Risk > Pol\'za'}
+                      {bra.outweighs ? 'Польза > Риск' : 'Риск > Польза'}
                     </Badge>
                   </div>
                 </div>
                 <p className="text-asvo-text-mid text-xs mb-1">
-                  <strong>Pol'za:</strong> {bra.benefit}
+                  <strong>Польза:</strong> {bra.benefit}
                 </p>
                 <p className="text-asvo-text-dim text-xs">
-                  <strong>Zaklyucheniye:</strong> {bra.conclusion}
+                  <strong>Заключение:</strong> {bra.conclusion}
                 </p>
               </div>
             ))}
