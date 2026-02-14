@@ -5,9 +5,8 @@
  *
  * 1. Drops all tables (DROP SCHEMA public CASCADE; CREATE SCHEMA public)
  * 2. Runs all migrations via sequelize-cli
- * 3. Syncs any remaining models not covered by migrations
- * 4. Seeds initial data (roles, abilities, role-ability assignments)
- * 5. Prints summary report
+ * 3. Seeds initial data (roles, abilities, role-ability assignments)
+ * 4. Prints summary report
  *
  * Usage: npm run db:reset
  */
@@ -63,19 +62,7 @@ async function main() {
     process.exit(1);
   }
 
-  // --- 4. Sync remaining models not covered by migrations ---
-  console.log("\n>>> Syncing remaining models (alter: true for safety)...");
-  try {
-    // Re-require models (they register with sequelize instance)
-    require("../models/index");
-    await sequelize.sync({ alter: true });
-    console.log("✅ Model sync complete");
-  } catch (e) {
-    console.error("⚠️  Model sync warning:", e.message);
-    // Non-fatal: migrations should have created everything
-  }
-
-  // --- 5. Initialize roles and abilities ---
+  // --- 4. Initialize roles and abilities ---
   console.log("\n>>> Initializing RBAC (roles, abilities)...");
   try {
     const models = require("../models/index");
@@ -217,7 +204,7 @@ async function main() {
 
     console.log("  ✅ Role-ability assignments complete");
 
-    // --- 6. Summary ---
+    // --- 5. Summary ---
     const tableCount = await sequelize.query(
       "SELECT COUNT(*) AS cnt FROM pg_tables WHERE schemaname = 'public'",
       { type: sequelize.constructor.QueryTypes.SELECT }
