@@ -26,10 +26,12 @@ export interface ProductionTask {
   sectionId?: number | null;
   projectId?: number | null;
   epicId?: number | null;
+  sprintId?: number | null;
 
   responsible?: { id: number; name: string; surname: string } | null;
   project?: { id: number; title: string } | null;
   epic?: { id: number; title: string; color: string } | null;
+  sprint?: { id: number; title: string; status: string } | null;
 
   stats?: TaskStats;
   progressPercent?: number;
@@ -75,6 +77,7 @@ export const createTask = async (payload: {
   sectionId?: number;
   projectId?: number;
   epicId?: number;
+  sprintId?: number;
 }) => {
   const { data } = await $authHost.post("api/tasks", payload);
   return data as ProductionTask;
@@ -88,6 +91,8 @@ export const fetchTasks = async (params?: {
   originType?: string;
   projectId?: number;
   epicId?: number;
+  sprintId?: number;
+  backlog?: boolean;
 }) => {
   const { data } = await $authHost.get("api/tasks", { params });
   return data as TaskListResponse;

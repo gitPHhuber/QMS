@@ -34,9 +34,10 @@ interface ExtendedTask extends ProductionTask { stats?: TaskStats; }
 interface TasksListProps {
   projectId?: number;
   epicId?: number;
+  sprintId?: number;
 }
 
-const TasksList: React.FC<TasksListProps> = ({ projectId, epicId }) => {
+const TasksList: React.FC<TasksListProps> = ({ projectId, epicId, sprintId }) => {
   const [tasks, setTasks] = useState<ExtendedTask[]>([]);
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState<userGetModel[]>([]);
@@ -77,6 +78,7 @@ const TasksList: React.FC<TasksListProps> = ({ projectId, epicId }) => {
         limit: 500,
         ...(projectId ? { projectId } : {}),
         ...(epicId ? { epicId } : {}),
+        ...(sprintId ? { sprintId } : {}),
       });
       setTasks(res.rows as unknown as ExtendedTask[]);
     } catch (e) {
@@ -84,7 +86,7 @@ const TasksList: React.FC<TasksListProps> = ({ projectId, epicId }) => {
     } finally {
       setLoading(false);
     }
-  }, [projectId, epicId]);
+  }, [projectId, epicId, sprintId]);
 
   useEffect(() => {
     loadData();
@@ -165,6 +167,7 @@ const TasksList: React.FC<TasksListProps> = ({ projectId, epicId }) => {
       originId: createForm.originId ? Number(createForm.originId) : undefined,
       projectId: createForm.projectId ? Number(createForm.projectId) : undefined,
       epicId: createForm.epicId ? Number(createForm.epicId) : undefined,
+      sprintId: createForm.sprintId ? Number(createForm.sprintId) : undefined,
       responsibleId: createForm.responsibleId ? Number(createForm.responsibleId) : undefined,
       priority: Number(createForm.priority) || 1,
     });

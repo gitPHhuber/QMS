@@ -12,6 +12,7 @@ module.exports = {
     router.use('/projects',  require('./routes/projectRouter'));
     router.use('/notifications', require('./routes/notificationRouter'));
     router.use('/epics', require('./routes/epicRouter'));
+    router.use('/sprints', require('./routes/sprintRouter'));
   },
 
   getModels() {
@@ -21,7 +22,8 @@ module.exports = {
     const notification = require('./models/Notification');
     const taskExtensions = require('./models/TaskExtensions');
     const epic = require('./models/Epic');
-    return { ...general, ...structure, ...project, ...notification, ...taskExtensions, ...epic };
+    const sprint = require('./models/Sprint');
+    return { ...general, ...structure, ...project, ...notification, ...taskExtensions, ...epic, ...sprint };
   },
 
   setupAssociations(m) {
@@ -100,6 +102,23 @@ module.exports = {
       m.ProductionTask.hasMany(m.TaskActivity, { foreignKey: 'taskId', as: 'activity' });
       m.TaskActivity.belongsTo(m.ProductionTask, { foreignKey: 'taskId', as: 'task' });
       m.TaskActivity.belongsTo(m.User, { foreignKey: 'userId', as: 'user' });
+    }
+
+    // Sprint <-> Project, User, SprintBurndown, ProductionTask
+    if (m.Sprint) {
+      m.Sprint.belongsTo(m.Project, { foreignKey: 'projectId', as: 'project' });
+      m.Project.hasMany(m.Sprint, { foreignKey: 'projectId', as: 'sprints' });
+      m.Sprint.belongsTo(m.User, { foreignKey: 'createdById', as: 'createdBy' });
+
+      if (m.SprintBurndown) {
+        m.Sprint.hasMany(m.SprintBurndown, { foreignKey: 'sprintId', as: 'burndown' });
+        m.SprintBurndown.belongsTo(m.Sprint, { foreignKey: 'sprintId', as: 'sprint' });
+      }
+
+      if (m.ProductionTask) {
+        m.Sprint.hasMany(m.ProductionTask, { foreignKey: 'sprintId', as: 'tasks' });
+        m.ProductionTask.belongsTo(m.Sprint, { foreignKey: 'sprintId', as: 'sprint' });
+      }
     }
   },
 };

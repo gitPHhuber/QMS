@@ -13,8 +13,10 @@ const {
   TaskChecklist,
   TaskChecklistItem,
   Epic,
+  Sprint,
 } = require("../../../models/index");
 const TaskActivityService = require("../services/TaskActivityService");
+const BurndownSnapshotService = require("../services/BurndownSnapshotService");
 
 class TaskController {
 
@@ -33,6 +35,7 @@ class TaskController {
         sectionId,
         projectId,
         epicId,
+        sprintId,
       } = req.body;
 
       if (!req.user || !req.user.id) {
@@ -58,6 +61,7 @@ class TaskController {
         sectionId: sectionId || null,
         projectId: projectId || null,
         epicId: epicId || null,
+        sprintId: sprintId || null,
       });
 
       TaskActivityService.logTaskCreated(task.id, req.user.id);
@@ -72,7 +76,7 @@ class TaskController {
 
   async getTasks(req, res, next) {
     try {
-      let { page = 1, limit = 50, status, search, originType, projectId, epicId } = req.query;
+      let { page = 1, limit = 50, status, search, originType, projectId, epicId, sprintId, backlog } = req.query;
       page = Number(page) || 1;
       limit = Number(limit) || 50;
       const offset = (page - 1) * limit;
@@ -82,6 +86,10 @@ class TaskController {
       if (originType) where.originType = originType;
       if (projectId) where.projectId = Number(projectId);
       if (epicId) where.epicId = Number(epicId);
+      if (sprintId) where.sprintId = Number(sprintId);
+      if (backlog === "true" && projectId) {
+        where.sprintId = { [Op.is]: null };
+      }
       if (search) {
         const s = String(search).trim();
         where[Op.or] = [
@@ -119,6 +127,11 @@ class TaskController {
                 model: Epic,
                 as: "epic",
                 attributes: ["id", "title", "color"]
+            }] : []),
+            ...(Sprint ? [{
+                model: Sprint,
+                as: "sprint",
+                attributes: ["id", "title", "status"]
             }] : [])
         ]
       });
@@ -229,7 +242,8 @@ class TaskController {
         include: [
             { model: User, as: "responsible", attributes: ["id", "name", "surname"] },
             { model: Project, as: "project", attributes: ["id", "title"] },
-            ...(Epic ? [{ model: Epic, as: "epic", attributes: ["id", "title", "color"] }] : [])
+            ...(Epic ? [{ model: Epic, as: "epic", attributes: ["id", "title", "color"] }] : []),
+            ...(Sprint ? [{ model: Sprint, as: "sprint", attributes: ["id", "title", "status"] }] : [])
         ]
       });
 
@@ -327,7 +341,7 @@ class TaskController {
       const { id } = req.params;
       const {
         title, targetQty, unit, dueDate, priority, comment,
-        responsibleId, sectionId, projectId, epicId, status
+        responsibleId, sectionId, projectId, epicId, sprintId, status
       } = req.body;
 
       const task = await ProductionTask.findByPk(id);
@@ -354,6 +368,7 @@ class TaskController {
         sectionId: sectionId !== undefined ? (sectionId || null) : task.sectionId,
         projectId: projectId !== undefined ? (projectId || null) : task.projectId,
         epicId: epicId !== undefined ? (epicId || null) : task.epicId,
+        sprintId: sprintId !== undefined ? (sprintId || null) : task.sprintId,
         status: status !== undefined ? status : task.status
       });
 
@@ -385,6 +400,11 @@ class TaskController {
       await task.save();
 
       TaskActivityService.logStatusChange(task.id, req.user.id, oldStatus, status);
+
+      // Update burndown if task is in a sprint
+      if (task.sprintId) {
+        BurndownSnapshotService.updateForSprint(task.sprintId);
+      }
 
       return res.json(task);
     } catch (e) {

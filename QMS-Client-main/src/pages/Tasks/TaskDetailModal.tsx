@@ -556,6 +556,14 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                       )}
                     </div>
                   </div>
+
+                  {/* Sprint */}
+                  <div className="bg-asvo-surface border border-asvo-border rounded-lg px-3 py-2">
+                    <div className="text-[10px] text-asvo-text-dim uppercase tracking-wide">Спринт</div>
+                    <div className="text-[13px] font-medium mt-0.5 text-asvo-text">
+                      {detail.task.sprint?.title || "\u2014"}
+                    </div>
+                  </div>
                 </div>
 
                 {!isClosed && (

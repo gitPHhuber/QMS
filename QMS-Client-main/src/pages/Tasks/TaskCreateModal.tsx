@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { ProjectModel } from "src/api/projectsApi";
 import { EpicModel, fetchEpics } from "src/api/epicsApi";
+import { SprintModel, fetchSprintsForProject } from "src/api/sprintsApi";
 import { userGetModel } from "src/types/UserModel";
 import { Modal } from "src/components/Modal/Modal";
 
@@ -24,11 +25,23 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
   onSubmit,
 }) => {
   const [epics, setEpics] = useState<EpicModel[]>([]);
+  const [sprints, setSprints] = useState<SprintModel[]>([]);
   useEffect(() => {
     if (isModalOpen && epics.length === 0) {
       fetchEpics().then(setEpics).catch(() => {});
     }
   }, [isModalOpen, epics.length]);
+
+  // Load sprints when project changes
+  useEffect(() => {
+    if (createForm.projectId) {
+      fetchSprintsForProject(Number(createForm.projectId))
+        .then(data => setSprints(data.filter(s => s.status !== "COMPLETED")))
+        .catch(() => setSprints([]));
+    } else {
+      setSprints([]);
+    }
+  }, [createForm.projectId]);
   return (
     <Modal isOpen={isModalOpen} onClose={onClose}>
       <div className="p-1">
@@ -60,6 +73,18 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
               {epics.map(e => <option key={e.id} value={e.id}>{e.title}</option>)}
             </select>
           </div>
+          {/* Sprint (shown when project is selected) */}
+          {createForm.projectId && sprints.length > 0 && (
+            <select
+              className="w-full px-3 py-2 bg-asvo-card border border-asvo-border rounded-lg text-asvo-text text-sm focus:border-asvo-border-lt focus:outline-none"
+              value={createForm.sprintId || ""}
+              onChange={e => onCreateFormChange({ ...createForm, sprintId: e.target.value })}
+            >
+              <option value="">Без спринта (бэклог)</option>
+              {sprints.map(s => <option key={s.id} value={s.id}>{s.title}{s.status === "ACTIVE" ? " (активный)" : ""}</option>)}
+            </select>
+          )}
+
           <div className="grid grid-cols-2 gap-2">
             <select
               className="w-full px-3 py-2 bg-asvo-card border border-asvo-border rounded-lg text-asvo-text text-sm focus:border-asvo-border-lt focus:outline-none"

@@ -123,6 +123,7 @@ const ProductionTask = sequelize.define("production_task", {
   sectionId: { type: DataTypes.INTEGER, allowNull: true },
   projectId: { type: DataTypes.INTEGER, allowNull: true },
   epicId: { type: DataTypes.INTEGER, allowNull: true },
+  sprintId: { type: DataTypes.INTEGER, allowNull: true },
 });
 
 

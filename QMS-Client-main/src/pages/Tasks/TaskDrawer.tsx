@@ -321,6 +321,14 @@ const TaskDrawer: React.FC<TaskDrawerProps> = ({
                 </div>
               ) : <span className="text-xs text-asvo-text-dim">—</span>}
             </div>
+
+            {/* Sprint */}
+            <div className="bg-asvo-card border border-asvo-border rounded-lg p-3">
+              <span className="block text-[10px] text-asvo-text-dim uppercase font-bold mb-1.5">Спринт</span>
+              <span className="text-xs text-asvo-text font-medium">
+                {drawerTask.task.sprint?.title || "—"}
+              </span>
+            </div>
           </div>
 
           {/* Breakdown */}
