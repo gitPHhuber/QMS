@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   GraduationCap,
   Plus,
@@ -18,6 +18,8 @@ import DataTable from "../../components/qms/DataTable";
 import Card from "../../components/qms/Card";
 import SectionTitle from "../../components/qms/SectionTitle";
 import { trainingApi } from "../../api/qmsApi";
+import CreateTrainingModal from "./CreateTrainingModal";
+import TrainingDetailModal from "./TrainingDetailModal";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                               */
@@ -72,6 +74,8 @@ type View = "table" | "matrix";
 
 const TrainingPage: React.FC = () => {
   const [view, setView] = useState<View>("table");
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [detailRecordId, setDetailRecordId] = useState<number | null>(null);
 
   /* ---- API state ---- */
   const [plans, setPlans] = useState<TrainingRow[]>([]);
@@ -83,36 +87,36 @@ const TrainingPage: React.FC = () => {
 
   /* ---- Fetch data on mount and when view changes ---- */
 
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        // Always fetch stats
-        const statsData = await trainingApi.getStats();
-        setStats(statsData);
+  const reload = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Always fetch stats
+      const statsData = await trainingApi.getStats();
+      setStats(statsData);
 
-        if (view === "table") {
-          const [plansRes, recordsRes] = await Promise.all([
-            trainingApi.getPlans(),
-            trainingApi.getRecords(),
-          ]);
-          setPlans(plansRes.rows ?? []);
-          setRecords(recordsRes.rows ?? []);
-        } else {
-          const compRes = await trainingApi.getCompetency();
-          setCompetency(compRes.rows ?? []);
-        }
-      } catch (e: any) {
-        console.error(e);
-        setError(e?.response?.data?.message || "Ошибка загрузки данных обучения");
-      } finally {
-        setLoading(false);
+      if (view === "table") {
+        const [plansRes, recordsRes] = await Promise.all([
+          trainingApi.getPlans(),
+          trainingApi.getRecords(),
+        ]);
+        setPlans(plansRes.rows ?? []);
+        setRecords(recordsRes.rows ?? []);
+      } else {
+        const compRes = await trainingApi.getCompetency();
+        setCompetency(compRes.rows ?? []);
       }
-    };
-
-    load();
+    } catch (e: any) {
+      console.error(e);
+      setError(e?.response?.data?.message || "Ошибка загрузки данных обучения");
+    } finally {
+      setLoading(false);
+    }
   }, [view]);
+
+  useEffect(() => {
+    reload();
+  }, [reload]);
 
   /* ---- Derive skills list from competency data ---- */
 
@@ -198,7 +202,7 @@ const TrainingPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <ActionBtn variant="primary" icon={<Plus size={15} />} disabled title="Будет доступно в следующем спринте">+ Назначить обучение</ActionBtn>
+          <ActionBtn variant="primary" icon={<Plus size={15} />} onClick={() => setShowCreateModal(true)}>+ Назначить обучение</ActionBtn>
           <ActionBtn
             variant="secondary"
             color="#A06AE8"
@@ -239,7 +243,13 @@ const TrainingPage: React.FC = () => {
       )}
 
       {/* ---- View: Table ---- */}
-      {!loading && !error && view === "table" && <DataTable columns={columns} data={plans} />}
+      {!loading && !error && view === "table" && (
+        <DataTable
+          columns={columns}
+          data={plans}
+          onRowClick={(row: any) => row.id && setDetailRecordId(row.id)}
+        />
+      )}
 
       {/* ---- View: Competency Matrix ---- */}
       {!loading && !error && view === "matrix" && (
@@ -300,6 +310,22 @@ const TrainingPage: React.FC = () => {
             </span>
           </div>
         </Card>
+      )}
+
+      {/* ---- Modals ---- */}
+      <CreateTrainingModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onCreated={reload}
+      />
+
+      {detailRecordId !== null && (
+        <TrainingDetailModal
+          recordId={detailRecordId}
+          isOpen={detailRecordId !== null}
+          onClose={() => setDetailRecordId(null)}
+          onAction={reload}
+        />
       )}
     </div>
   );

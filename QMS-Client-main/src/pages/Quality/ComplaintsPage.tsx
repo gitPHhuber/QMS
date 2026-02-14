@@ -16,6 +16,8 @@ import DataTable from "../../components/qms/DataTable";
 import Card from "../../components/qms/Card";
 import SectionTitle from "../../components/qms/SectionTitle";
 import { complaintsApi } from "../../api/qmsApi";
+import CreateComplaintModal from "./CreateComplaintModal";
+import ComplaintDetailModal from "./ComplaintDetailModal";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -217,30 +219,45 @@ const ComplaintsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  /* ---- Fetch data on mount ---- */
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+  /* ---- Modal state ---- */
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [detailComplaintId, setDetailComplaintId] = useState<number | null>(null);
 
-        const [complaintsRes, statsRes] = await Promise.all([
-          complaintsApi.getAll(),
-          complaintsApi.getStats(),
-        ]);
+  /* ---- Fetch data ---- */
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-        setComplaints(complaintsRes.rows ?? []);
-        setStats(statsRes);
-      } catch (err: any) {
-        console.error("Failed to load complaints data:", err);
-        setError(err?.response?.data?.message || err?.message || "Ошибка загрузки данных");
-      } finally {
-        setLoading(false);
-      }
-    };
+      const [complaintsRes, statsRes] = await Promise.all([
+        complaintsApi.getAll(),
+        complaintsApi.getStats(),
+      ]);
 
-    fetchData();
-  }, []);
+      setComplaints(complaintsRes.rows ?? []);
+      setStats(statsRes);
+    } catch (err: any) {
+      console.error("Failed to load complaints data:", err);
+      setError(err?.response?.data?.message || err?.message || "Ошибка загрузки данных");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const reloadData = async () => {
+    try {
+      const [complaintsRes, statsRes] = await Promise.all([
+        complaintsApi.getAll(),
+        complaintsApi.getStats(),
+      ]);
+      setComplaints(complaintsRes.rows ?? []);
+      setStats(statsRes);
+    } catch (err: any) {
+      console.error("Failed to reload complaints data:", err);
+    }
+  };
+
+  useEffect(() => { fetchData(); }, []);
 
   /* ---- Compute source stats from complaints ---- */
   const sourceStats: SourceStat[] = (() => {
@@ -331,7 +348,7 @@ const ComplaintsPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <ActionBtn variant="primary" icon={<Plus size={15} />} disabled title="Будет доступно в следующем спринте">+ Новая рекламация</ActionBtn>
+          <ActionBtn variant="primary" icon={<Plus size={15} />} onClick={() => setShowCreateModal(true)}>+ Новая рекламация</ActionBtn>
           <ActionBtn variant="secondary" icon={<Download size={15} />} disabled title="Будет доступно в следующем спринте">Экспорт</ActionBtn>
         </div>
       </div>
@@ -343,7 +360,7 @@ const ComplaintsPage: React.FC = () => {
       <TabBar tabs={TABS} active={tab} onChange={setTab} />
 
       {/* ---- TAB: Registry ---- */}
-      {tab === "registry" && <DataTable columns={columns} data={complaints} />}
+      {tab === "registry" && <DataTable columns={columns} data={complaints} onRowClick={(row: ComplaintRow) => setDetailComplaintId(Number(row.id))} />}
 
       {/* ---- TAB: Sources ---- */}
       {tab === "sources" && (
@@ -437,6 +454,22 @@ const ComplaintsPage: React.FC = () => {
             <p className="text-[13px]">Раздел аналитики находится в разработке</p>
           </div>
         </Card>
+      )}
+
+      {/* ---- Modals ---- */}
+      <CreateComplaintModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onCreated={reloadData}
+      />
+
+      {detailComplaintId !== null && (
+        <ComplaintDetailModal
+          complaintId={detailComplaintId}
+          isOpen={true}
+          onClose={() => setDetailComplaintId(null)}
+          onAction={reloadData}
+        />
       )}
     </div>
   );

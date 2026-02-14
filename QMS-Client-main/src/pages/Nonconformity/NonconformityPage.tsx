@@ -4,7 +4,7 @@
  * ISO 13485 §8.3 — Управление несоответствующей продукцией
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   AlertTriangle, Plus, Download, ClipboardList, Loader2,
 } from "lucide-react";
@@ -19,6 +19,9 @@ import {
   type NcStatus,
   type NcClassification,
 } from "../../api/qmsApi";
+
+import CreateNcModal from "./CreateNcModal";
+import NcDetailModal from "./NcDetailModal";
 
 /* ─── Helpers ────────────────────────────────────────────────── */
 
@@ -112,35 +115,27 @@ export const NonconformityPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [detailNcId, setDetailNcId] = useState<number | null>(null);
 
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const [listResult, statsResult] = await Promise.all([
-          ncApi.getAll({}),
-          ncApi.getStats(),
-        ]);
-        if (!cancelled) {
-          setData(listResult.rows ?? []);
-          setStats(statsResult);
-        }
-      } catch (err: any) {
-        if (!cancelled) {
-          setError(err?.response?.data?.message || err?.message || "Не удалось загрузить данные");
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    };
-
-    fetchData();
-    return () => { cancelled = true; };
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [listResult, statsResult] = await Promise.all([
+        ncApi.getAll({}),
+        ncApi.getStats(),
+      ]);
+      setData(listResult.rows ?? []);
+      setStats(statsResult);
+    } catch (err: any) {
+      setError(err?.response?.data?.message || err?.message || "Не удалось загрузить данные");
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   /* ── KPI values derived from stats ─────────────────────────── */
   const totalNc = stats ? sumCounts(stats.ncByStatus) : 0;
@@ -172,11 +167,7 @@ export const NonconformityPage: React.FC = () => {
     : [];
 
   /* ── Handle "Register NC" button ───────────────────────────── */
-  const handleRegisterNc = () => {
-    // eslint-disable-next-line no-alert
-    alert("Зарегистрировать NC — форма создания пока не реализована");
-    console.log("Зарегистрировать NC clicked");
-  };
+  const handleRegisterNc = () => setShowCreateModal(true);
 
   /* ── Render ─────────────────────────────────────────────────── */
 
@@ -278,6 +269,7 @@ export const NonconformityPage: React.FC = () => {
                 return (
                   <tr
                     key={row.id}
+                    onClick={() => setDetailNcId(row.id)}
                     className="border-b border-asvo-border/30 hover:bg-asvo-surface-3 transition-colors cursor-pointer"
                   >
                     <td className="px-4 py-3 text-sm font-mono font-bold text-asvo-accent">{row.number}</td>
@@ -375,6 +367,22 @@ export const NonconformityPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Modals */}
+      <CreateNcModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onCreated={fetchData}
+      />
+
+      {detailNcId !== null && (
+        <NcDetailModal
+          ncId={detailNcId}
+          isOpen={true}
+          onClose={() => setDetailNcId(null)}
+          onAction={fetchData}
+        />
+      )}
     </div>
   );
 };

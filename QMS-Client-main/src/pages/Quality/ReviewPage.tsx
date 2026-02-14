@@ -18,6 +18,8 @@ import DataTable from "../../components/qms/DataTable";
 import Badge from "../../components/qms/Badge";
 import SectionTitle from "../../components/qms/SectionTitle";
 import { reviewsApi } from "../../api/qmsApi";
+import CreateReviewModal from "./CreateReviewModal";
+import ReviewDetailModal from "./ReviewDetailModal";
 
 interface ReviewApiAction {
   id: number;
@@ -225,6 +227,8 @@ const ReviewPage: React.FC = () => {
   const [stats, setStats] = useState<ReviewApiStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [detailReviewId, setDetailReviewId] = useState<number | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -352,7 +356,7 @@ const ReviewPage: React.FC = () => {
       />
 
       <div className="flex items-center gap-3">
-        <ActionBtn variant="primary" icon={<Plus size={15} />} disabled title="Будет доступно в следующем спринте">
+        <ActionBtn variant="primary" icon={<Plus size={15} />} onClick={() => setShowCreateModal(true)}>
           + Новое совещание
         </ActionBtn>
         <ActionBtn variant="secondary" icon={<FileText size={15} />} disabled title="Будет доступно в следующем спринте">
@@ -361,7 +365,16 @@ const ReviewPage: React.FC = () => {
       </div>
 
       <SectionTitle>Совещания руководства</SectionTitle>
-      <DataTable<ReviewRow> columns={reviewColumns} data={reviewData} />
+      <DataTable<ReviewRow>
+        columns={reviewColumns}
+        data={reviewData}
+        onRowClick={(row) => {
+          const rawReview = reviews.find(
+            (r) => (r.reviewNumber || `MR-${r.id}`) === row.id
+          );
+          if (rawReview) setDetailReviewId(rawReview.id);
+        }}
+      />
 
       <SectionTitle>ISO 13485 п.5.6.2 — Входные данные анализа</SectionTitle>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -380,6 +393,22 @@ const ReviewPage: React.FC = () => {
 
       <SectionTitle>Решения и действия</SectionTitle>
       <DataTable<DecisionRow> columns={decisionColumns} data={decisionsData} />
+
+      {/* ── Modals ── */}
+      <CreateReviewModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onCreated={() => window.location.reload()}
+      />
+
+      {detailReviewId !== null && (
+        <ReviewDetailModal
+          reviewId={detailReviewId}
+          isOpen={detailReviewId !== null}
+          onClose={() => setDetailReviewId(null)}
+          onAction={() => window.location.reload()}
+        />
+      )}
     </div>
   );
 };

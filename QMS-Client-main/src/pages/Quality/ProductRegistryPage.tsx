@@ -16,6 +16,8 @@ import DataTable from "../../components/qms/DataTable";
 import Card from "../../components/qms/Card";
 import SectionTitle from "../../components/qms/SectionTitle";
 import { productsApi } from "../../api/qmsApi";
+import CreateProductModal from "./CreateProductModal";
+import ProductDetailModal from "./ProductDetailModal";
 
 /* ───── types ───── */
 
@@ -129,6 +131,8 @@ const ProductRegistryPage: React.FC = () => {
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [detailProductId, setDetailProductId] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -224,7 +228,7 @@ const ProductRegistryPage: React.FC = () => {
 
       {/* ── Action buttons ── */}
       <div className="flex items-center gap-3">
-        <ActionBtn variant="primary" icon={<Plus size={15} />} disabled title="Будет доступно в следующем спринте">
+        <ActionBtn variant="primary" icon={<Plus size={15} />} onClick={() => setShowCreateModal(true)}>
           + Новое изделие
         </ActionBtn>
         <ActionBtn variant="secondary" icon={<Download size={15} />} disabled title="Будет доступно в следующем спринте">
@@ -236,7 +240,14 @@ const ProductRegistryPage: React.FC = () => {
       <KpiRow items={kpis} />
 
       {/* ── Data table ── */}
-      <DataTable<ProductRow> columns={columns} data={products} />
+      <DataTable<ProductRow>
+        columns={columns}
+        data={products}
+        onRowClick={(row) => {
+          const rawId = (row as any).id ?? (row as any)._raw?.id;
+          if (rawId) setDetailProductId(Number(rawId));
+        }}
+      />
 
       {/* ── Risk class distribution ── */}
       <Card>
@@ -264,6 +275,22 @@ const ProductRegistryPage: React.FC = () => {
           ))}
         </div>
       </Card>
+
+      {/* ── Modals ── */}
+      <CreateProductModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onCreated={() => window.location.reload()}
+      />
+
+      {detailProductId !== null && (
+        <ProductDetailModal
+          productId={detailProductId}
+          isOpen={detailProductId !== null}
+          onClose={() => setDetailProductId(null)}
+          onAction={() => window.location.reload()}
+        />
+      )}
     </div>
   );
 };

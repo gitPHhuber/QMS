@@ -17,6 +17,8 @@ import Card from "../../components/qms/Card";
 import SectionTitle from "../../components/qms/SectionTitle";
 import Timeline from "../../components/qms/Timeline";
 import { equipmentApi } from "../../api/qmsApi";
+import CreateEquipmentModal from "./CreateEquipmentModal";
+import EquipmentDetailModal from "./EquipmentDetailModal";
 
 /* ─── types ─────────────────────────────────────────────────────────── */
 
@@ -88,6 +90,8 @@ const EquipmentPage: React.FC = () => {
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [detailEquipmentId, setDetailEquipmentId] = useState<number | null>(null);
   const [selected, setSelected] = useState<any>(null);
   const [calibrationHistory, setCalibrationHistory] = useState<
     { date: string; title: string; color: string }[]
@@ -263,7 +267,7 @@ const EquipmentPage: React.FC = () => {
 
       {/* Action buttons */}
       <div className="flex items-center gap-3">
-        <ActionBtn variant="primary" icon={<Plus size={15} />} disabled title="Будет доступно в следующем спринте">
+        <ActionBtn variant="primary" icon={<Plus size={15} />} onClick={() => setShowCreateModal(true)}>
           + Добавить оборудование
         </ActionBtn>
         <ActionBtn variant="secondary" color="#4A90E8" icon={<CalendarClock size={15} />} disabled title="Будет доступно в следующем спринте">
@@ -276,7 +280,14 @@ const EquipmentPage: React.FC = () => {
 
       {/* Data table */}
       <SectionTitle>Реестр оборудования</SectionTitle>
-      <DataTable<EquipmentRow> columns={columns} data={equipment} />
+      <DataTable<EquipmentRow>
+        columns={columns}
+        data={equipment}
+        onRowClick={(row) => {
+          const rawId = (row as any)._raw?.id;
+          if (rawId) setDetailEquipmentId(Number(rawId));
+        }}
+      />
 
       {/* Passport + History for selected equipment */}
       {selected && (
@@ -310,6 +321,22 @@ const EquipmentPage: React.FC = () => {
             )}
           </Card>
         </div>
+      )}
+
+      {/* Modals */}
+      <CreateEquipmentModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onCreated={() => window.location.reload()}
+      />
+
+      {detailEquipmentId !== null && (
+        <EquipmentDetailModal
+          equipmentId={detailEquipmentId}
+          isOpen={detailEquipmentId !== null}
+          onClose={() => setDetailEquipmentId(null)}
+          onAction={() => window.location.reload()}
+        />
       )}
     </div>
   );
