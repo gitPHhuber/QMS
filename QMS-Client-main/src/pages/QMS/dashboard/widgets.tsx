@@ -229,7 +229,10 @@ export const TrendChartWidget: React.FC<{ data: TrendPoint[] }> = ({ data }) => 
 /*  Quality Objectives                                                 */
 /* ------------------------------------------------------------------ */
 
-export const QualityObjectivesWidget: React.FC<{ summary: DashboardSummary }> = ({ summary }) => {
+export const QualityObjectivesWidget: React.FC<{
+  summary: DashboardSummary;
+  onObjectiveClick?: (id: number) => void;
+}> = ({ summary, onObjectiveClick }) => {
   if (!summary.qualityObjectives || summary.qualityObjectives.length === 0) return null;
   return (
     <div className="bg-asvo-surface-2 border border-asvo-border rounded-xl p-4">
@@ -239,7 +242,11 @@ export const QualityObjectivesWidget: React.FC<{ summary: DashboardSummary }> = 
       </h3>
       <div className="space-y-3">
         {summary.qualityObjectives.map((qo) => (
-          <div key={qo.id} className="flex items-center gap-4">
+          <div
+            key={qo.id}
+            className="flex items-center gap-4 cursor-pointer hover:bg-asvo-surface rounded-lg px-2 py-1 -mx-2 transition-colors"
+            onClick={() => onObjectiveClick?.(qo.id)}
+          >
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-xs font-semibold text-asvo-text">{qo.number}</span>

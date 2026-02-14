@@ -10,6 +10,7 @@ import TabBar from "../../../components/qms/TabBar";
 import ProcessMap from "../../../components/qms/ProcessMap";
 import { dashboardApi, type DashboardSummary, type DashboardTrends } from "../../../api/qmsApi";
 import CreateObjectiveModal from "./CreateObjectiveModal";
+import ObjectiveDetailModal from "./ObjectiveDetailModal";
 
 import type { DashboardRole } from "./types";
 import { roleTabs } from "./constants";
@@ -40,6 +41,7 @@ export const QmsDashboardPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showObjectiveModal, setShowObjectiveModal] = useState(false);
+  const [detailObjectiveId, setDetailObjectiveId] = useState<number | null>(null);
 
   const reload = useCallback(() => {
     setLoading(true);
@@ -144,7 +146,12 @@ export const QmsDashboardPage: React.FC = () => {
       )}
 
       {/* Quality Objectives */}
-      {show(true, false, true) && <QualityObjectivesWidget summary={summary} />}
+      {show(true, false, true) && (
+        <QualityObjectivesWidget
+          summary={summary}
+          onObjectiveClick={(id) => setDetailObjectiveId(id)}
+        />
+      )}
 
       {/* Bottom widgets grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -162,12 +169,20 @@ export const QmsDashboardPage: React.FC = () => {
       {/* Process Map */}
       <ProcessMap />
 
-      {/* Objective Modal */}
+      {/* Objective Modals */}
       <CreateObjectiveModal
         isOpen={showObjectiveModal}
         onClose={() => setShowObjectiveModal(false)}
         onCreated={reload}
       />
+      {detailObjectiveId !== null && (
+        <ObjectiveDetailModal
+          objectiveId={detailObjectiveId}
+          isOpen={detailObjectiveId !== null}
+          onClose={() => setDetailObjectiveId(null)}
+          onUpdated={reload}
+        />
+      )}
     </div>
   );
 };
