@@ -8,7 +8,10 @@ const {
   Section,
   Team,
   User,
-  Project
+  Project,
+  TaskSubtask,
+  TaskChecklist,
+  TaskChecklistItem,
 } = require("../../../models/index");
 
 class TaskController {
@@ -154,6 +157,40 @@ class TaskController {
         task.setDataValue("totalFound", stats.total);
       }
 
+      // Subtask & checklist progress (bulk queries)
+      const taskIds = rows.map(t => t.id);
+      if (taskIds.length > 0) {
+        const subtaskCounts = await sequelize.query(`
+          SELECT "taskId",
+                 COUNT(*)::int AS "total",
+                 SUM(CASE WHEN "isCompleted" THEN 1 ELSE 0 END)::int AS "completed"
+          FROM task_subtasks
+          WHERE "taskId" = ANY($1)
+          GROUP BY "taskId"
+        `, { bind: [taskIds], type: sequelize.QueryTypes.SELECT });
+
+        const subtaskMap = {};
+        for (const s of subtaskCounts) subtaskMap[s.taskId] = { total: s.total, completed: s.completed };
+
+        const checklistCounts = await sequelize.query(`
+          SELECT c."taskId",
+                 COUNT(ci.id)::int AS "total",
+                 SUM(CASE WHEN ci."isCompleted" THEN 1 ELSE 0 END)::int AS "completed"
+          FROM task_checklists c
+          JOIN task_checklist_items ci ON ci."checklistId" = c.id
+          WHERE c."taskId" = ANY($1)
+          GROUP BY c."taskId"
+        `, { bind: [taskIds], type: sequelize.QueryTypes.SELECT });
+
+        const checklistMap = {};
+        for (const c of checklistCounts) checklistMap[c.taskId] = { total: c.total, completed: c.completed };
+
+        for (const task of rows) {
+          task.setDataValue("subtaskProgress", subtaskMap[task.id] || { total: 0, completed: 0 });
+          task.setDataValue("checklistProgress", checklistMap[task.id] || { total: 0, completed: 0 });
+        }
+      }
+
       return res.json({ rows, count, page, limit });
     } catch (e) {
       console.error(e);
@@ -225,11 +262,34 @@ class TaskController {
         breakdown = Object.values(map);
       }
 
+      // Subtasks & checklists
+      const subtasks = await TaskSubtask.findAll({
+        where: { taskId: id },
+        order: [["sortOrder", "ASC"], ["id", "ASC"]],
+        include: [
+          { model: User, as: "createdBy", attributes: ["id", "name", "surname"] },
+        ],
+      });
+
+      const checklists = await TaskChecklist.findAll({
+        where: { taskId: id },
+        order: [
+          ["sortOrder", "ASC"],
+          ["id", "ASC"],
+          [{ model: TaskChecklistItem, as: "items" }, "sortOrder", "ASC"],
+        ],
+        include: [
+          { model: TaskChecklistItem, as: "items" },
+        ],
+      });
+
       return res.json({
         task,
         totalQty,
         breakdown,
         boxes,
+        subtasks,
+        checklists,
       });
     } catch (e) {
       console.error(e);

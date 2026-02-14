@@ -1,5 +1,5 @@
 import React, { DragEvent } from "react";
-import { Plus, Loader2, Calendar, AlertTriangle } from "lucide-react";
+import { Plus, Loader2, Calendar, AlertTriangle, ListChecks, CheckSquare } from "lucide-react";
 import { ProductionTask, TaskDetailResponse } from "src/api/tasksApi";
 import Badge from "src/components/qms/Badge";
 import StatusDot from "src/components/qms/StatusDot";
@@ -152,6 +152,24 @@ const TaskBoardView: React.FC<TaskBoardViewProps> = ({
                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-asvo-accent-dim text-asvo-text-mid">
                           {task.originType}
                         </span>
+                      </div>
+                    )}
+
+                    {/* Row 4.5: Subtask/Checklist indicators */}
+                    {((task.subtaskProgress?.total ?? 0) > 0 || (task.checklistProgress?.total ?? 0) > 0) && (
+                      <div className="flex items-center gap-3 mb-1.5 text-[10px] text-asvo-text-dim">
+                        {(task.subtaskProgress?.total ?? 0) > 0 && (
+                          <span className="flex items-center gap-1">
+                            <ListChecks size={10} />
+                            {task.subtaskProgress!.completed}/{task.subtaskProgress!.total}
+                          </span>
+                        )}
+                        {(task.checklistProgress?.total ?? 0) > 0 && (
+                          <span className="flex items-center gap-1">
+                            <CheckSquare size={10} />
+                            {task.checklistProgress!.completed}/{task.checklistProgress!.total}
+                          </span>
+                        )}
                       </div>
                     )}
 

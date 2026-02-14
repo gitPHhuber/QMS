@@ -18,7 +18,8 @@ module.exports = {
     const structure = require('./models/Structure');
     const project = require('./models/Project');
     const notification = require('./models/Notification');
-    return { ...general, ...structure, ...project, ...notification };
+    const taskExtensions = require('./models/TaskExtensions');
+    return { ...general, ...structure, ...project, ...notification, ...taskExtensions };
   },
 
   setupAssociations(m) {
@@ -54,6 +55,26 @@ module.exports = {
     if (m.Notification) {
       m.Notification.belongsTo(m.User, { foreignKey: 'userId', as: 'user' });
       m.User.hasMany(m.Notification, { foreignKey: 'userId', as: 'notifications' });
+    }
+
+    // TaskSubtask <-> ProductionTask, User
+    if (m.TaskSubtask && m.ProductionTask) {
+      m.ProductionTask.hasMany(m.TaskSubtask, { foreignKey: 'taskId', as: 'subtasks' });
+      m.TaskSubtask.belongsTo(m.ProductionTask, { foreignKey: 'taskId', as: 'task' });
+      m.TaskSubtask.belongsTo(m.User, { foreignKey: 'createdById', as: 'createdBy' });
+    }
+
+    // TaskChecklist <-> ProductionTask, User
+    if (m.TaskChecklist && m.ProductionTask) {
+      m.ProductionTask.hasMany(m.TaskChecklist, { foreignKey: 'taskId', as: 'checklists' });
+      m.TaskChecklist.belongsTo(m.ProductionTask, { foreignKey: 'taskId', as: 'task' });
+      m.TaskChecklist.belongsTo(m.User, { foreignKey: 'createdById', as: 'createdBy' });
+    }
+
+    // TaskChecklistItem <-> TaskChecklist
+    if (m.TaskChecklistItem && m.TaskChecklist) {
+      m.TaskChecklist.hasMany(m.TaskChecklistItem, { foreignKey: 'checklistId', as: 'items' });
+      m.TaskChecklistItem.belongsTo(m.TaskChecklist, { foreignKey: 'checklistId', as: 'checklist' });
     }
   },
 };

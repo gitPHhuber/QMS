@@ -1,5 +1,7 @@
 import { $authHost } from "./index";
 import { InventoryBoxModel } from "src/types/WarehouseModels";
+import type { Subtask } from "./subtasksApi";
+import type { Checklist } from "./checklistsApi";
 
 export interface TaskStats {
   total: number;
@@ -29,6 +31,9 @@ export interface ProductionTask {
 
   stats?: TaskStats;
   progressPercent?: number;
+
+  subtaskProgress?: { total: number; completed: number };
+  checklistProgress?: { total: number; completed: number };
 }
 
 export interface TaskListResponse {
@@ -50,6 +55,8 @@ export interface TaskDetailResponse {
   totalQty: number;
   breakdown: TaskBreakdownItem[];
   boxes: InventoryBoxModel[];
+  subtasks: Subtask[];
+  checklists: Checklist[];
 }
 
 export const createTask = async (payload: {
