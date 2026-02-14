@@ -10,6 +10,7 @@ import {
   Grid3X3,
   Calendar,
   Award,
+  Loader2,
 } from "lucide-react";
 import KpiRow from "../../components/qms/KpiRow";
 import ActionBtn from "../../components/qms/ActionBtn";
@@ -18,6 +19,7 @@ import DataTable from "../../components/qms/DataTable";
 import Card from "../../components/qms/Card";
 import SectionTitle from "../../components/qms/SectionTitle";
 import { trainingApi } from "../../api/qmsApi";
+import { useExport } from "../../hooks/useExport";
 import CreateTrainingModal from "./CreateTrainingModal";
 import TrainingDetailModal from "./TrainingDetailModal";
 
@@ -73,6 +75,7 @@ type View = "table" | "matrix";
 /* ================================================================== */
 
 const TrainingPage: React.FC = () => {
+  const { exporting, doExport } = useExport();
   const [view, setView] = useState<View>("table");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [detailRecordId, setDetailRecordId] = useState<number | null>(null);
@@ -211,7 +214,7 @@ const TrainingPage: React.FC = () => {
           >
             Матрица компетенций
           </ActionBtn>
-          <ActionBtn variant="secondary" icon={<Download size={15} />} disabled title="Будет доступно в следующем спринте">Экспорт</ActionBtn>
+          <ActionBtn variant="secondary" icon={exporting ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />} disabled={exporting} onClick={() => doExport("training", "Training_Export")}>Экспорт</ActionBtn>
         </div>
       </div>
 

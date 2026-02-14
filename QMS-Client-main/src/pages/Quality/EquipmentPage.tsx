@@ -8,6 +8,7 @@ import {
   AlertTriangle,
   Clock,
   Boxes,
+  Loader2,
 } from "lucide-react";
 import KpiRow from "../../components/qms/KpiRow";
 import ActionBtn from "../../components/qms/ActionBtn";
@@ -96,6 +97,8 @@ const EquipmentPage: React.FC = () => {
   const [calibrationHistory, setCalibrationHistory] = useState<
     { date: string; title: string; color: string }[]
   >([]);
+  const [showCalibrationSchedule, setShowCalibrationSchedule] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   /* ─── fetch data on mount ─── */
   useEffect(() => {
@@ -270,13 +273,64 @@ const EquipmentPage: React.FC = () => {
         <ActionBtn variant="primary" icon={<Plus size={15} />} onClick={() => setShowCreateModal(true)}>
           + Добавить оборудование
         </ActionBtn>
-        <ActionBtn variant="secondary" color="#4A90E8" icon={<CalendarClock size={15} />} disabled title="Будет доступно в следующем спринте">
+        <ActionBtn variant="secondary" color="#4A90E8" icon={<CalendarClock size={15} />} onClick={() => setShowCalibrationSchedule(!showCalibrationSchedule)}>
           График калибровки
         </ActionBtn>
-        <ActionBtn variant="secondary" icon={<Download size={15} />} disabled title="Будет доступно в следующем спринте">
+        <ActionBtn
+          variant="secondary"
+          icon={exporting ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />}
+          disabled={exporting}
+          onClick={async () => {
+            setExporting(true);
+            try {
+              const { $authHost } = await import("../../api/index");
+              const res = await $authHost.get("/api/export/equipment", { responseType: "blob" });
+              const url = window.URL.createObjectURL(new Blob([res.data]));
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `Equipment_Export_${new Date().toISOString().slice(0, 10)}.xlsx`;
+              a.click();
+              window.URL.revokeObjectURL(url);
+            } catch {
+              alert("Ошибка экспорта");
+            } finally {
+              setExporting(false);
+            }
+          }}
+        >
           Экспорт
         </ActionBtn>
       </div>
+
+      {/* Calibration Schedule View */}
+      {showCalibrationSchedule && (
+        <Card>
+          <SectionTitle>График калибровки — ближайшие 90 дней</SectionTitle>
+          <div className="space-y-2">
+            {equipment
+              .filter((e) => e.daysUntil !== undefined && (e.daysUntil as number) <= 90)
+              .sort((a, b) => (a.daysUntil as number) - (b.daysUntil as number))
+              .map((e) => {
+                const days = e.daysUntil as number;
+                const color = days < 0 ? "#F06060" : days <= 14 ? "#E8A830" : "#2DD4A8";
+                return (
+                  <div key={e.id} className="flex items-center gap-3 bg-asvo-surface-2 border border-asvo-border rounded-lg p-3">
+                    <div className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} />
+                    <span className="text-asvo-text font-medium text-sm flex-1">{e.name}</span>
+                    <span className="text-asvo-text-mid text-xs">{e.manufacturer}</span>
+                    <span className="text-asvo-text-mid text-xs">{e.nextCalibration}</span>
+                    <span className="inline-flex items-center rounded-xl text-[11px] font-semibold px-2.5 py-0.5 leading-none" style={{ backgroundColor: color + "22", color }}>
+                      {days < 0 ? `Просрочено ${Math.abs(days)} дн.` : days === 0 ? "Сегодня" : `Через ${days} дн.`}
+                    </span>
+                  </div>
+                );
+              })}
+            {equipment.filter((e) => (e.daysUntil as number) <= 90).length === 0 && (
+              <p className="text-asvo-text-dim text-sm text-center py-4">Нет оборудования с калибровкой в ближайшие 90 дней</p>
+            )}
+          </div>
+        </Card>
+      )}
 
       {/* Data table */}
       <SectionTitle>Реестр оборудования</SectionTitle>

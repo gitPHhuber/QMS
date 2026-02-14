@@ -22,6 +22,7 @@ import Card from "../../components/qms/Card";
 import { internalAuditsApi } from "../../api/qmsApi";
 import CreateAuditModal from "./CreateAuditModal";
 import AuditDetailModal from "./AuditDetailModal";
+import { useExport } from "../../hooks/useExport";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                               */
@@ -116,6 +117,7 @@ const cellCls: Record<CellState, string> = {
 /* ================================================================== */
 
 const AuditsPage: React.FC = () => {
+  const { exporting, doExport } = useExport();
   const [tab, setTab] = useState("registry");
 
   /* ---- Modal state ---- */
@@ -365,7 +367,7 @@ const AuditsPage: React.FC = () => {
 
         <div className="flex items-center gap-2">
           <ActionBtn variant="primary" icon={<Plus size={15} />} onClick={() => setShowCreateModal(true)}>+ Новый аудит</ActionBtn>
-          <ActionBtn variant="secondary" icon={<Download size={15} />} disabled title="Будет доступно в следующем спринте">Экспорт</ActionBtn>
+          <ActionBtn variant="secondary" icon={exporting ? <Clock size={15} className="animate-spin" /> : <Download size={15} />} disabled={exporting} onClick={() => doExport("audits", "Audits_Export")}>Экспорт</ActionBtn>
         </div>
       </div>
 

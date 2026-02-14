@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   FileText, Plus, Shield, AlertTriangle, CheckCircle,
-  Search, Eye, ChevronRight, Scale, Link2, Loader2,
+  Search, Eye, ChevronRight, Scale, Link2, Loader2, Download,
 } from 'lucide-react';
 import KpiRow from '../../../components/qms/KpiRow';
 import ActionBtn from '../../../components/qms/ActionBtn';
@@ -17,6 +17,7 @@ import type { TabKey, PlanRow, HazardRow, TraceRow, BenefitRiskRow, StatsData } 
 import { riskClassColors, hazardCategoryColors } from './constants';
 import { planColumns, hazardColumns, traceColumns } from './columns';
 import { mapPlan, mapHazard, mapTraceRow, mapBenefitRisk } from './mappers';
+import CreatePlanModal from './CreatePlanModal';
 
 const tabs: { key: TabKey; label: string; icon: React.ReactNode }[] = [
   { key: 'plans',        label: 'Plany RMP',             icon: <FileText size={15} /> },
@@ -36,6 +37,8 @@ const RiskManagementPage: React.FC = () => {
   const [stats, setStats] = useState<StatsData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showCreatePlanModal, setShowCreatePlanModal] = useState(false);
+  const [exportingReport, setExportingReport] = useState(false);
 
   useEffect(() => {
     riskManagementApi.getStats()
@@ -122,13 +125,35 @@ const RiskManagementPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <ActionBtn icon={<Plus size={15} />} disabled title="Будет доступно в следующем спринте">
+          <ActionBtn icon={<Plus size={15} />} onClick={() => setShowCreatePlanModal(true)}>
             {activeTab === 'plans' ? 'Noviy plan' :
              activeTab === 'hazards' ? 'Novaya opasnost\'' :
              activeTab === 'traceability' ? 'Novaya mera' :
              'Noviy analiz'}
           </ActionBtn>
-          <ActionBtn variant="secondary" color="#A06AE8" icon={<Eye size={15} />} disabled title="Будет доступно в следующем спринте">
+          <ActionBtn
+            variant="secondary"
+            color="#A06AE8"
+            icon={exportingReport ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />}
+            disabled={exportingReport}
+            onClick={async () => {
+              setExportingReport(true);
+              try {
+                const { $authHost } = await import('../../../api/index');
+                const res = await $authHost.get('/api/risk-management/export/report', { responseType: 'blob' });
+                const url = window.URL.createObjectURL(new Blob([res.data]));
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `ISO14971_Risk_Report_${new Date().toISOString().slice(0, 10)}.xlsx`;
+                a.click();
+                window.URL.revokeObjectURL(url);
+              } catch (e: any) {
+                setError(e?.response?.data?.message || 'Oshibka generatsii otchyota');
+              } finally {
+                setExportingReport(false);
+              }
+            }}
+          >
             Otchyot ISO 14971
           </ActionBtn>
         </div>
@@ -307,6 +332,13 @@ const RiskManagementPage: React.FC = () => {
           </div>
         </>
       )}
+
+      {/* Create Plan Modal */}
+      <CreatePlanModal
+        isOpen={showCreatePlanModal}
+        onClose={() => setShowCreatePlanModal(false)}
+        onCreated={() => fetchTabData('plans')}
+      />
     </div>
   );
 };

@@ -46,7 +46,10 @@ for (const [moduleCode, dirName] of Object.entries(MODULE_DIRS)) {
   }
 }
 
-// 3. System API (always)
+// 3. Export API
+router.use("/export", require("./exportRouter"));
+
+// 4. System API (always)
 router.get("/system/modules", (req, res) => {
   res.json(moduleManager.toClientConfig());
 });

@@ -7,6 +7,7 @@ import {
   AlertTriangle,
   Timer,
   Shield,
+  Loader2,
 } from "lucide-react";
 import KpiRow from "../../components/qms/KpiRow";
 import TabBar from "../../components/qms/TabBar";
@@ -16,6 +17,7 @@ import DataTable from "../../components/qms/DataTable";
 import Card from "../../components/qms/Card";
 import SectionTitle from "../../components/qms/SectionTitle";
 import { complaintsApi } from "../../api/qmsApi";
+import { useExport } from "../../hooks/useExport";
 import CreateComplaintModal from "./CreateComplaintModal";
 import ComplaintDetailModal from "./ComplaintDetailModal";
 
@@ -211,6 +213,7 @@ const columns = [
 /* ================================================================== */
 
 const ComplaintsPage: React.FC = () => {
+  const { exporting, doExport } = useExport();
   const [tab, setTab] = useState("registry");
 
   /* ---- Data state ---- */
@@ -349,7 +352,7 @@ const ComplaintsPage: React.FC = () => {
 
         <div className="flex items-center gap-2">
           <ActionBtn variant="primary" icon={<Plus size={15} />} onClick={() => setShowCreateModal(true)}>+ Новая рекламация</ActionBtn>
-          <ActionBtn variant="secondary" icon={<Download size={15} />} disabled title="Будет доступно в следующем спринте">Экспорт</ActionBtn>
+          <ActionBtn variant="secondary" icon={exporting ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />} disabled={exporting} onClick={() => doExport("complaints", "Complaints_Export")}>Экспорт</ActionBtn>
         </div>
       </div>
 
