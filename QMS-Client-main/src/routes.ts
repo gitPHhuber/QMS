@@ -14,6 +14,7 @@ import { WarehousePage as AdminWarehousePage } from "./pages/Admin/Warehouse/War
 import { WarehousePage as UserWarehousePage } from "./pages/Warehouse/WarehousePage";
 import { AnalyticsPage } from "./pages/Warehouse/AnalyticsPage";
 import { InventoryPage } from "./pages/Warehouse/InventoryPage";
+import { DHRPage } from "./pages/Warehouse/DHRPage";
 
 import TasksPage from "./pages/Tasks/TasksPage";
 
@@ -54,6 +55,7 @@ import {
   WAREHOUSE_ROUTE,
   WAREHOUSE_ANALYTICS_ROUTE,
   WAREHOUSE_INVENTORY_ROUTE,
+  WAREHOUSE_DHR_ROUTE,
   TASKS_ROUTE,
   ADMIN_RBAC_ROUTE,
   ADMIN_MODULES_ROUTE,
@@ -109,6 +111,7 @@ export const authRoutes = [
   { path: WAREHOUSE_ROUTE, Component: UserWarehousePage },
   { path: WAREHOUSE_ANALYTICS_ROUTE, Component: AnalyticsPage },
   { path: WAREHOUSE_INVENTORY_ROUTE, Component: InventoryPage },
+  { path: WAREHOUSE_DHR_ROUTE, Component: DHRPage },
   { path: TASKS_ROUTE, Component: TasksPage },
 ];
 

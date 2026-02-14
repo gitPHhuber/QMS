@@ -20,6 +20,7 @@ export const START_ROUTE = '/';
 export const WAREHOUSE_ROUTE = '/warehouse';
 export const WAREHOUSE_ANALYTICS_ROUTE = '/warehouse/analytics';
 export const WAREHOUSE_INVENTORY_ROUTE = '/warehouse/inventory';
+export const WAREHOUSE_DHR_ROUTE = '/warehouse/dhr';
 
 export const TASKS_ROUTE = '/tasks';
 
