@@ -76,21 +76,85 @@ const NotificationBell: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // Fetch unread count periodically
-  const fetchCount = useCallback(async () => {
-    try {
-      const data = await notificationsApi.getCount();
-      setUnreadCount(data.count ?? 0);
-    } catch {
-      // silently ignore
-    }
-  }, []);
-
+  // Adaptive notification polling
+  //  - 30 s when tab is visible (base)
+  //  - 120 s when tab is hidden
+  //  - 180 s after 5 consecutive polls with no change
+  //  - Retry-After value (capped at 300 s) after a 429 response
   useEffect(() => {
-    fetchCount();
-    const interval = setInterval(fetchCount, 30_000);
-    return () => clearInterval(interval);
-  }, [fetchCount]);
+    const BASE_MS      = 30_000;
+    const HIDDEN_MS    = 120_000;
+    const IDLE_MS      = 180_000;
+    const RATE_LIMIT_MS = 300_000;
+    const IDLE_THRESHOLD = 5;
+
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    let currentInterval = BASE_MS;
+    let consecutiveNoChange = 0;
+    let prevCount = 0;
+    let cancelled = false;
+
+    const getInterval = () => {
+      if (document.hidden) return HIDDEN_MS;
+      if (consecutiveNoChange >= IDLE_THRESHOLD) return IDLE_MS;
+      return currentInterval;
+    };
+
+    const poll = async () => {
+      if (cancelled) return;
+
+      try {
+        const data = await notificationsApi.getCount();
+        if (cancelled) return;
+
+        const newCount = data.count ?? 0;
+        if (newCount === prevCount) {
+          consecutiveNoChange += 1;
+        } else {
+          consecutiveNoChange = 0;
+        }
+        prevCount = newCount;
+        setUnreadCount(newCount);
+        currentInterval = BASE_MS;
+      } catch (error: any) {
+        if (cancelled) return;
+
+        if (error?.response?.status === 429) {
+          const headerVal = error.response.headers?.['retry-after'];
+          const bodyVal = error.response.data?.retryAfter;
+          const seconds = headerVal ? Number(headerVal) : (bodyVal ?? 0);
+          currentInterval =
+            !Number.isNaN(seconds) && seconds > 0
+              ? Math.min(seconds * 1000, RATE_LIMIT_MS)
+              : RATE_LIMIT_MS;
+        }
+      }
+
+      if (!cancelled) {
+        timeoutId = setTimeout(poll, getInterval());
+      }
+    };
+
+    // Immediate first fetch
+    poll();
+
+    // When tab becomes visible again, reset and poll immediately
+    const handleVisibility = () => {
+      if (!document.hidden && !cancelled) {
+        consecutiveNoChange = 0;
+        currentInterval = BASE_MS;
+        if (timeoutId) clearTimeout(timeoutId);
+        poll();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      cancelled = true;
+      if (timeoutId) clearTimeout(timeoutId);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, []);
 
   // Fetch full list when dropdown opens
   const fetchNotifications = useCallback(async () => {

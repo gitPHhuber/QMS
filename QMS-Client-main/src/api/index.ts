@@ -1,4 +1,5 @@
 import axios, { AxiosError, AxiosInstance } from 'axios';
+import { parseRetryAfter } from './rateLimitUtils';
 
 
 const $host = axios.create({
@@ -21,7 +22,7 @@ const authInterceptor = (config: any) => {
 
 $authHost.interceptors.request.use(authInterceptor);
 
-const MAX_RETRIES = 1;
+const MAX_RETRIES = 3;
 
 function addRateLimitRetry(instance: AxiosInstance) {
   instance.interceptors.response.use(undefined, async (error: AxiosError) => {
@@ -32,8 +33,15 @@ function addRateLimitRetry(instance: AxiosInstance) {
       (config._retryCount ?? 0) < MAX_RETRIES
     ) {
       config._retryCount = (config._retryCount ?? 0) + 1;
-      const retryAfter = Number(error.response.headers['retry-after']) || 2;
-      const delayMs = Math.min(retryAfter * 1000, 10000);
+
+      const retryAfterSeconds = parseRetryAfter(
+        error.response.headers['retry-after'] as string | undefined,
+        error.response.data,
+      );
+
+      // Exponential backoff: multiply parsed delay by 2^(attempt-1)
+      const backoff = Math.pow(2, config._retryCount - 1);
+      const delayMs = Math.min(retryAfterSeconds * 1000 * backoff, 60_000);
       await new Promise(resolve => setTimeout(resolve, delayMs));
       return instance.request(config);
     }
