@@ -9,15 +9,16 @@ import {
 } from "src/api/rbacApi";
 import { fetchUsers } from "src/api/userApi";
 import { userGetModel } from "src/types/UserModel";
-import { Shield, Loader2, Users, Key, AlertTriangle } from "lucide-react";
+import { Shield, Loader2, Users, Key, AlertTriangle, ScrollText } from "lucide-react";
 import toast from "react-hot-toast";
 import type { AbilityGroup, KeycloakStatus } from "./types";
 import { GROUP_LABELS } from "./constants";
 import { UsersView } from "./UsersView";
 import { MatrixView } from "./MatrixView";
+import { AuditView } from "./AuditView";
 
 export const AdminRightsPage: React.FC = observer(() => {
-    const [viewMode, setViewMode] = useState<"USERS" | "MATRIX">("USERS");
+    const [viewMode, setViewMode] = useState<"USERS" | "MATRIX" | "AUDIT">("USERS");
     const [loading, setLoading] = useState(false);
     const [kcStatus, setKcStatus] = useState<KeycloakStatus | null>(null);
 
@@ -282,6 +283,16 @@ export const AdminRightsPage: React.FC = observer(() => {
                         >
                             <Key size={18} /> Матрица прав
                         </button>
+                        <button
+                            onClick={() => setViewMode("AUDIT")}
+                            className={`px-6 py-2 rounded-lg font-bold transition flex items-center gap-2 ${
+                                viewMode === "AUDIT"
+                                    ? "bg-indigo-50 text-indigo-700 shadow-sm"
+                                    : "text-asvo-text-mid hover:bg-asvo-surface/50"
+                            }`}
+                        >
+                            <ScrollText size={18} /> Журнал
+                        </button>
                     </div>
                 </div>
 
@@ -317,6 +328,8 @@ export const AdminRightsPage: React.FC = observer(() => {
                         savingAll={savingAll}
                     />
                 )}
+
+                {viewMode === "AUDIT" && <AuditView />}
             </div>
 
             <style>{`
