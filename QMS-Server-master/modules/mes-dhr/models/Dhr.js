@@ -113,14 +113,6 @@ const DhrProcessStep = sequelize.define("dhr_process_step", {
   notes: { type: DataTypes.TEXT },
 });
 
-// ═══════════════════════════════════════════════════════════════
-// Internal associations
-// ═══════════════════════════════════════════════════════════════
-
-DeviceHistoryRecord.hasMany(DhrMaterialTrace, { as: "materials", foreignKey: "dhrId", onDelete: "CASCADE" });
-DhrMaterialTrace.belongsTo(DeviceHistoryRecord, { as: "dhr", foreignKey: "dhrId" });
-
-DeviceHistoryRecord.hasMany(DhrProcessStep, { as: "steps", foreignKey: "dhrId", onDelete: "CASCADE" });
-DhrProcessStep.belongsTo(DeviceHistoryRecord, { as: "dhr", foreignKey: "dhrId" });
+// Associations are set up in index.js → setupAssociations()
 
 module.exports = { DeviceHistoryRecord, DhrMaterialTrace, DhrProcessStep };
