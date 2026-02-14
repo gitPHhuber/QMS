@@ -27,6 +27,11 @@ const MODULE_DIRS = {
   'qms.dashboard':  'qms-dashboard',
   'core.esign':     'core-esign',
   'mes.dhr':        'mes-dhr',
+  'mes.dmr':        'mes-dmr',
+  'mes.routes':     'mes-routes',
+  'mes.orders':     'mes-orders',
+  'mes.quality':    'mes-quality',
+  'mes.kpi':        'mes-kpi',
   'wms.warehouse':  'wms',
 };
 

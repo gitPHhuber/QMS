@@ -20,6 +20,12 @@ import {
   ShieldCheck,
   Compass,
   PenTool,
+  BookOpen,
+  ClipboardCheck,
+  Route,
+  Shield,
+  Award,
+  BarChart3,
 } from "lucide-react";
 
 const SIDEBAR_ITEMS = [
@@ -40,6 +46,13 @@ const SIDEBAR_ITEMS = [
   { label: "Реестр изделий",  to: "/qms/products",       icon: Package,         moduleCode: "qms.product" },
   { label: "Design Control", to: "/qms/design-control", icon: Compass,         moduleCode: "qms.design" },
   { label: "Эл. подписи",   to: "/qms/esign",          icon: PenTool,         moduleCode: "core.esign" },
+  // ── MES / Производство ──
+  { label: "DMR",              to: "/qms/dmr",               icon: BookOpen,        moduleCode: "mes.dmr" },
+  { label: "Произв. задания",  to: "/qms/work-orders",       icon: ClipboardCheck,  moduleCode: "mes.orders" },
+  { label: "Маршрутные карты", to: "/qms/route-sheets",      icon: Route,           moduleCode: "mes.routes" },
+  { label: "Контроль MES",    to: "/qms/mes-quality",       icon: Shield,          moduleCode: "mes.quality" },
+  { label: "ПСИ",             to: "/qms/acceptance-testing", icon: Award,           moduleCode: "mes.quality" },
+  { label: "KPI производства", to: "/qms/mes-kpi",           icon: BarChart3,       moduleCode: "mes.kpi" },
 ];
 
 const QmsLayout: React.FC = observer(() => {
