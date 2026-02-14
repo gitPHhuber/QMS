@@ -38,7 +38,7 @@ jobs:
           cache: npm
           cache-dependency-path: QMS-Server-master/package-lock.json
       - run: npm ci
-      - run: npm test
+      - run: npm test -- --coverage
         env:
           DB_HOST: localhost
           DB_PORT: 5434
@@ -47,6 +47,13 @@ jobs:
           DB_PASSWORD: test_password
           AUTH_MODE: dev-bypass
           NODE_ENV: test
+      - name: Upload server coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-coverage
+          path: QMS-Server-master/coverage/
+          retention-days: 14
 
   lint-and-test-client:
     name: Client - Lint & Test
@@ -63,10 +70,17 @@ jobs:
           cache-dependency-path: QMS-Client-main/package-lock.json
       - run: npm ci
       - run: npm run build
-      - run: npm test -- --run
+      - run: npm test -- --run --coverage
         env:
           VITE_API_URL: http://localhost:5001
           VITE_AUTH_MODE: dev-bypass
+      - name: Upload client coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: client-coverage
+          path: QMS-Client-main/coverage/
+          retention-days: 14
 
   build-docker:
     name: Build Docker Images
