@@ -13,6 +13,8 @@ const RiskMonitoringService = require("./modules/qms-risk/services/RiskMonitorin
 
 const { apiLimiter } = require("./middleware/rateLimitMiddleware");
 const { refreshToken, logoutToken } = require("./middleware/refreshTokenMiddleware");
+const licenseService = require("./services/LicenseService");
+const licenseMiddleware = require("./middleware/licenseMiddleware");
 
 const PORT = process.env.PORT || 5000;
 const app = express();
@@ -38,6 +40,9 @@ app.use("/api", healthRouter);
 
 // Rate limiting
 app.use("/api", apiLimiter);
+
+// License enforcement (read-only mode if expired beyond grace)
+app.use("/api", licenseMiddleware);
 
 // Auth token refresh endpoints
 app.post("/api/auth/refresh", refreshToken);
@@ -294,6 +299,10 @@ const initInitialData = async () => {
 
 const start = async () => {
   try {
+    // Initialize license system (reads file/env, verifies Ed25519 signature)
+    licenseService.init();
+    licenseService.applyToModuleManager(moduleManager);
+
     moduleManager.printStatus();
     await sequelize.authenticate();
 // AUTO-DISABLED: sequelize.sync disabled (use migrations)

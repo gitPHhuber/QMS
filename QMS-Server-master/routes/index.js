@@ -55,4 +55,41 @@ router.get("/system/modules", (req, res) => {
   res.json(moduleManager.toClientConfig());
 });
 
+// 5. License API
+const licenseService = require('../services/LicenseService');
+
+router.get("/system/license", (req, res) => {
+  res.json(licenseService.getStatus());
+});
+
+router.post("/system/license/activate", (req, res, next) => {
+  const ApiError = require('../error/ApiError');
+
+  // Require admin access
+  if (!req.user || !req.user.abilities?.includes('admin.access')) {
+    if (req.user?.role !== 'SUPER_ADMIN') {
+      return next(ApiError.forbidden('Требуется право admin.access для активации лицензии.'));
+    }
+  }
+
+  const { licenseKey } = req.body;
+  if (!licenseKey || typeof licenseKey !== 'string') {
+    return next(ApiError.badRequest('Поле licenseKey обязательно.'));
+  }
+
+  const result = licenseService.activate(licenseKey.trim());
+  if (!result.success) {
+    return next(ApiError.badRequest(result.error));
+  }
+
+  // Re-apply to module manager
+  licenseService.applyToModuleManager(moduleManager);
+
+  res.json({
+    message: 'Лицензия успешно активирована.',
+    license: result.status,
+    modules: moduleManager.toClientConfig(),
+  });
+});
+
 module.exports = router;

@@ -14,12 +14,14 @@ import { AuthProvider } from "react-oidc-context";
 import UserStore from "./store/UserStore.ts";
 import StructureStore from "./store/StructureStore.ts";
 import ModuleStore from "./store/ModuleStore.ts";
+import LicenseStore from "./store/LicenseStore.ts";
 
 
 interface IContext {
   user: UserStore;
   structureStore: StructureStore;
   modules: ModuleStore;
+  license: LicenseStore;
 }
 
 export const Context = React.createContext<IContext | null>(null);
@@ -85,6 +87,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         user: new UserStore(),
         structureStore: new StructureStore(),
         modules: new ModuleStore(),
+        license: new LicenseStore(),
       }}
     >
       <BrowserRouter

@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 
 import NotificationBell from "../NotificationBell";
+import { SubscriptionBadge } from "./SubscriptionBadge";
 
 import {
   ADMIN_ROUTE,
@@ -240,11 +241,7 @@ export const Header: React.FC = observer(() => {
 
         {/* ── Right side ── */}
         <div className="flex items-center gap-4 min-w-max">
-          {modules.config?.tier === 'dev-all' && (
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-yellow-900/30 border border-yellow-700/50 text-yellow-400">
-              DEV — все модули
-            </span>
-          )}
+          <SubscriptionBadge />
           <div className="hidden xl:block text-right">
             <DateTimeDisplay />
           </div>

@@ -122,6 +122,9 @@ class ModuleManager {
     const tier = process.env.MODULES_TIER;
     const explicit = process.env.MODULES_ENABLED;
 
+    this.licenseInfo = null; // Set by applyLicense()
+    this._maxUsersOverride = null;
+
     if (explicit) {
       this.enabled = new Set(explicit.split(',').map(m => m.trim()));
       this.tier = 'custom';
@@ -133,6 +136,26 @@ class ModuleManager {
       this.enabled = new Set(Object.keys(MODULE_CATALOG));
       this.tier = 'dev-all';
     }
+
+    // Core — always on
+    for (const [code, mod] of Object.entries(MODULE_CATALOG)) {
+      if (mod.alwaysOn) this.enabled.add(code);
+    }
+
+    this._resolveDependencies();
+  }
+
+  /**
+   * Apply license data — overrides tier, modules, and limits.
+   * Called by LicenseService after successful verification.
+   */
+  applyLicense({ tier, modules, limits, licenseInfo }) {
+    this.tier = tier;
+    this.licenseInfo = licenseInfo;
+    this._maxUsersOverride = limits?.max_users || null;
+
+    // Replace enabled set with license modules
+    this.enabled = new Set(modules);
 
     // Core — always on
     for (const [code, mod] of Object.entries(MODULE_CATALOG)) {
@@ -189,16 +212,21 @@ class ModuleManager {
         enabled: this.enabled.has(code) || !!mod.alwaysOn,
       });
     }
-    return {
+    const config = {
       tier: this.tier,
       enabled: [...this.enabled],
       groups: this.getEnabledGroups(),
       maxUsers: this._getMaxUsers(),
       modules,
     };
+    if (this.licenseInfo) {
+      config.license = this.licenseInfo;
+    }
+    return config;
   }
 
   _getMaxUsers() {
+    if (this._maxUsersOverride) return this._maxUsersOverride;
     const limits = { start: 5, standard: 15, pro: 50, industry: 200, 'dev-all': 999, custom: 999 };
     return limits[this.tier] || 999;
   }

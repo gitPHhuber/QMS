@@ -41,7 +41,7 @@ const App = observer(() => {
   }, []);
 
   if (!context) throw new Error("Context required");
-  const { user, modules } = context;
+  const { user, modules, license } = context;
 
 
   useEffect(() => {
@@ -49,9 +49,12 @@ const App = observer(() => {
       localStorage.setItem('token', auth.user.access_token);
       setIsUserLoading(true);
 
-      // Load modules config
+      // Load modules config and license status
       if (!modules.config) {
         modules.fetchModules();
+      }
+      if (!license.license) {
+        license.fetchLicense();
       }
 
       check()

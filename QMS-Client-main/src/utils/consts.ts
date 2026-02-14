@@ -8,6 +8,7 @@ export const AUDIT_LOG_ROUTE = '/admin/audit-log';
 export const ADMIN_WAREHOUSE_ROUTE = '/admin/warehouse';
 export const ADMIN_RBAC_ROUTE = '/admin/rbac';
 export const ADMIN_MODULES_ROUTE = '/admin/modules';
+export const ADMIN_LICENSE_ROUTE = '/admin/license';
 
 export const LOGIN_ROUTE = '/login';
 export const SELECT_PC_ROUTE = '/select-pc-for-start-session';
