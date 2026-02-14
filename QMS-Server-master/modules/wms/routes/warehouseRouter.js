@@ -23,6 +23,7 @@ const EnvironmentController = require("../controllers/EnvironmentController");
 const LocationController = require("../controllers/LocationController");
 const ShipmentController = require("../controllers/ShipmentController");
 const ReturnController = require("../controllers/ReturnController");
+const LabelTemplateController = require("../controllers/LabelTemplateController");
 
 const protect = [authMiddleware, syncUserMiddleware];
 
@@ -63,6 +64,14 @@ router.get("/rankings", ...protect, checkAbility("warehouse.view"), RankingsCont
 router.get("/alerts", ...protect, checkAbility("warehouse.view"), AlertsController.getAlerts);
 router.get("/limits", ...protect, checkAbility("warehouse.view"), AlertsController.getAllLimits);
 router.post("/limits", ...protect, checkAbility("warehouse.manage"), AlertsController.setLimit);
+
+// ═══════════════════════════════════════════════════════════════
+// LABEL TEMPLATES
+// ═══════════════════════════════════════════════════════════════
+
+router.get("/label-templates", ...protect, checkAbility("labels.print"), LabelTemplateController.getTemplates);
+router.post("/label-templates", ...protect, checkAbility("labels.print"), LabelTemplateController.createTemplate);
+router.delete("/label-templates/:id", ...protect, checkAbility("labels.print"), LabelTemplateController.deleteTemplate);
 
 // ═══════════════════════════════════════════════════════════════
 // ISO 13485: STORAGE ZONES (Module 1)

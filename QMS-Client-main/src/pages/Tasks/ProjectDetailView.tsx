@@ -16,8 +16,12 @@ import {
   updateProject,
   ProjectModel,
 } from "src/api/projectsApi";
+import { SprintModel } from "src/api/sprintsApi";
 import Avatar from "src/components/qms/Avatar";
 import TasksList from "./TasksList";
+import SprintSection from "./SprintSection";
+import SprintDetailView from "./SprintDetailView";
+import BacklogView from "./BacklogView";
 
 const AVATAR_COLORS = ["accent", "blue", "purple", "amber", "red", "green", "orange"] as const;
 
@@ -38,6 +42,7 @@ const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({ projectId, onBack
   const [project, setProject] = useState<ProjectModel | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({ title: "", description: "" });
+  const [selectedSprint, setSelectedSprint] = useState<SprintModel | null>(null);
 
   const load = async () => {
     const data = await fetchProjectById(projectId);
@@ -66,6 +71,17 @@ const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({ projectId, onBack
       <div className="flex items-center justify-center py-20 text-asvo-text-dim">
         <Clock className="animate-spin mr-2" size={16} /> Загрузка...
       </div>
+    );
+  }
+
+  // Sprint detail sub-view
+  if (selectedSprint) {
+    return (
+      <SprintDetailView
+        sprintId={selectedSprint.id}
+        projectId={projectId}
+        onBack={() => setSelectedSprint(null)}
+      />
     );
   }
 
@@ -251,6 +267,12 @@ const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({ projectId, onBack
           </div>
         </div>
       )}
+
+      {/* ── Sprints ── */}
+      <SprintSection projectId={projectId} onSelectSprint={setSelectedSprint} />
+
+      {/* ── Backlog ── */}
+      <BacklogView projectId={projectId} />
 
       {/* ── Embedded Kanban ── */}
       <div>
