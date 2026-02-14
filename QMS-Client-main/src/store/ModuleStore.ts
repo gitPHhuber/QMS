@@ -53,8 +53,8 @@ export default class ModuleStore {
 
   /** Check specific module: isEnabled('qms.dms') */
   isEnabled(code: string): boolean {
-    if (!this.config) return true; // Not loaded yet — show everything
-    if (this.config.tier === 'fallback') return true; // Load error — show everything
+    if (!this.config) return false; // Not loaded yet — hide until ready (Preloader shown)
+    if (this.config.tier === 'fallback') return code.startsWith('core.'); // API error — core only
     if (this.config.enabled.includes(code)) return true;
     // Check by group: isEnabled('qms') -> true if any qms.* exists
     return this.config.enabled.some(m => m.startsWith(code + '.'));
@@ -62,8 +62,8 @@ export default class ModuleStore {
 
   /** Check group availability: hasGroup('wms') */
   hasGroup(group: string): boolean {
-    if (!this.config) return true;
-    if (this.config.tier === 'fallback') return true;
+    if (!this.config) return false;
+    if (this.config.tier === 'fallback') return group === 'core';
     return this.config.groups.includes(group);
   }
 

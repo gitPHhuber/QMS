@@ -117,6 +117,9 @@ const initInitialData = async () => {
       // Аналитика
       { code: "analytics.view", description: "Просмотр дашбордов и KPI" },
       { code: "audit.log.view", description: "Просмотр журнала аудита" },
+
+      // Администрирование
+      { code: "admin.access", description: "Доступ к панели администрирования" },
     ];
 
     for (const p of permissions) {
@@ -176,6 +179,7 @@ const initInitialData = async () => {
       "qms.audit.view", "qms.audit.verify", "qms.audit.report",
       "analytics.view", "audit.log.view",
       "warehouse.view", "rbac.manage", "users.manage",
+      "admin.access",
     ]);
 
     await assign("QMS_ENGINEER", [
