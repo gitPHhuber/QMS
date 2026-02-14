@@ -11,6 +11,7 @@ import SectionTitle from '../../components/qms/SectionTitle';
 import { risksApi } from '../../api/qmsApi';
 import CreateRiskModal from './CreateRiskModal';
 import RiskDetailModal from './RiskDetailModal';
+import { useExport } from '../../hooks/useExport';
 
 /* ───── types ───── */
 interface RiskRow {
@@ -108,6 +109,7 @@ const columns = [
 const RisksPage: React.FC = () => {
   const [showMatrix, setShowMatrix] = useState(true);
   const [search, setSearch] = useState('');
+  const { exporting, doExport } = useExport();
 
   /* ───── API state ───── */
   const [risks, setRisks] = useState<RiskRow[]>([]);
@@ -178,7 +180,7 @@ const RisksPage: React.FC = () => {
           <ActionBtn variant="secondary" color="#A06AE8" icon={<Grid3X3 size={15} />} onClick={() => setShowMatrix((v) => !v)}>
             Матрица рисков
           </ActionBtn>
-          <ActionBtn variant="secondary" icon={<Download size={15} />} disabled title="Будет доступно в следующем спринте">Экспорт</ActionBtn>
+          <ActionBtn variant="secondary" icon={exporting ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />} disabled={exporting} onClick={() => doExport("risks", "Risks_Export")}>Экспорт</ActionBtn>
         </div>
       </div>
 

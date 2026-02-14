@@ -19,6 +19,7 @@ import DataTable from "../../components/qms/DataTable";
 import Card from "../../components/qms/Card";
 import SectionTitle from "../../components/qms/SectionTitle";
 import { changeRequestsApi } from "../../api/qmsApi";
+import { useExport } from "../../hooks/useExport";
 import CreateChangeModal from "./CreateChangeModal";
 import ChangeDetailModal from "./ChangeDetailModal";
 
@@ -223,6 +224,7 @@ const columns = [
 /* ================================================================== */
 
 const ChangeControlPage: React.FC = () => {
+  const { exporting, doExport } = useExport();
   const [tab, setTab] = useState("registry");
 
   /* ---- Modal state ---- */
@@ -315,7 +317,7 @@ const ChangeControlPage: React.FC = () => {
 
         <div className="flex items-center gap-2">
           <ActionBtn variant="primary" icon={<Plus size={15} />} onClick={() => setShowCreateModal(true)}>+ Новый ECR</ActionBtn>
-          <ActionBtn variant="secondary" icon={<Download size={15} />} disabled title="Будет доступно в следующем спринте">Экспорт</ActionBtn>
+          <ActionBtn variant="secondary" icon={exporting ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />} disabled={exporting} onClick={() => doExport("changes", "Changes_Export")}>Экспорт</ActionBtn>
         </div>
       </div>
 

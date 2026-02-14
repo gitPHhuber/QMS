@@ -16,6 +16,7 @@ import DataTable from "../../components/qms/DataTable";
 import Card from "../../components/qms/Card";
 import SectionTitle from "../../components/qms/SectionTitle";
 import { productsApi } from "../../api/qmsApi";
+import { useExport } from "../../hooks/useExport";
 import CreateProductModal from "./CreateProductModal";
 import ProductDetailModal from "./ProductDetailModal";
 
@@ -127,6 +128,7 @@ const riskDistributionColors: Record<string, { label: string; color: string }> =
 /* ════════════════════════════════════════════════════ */
 
 const ProductRegistryPage: React.FC = () => {
+  const { exporting, doExport } = useExport();
   const [products, setProducts] = useState<ProductRow[]>([]);
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -231,7 +233,7 @@ const ProductRegistryPage: React.FC = () => {
         <ActionBtn variant="primary" icon={<Plus size={15} />} onClick={() => setShowCreateModal(true)}>
           + Новое изделие
         </ActionBtn>
-        <ActionBtn variant="secondary" icon={<Download size={15} />} disabled title="Будет доступно в следующем спринте">
+        <ActionBtn variant="secondary" icon={exporting ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />} disabled={exporting} onClick={() => doExport("products", "Products_Export")}>
           Экспорт
         </ActionBtn>
       </div>

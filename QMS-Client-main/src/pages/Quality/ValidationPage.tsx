@@ -18,6 +18,7 @@ import Card from "../../components/qms/Card";
 import SectionTitle from "../../components/qms/SectionTitle";
 import ProgressBar from "../../components/qms/ProgressBar";
 import { validationsApi } from "../../api/qmsApi";
+import { useExport } from "../../hooks/useExport";
 import CreateValidationModal from "./CreateValidationModal";
 import ValidationDetailModal from "./ValidationDetailModal";
 
@@ -98,6 +99,8 @@ const phaseToPercent = (phase: QualPhase): number => {
 /* ================================================================== */
 
 const ValidationPage: React.FC = () => {
+  const { exporting, doExport } = useExport();
+
   /* ---- state ---- */
 
   const [validations, setValidations] = useState<ValidationRow[]>([]);
@@ -246,7 +249,7 @@ const ValidationPage: React.FC = () => {
 
         <div className="flex items-center gap-2">
           <ActionBtn variant="primary" icon={<Plus size={15} />} onClick={() => setShowCreateModal(true)}>+ Новая валидация</ActionBtn>
-          <ActionBtn variant="secondary" icon={<Download size={15} />} disabled title="Будет доступно в следующем спринте">Экспорт</ActionBtn>
+          <ActionBtn variant="secondary" icon={exporting ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />} disabled={exporting} onClick={() => doExport("validation", "Validation_Export")}>Экспорт</ActionBtn>
         </div>
       </div>
 

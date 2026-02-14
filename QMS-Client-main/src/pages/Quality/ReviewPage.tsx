@@ -18,6 +18,7 @@ import DataTable from "../../components/qms/DataTable";
 import Badge from "../../components/qms/Badge";
 import SectionTitle from "../../components/qms/SectionTitle";
 import { reviewsApi } from "../../api/qmsApi";
+import { useExport } from "../../hooks/useExport";
 import CreateReviewModal from "./CreateReviewModal";
 import ReviewDetailModal from "./ReviewDetailModal";
 
@@ -223,6 +224,7 @@ const decisionColumns = [
 ];
 
 const ReviewPage: React.FC = () => {
+  const { exporting, doExport } = useExport();
   const [reviews, setReviews] = useState<ReviewApiItem[]>([]);
   const [stats, setStats] = useState<ReviewApiStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -359,7 +361,7 @@ const ReviewPage: React.FC = () => {
         <ActionBtn variant="primary" icon={<Plus size={15} />} onClick={() => setShowCreateModal(true)}>
           + Новое совещание
         </ActionBtn>
-        <ActionBtn variant="secondary" icon={<FileText size={15} />} disabled title="Будет доступно в следующем спринте">
+        <ActionBtn variant="secondary" icon={exporting ? <Loader2 size={15} className="animate-spin" /> : <FileText size={15} />} disabled={exporting} onClick={() => doExport("reviews", "Reviews_Export")}>
           Протокол
         </ActionBtn>
       </div>
