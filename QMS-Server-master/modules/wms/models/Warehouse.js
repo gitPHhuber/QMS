@@ -122,6 +122,23 @@ const ProductionTask = sequelize.define("production_task", {
   responsibleId: { type: DataTypes.INTEGER, allowNull: true },
   sectionId: { type: DataTypes.INTEGER, allowNull: true },
   projectId: { type: DataTypes.INTEGER, allowNull: true },
+
+  // ── MES расширение (ISO 13485 §7.5.1) ──
+  dmrId: { type: DataTypes.INTEGER, allowNull: true, comment: "FK → device_master_records" },
+  dmrVersion: { type: DataTypes.STRING(20), allowNull: true },
+  processRouteId: { type: DataTypes.INTEGER, allowNull: true, comment: "FK → process_routes" },
+  batchNumber: { type: DataTypes.STRING(50), allowNull: true },
+  serialNumberPrefix: { type: DataTypes.STRING(30), allowNull: true },
+  orderType: { type: DataTypes.STRING(30), allowNull: true, defaultValue: "STANDARD", comment: "STANDARD|REWORK|PROTOTYPE|VALIDATION_BATCH" },
+  plannedStartDate: { type: DataTypes.DATEONLY, allowNull: true },
+  plannedEndDate: { type: DataTypes.DATEONLY, allowNull: true },
+  actualStartDate: { type: DataTypes.DATEONLY, allowNull: true },
+  actualEndDate: { type: DataTypes.DATEONLY, allowNull: true },
+  yieldTarget: { type: DataTypes.FLOAT, allowNull: true, defaultValue: 100, comment: "Percent" },
+  completedQty: { type: DataTypes.INTEGER, allowNull: true, defaultValue: 0 },
+  scrapQty: { type: DataTypes.INTEGER, allowNull: true, defaultValue: 0 },
+  launchedById: { type: DataTypes.INTEGER, allowNull: true, comment: "FK → users" },
+  launchedAt: { type: DataTypes.DATE, allowNull: true },
 });
 
 

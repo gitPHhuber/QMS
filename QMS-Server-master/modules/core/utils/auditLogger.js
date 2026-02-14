@@ -235,6 +235,41 @@ const AUDIT_ACTIONS = {
   // ── Возвраты ──
   RETURN_CREATE: "RETURN_CREATE",
   RETURN_DECIDE: "RETURN_DECIDE",
+
+  // ═══ MES ДЕЙСТВИЯ ═══
+
+  // ── DMR (Device Master Record) ──
+  DMR_CREATE: "DMR_CREATE",
+  DMR_UPDATE: "DMR_UPDATE",
+  DMR_SUBMIT_REVIEW: "DMR_SUBMIT_REVIEW",
+  DMR_APPROVE: "DMR_APPROVE",
+  DMR_OBSOLETE: "DMR_OBSOLETE",
+  DMR_CLONE: "DMR_CLONE",
+
+  // ── Произв. задания (Work Orders) ──
+  WORK_ORDER_CREATE: "WORK_ORDER_CREATE",
+  WORK_ORDER_UPDATE: "WORK_ORDER_UPDATE",
+  WORK_ORDER_LAUNCH: "WORK_ORDER_LAUNCH",
+  WORK_ORDER_MATERIAL_ISSUE: "WORK_ORDER_MATERIAL_ISSUE",
+  WORK_ORDER_COMPLETE: "WORK_ORDER_COMPLETE",
+
+  // ── Маршрутный лист (Operations) ──
+  OPERATION_START: "OPERATION_START",
+  OPERATION_COMPLETE: "OPERATION_COMPLETE",
+  OPERATION_FAIL: "OPERATION_FAIL",
+  OPERATION_HOLD: "OPERATION_HOLD",
+  OPERATION_INSPECT: "OPERATION_INSPECT",
+
+  // ── ПСИ (Acceptance Testing) ──
+  PSI_CREATE: "PSI_CREATE",
+  PSI_SUBMIT: "PSI_SUBMIT",
+  PSI_START: "PSI_START",
+  PSI_DECIDE: "PSI_DECIDE",
+
+  // ── Контроль качества MES ──
+  MES_UNIT_HOLD: "MES_UNIT_HOLD",
+  MES_UNIT_RELEASE: "MES_UNIT_RELEASE",
+  MES_AUTO_HOLD: "MES_AUTO_HOLD",
 };
 
 // ═══════════════════════════════════════════════════════════════════
@@ -283,6 +318,16 @@ const AUDIT_ENTITIES = {
   PROCESS_VALIDATION: "ProcessValidation",
   PRODUCT: "Product",
   NOTIFICATION: "Notification",
+
+  // MES сущности
+  DEVICE_MASTER_RECORD: "DeviceMasterRecord",
+  BOM_ITEM: "BOMItem",
+  PROCESS_ROUTE: "ProcessRoute",
+  PROCESS_ROUTE_STEP: "ProcessRouteStep",
+  WORK_ORDER: "ProductionTask",
+  WORK_ORDER_UNIT: "WorkOrderUnit",
+  OPERATION_RECORD: "OperationRecord",
+  ACCEPTANCE_TEST: "AcceptanceTest",
 };
 
 // ═══════════════════════════════════════════════════════════════════
@@ -302,9 +347,18 @@ const SEVERITY_MAP = {
   SUPPLIER_SUSPEND: "CRITICAL",
   EQUIPMENT_OVERDUE: "CRITICAL",
   MANAGEMENT_REVIEW_CLOSE: "CRITICAL",
+  // MES CRITICAL
+  DMR_APPROVE: "CRITICAL",
+  PSI_DECIDE: "CRITICAL",
+  OPERATION_FAIL: "CRITICAL",
+  MES_AUTO_HOLD: "CRITICAL",
+  WORK_ORDER_LAUNCH: "CRITICAL",
 
   // WARNING — действия требующие внимания
   DOCUMENT_REJECT: "WARNING",
+  // MES WARNING
+  MES_UNIT_HOLD: "WARNING",
+  OPERATION_HOLD: "WARNING",
   NC_REOPEN: "WARNING",
   PRODUCTION_ENTRY_REJECT: "WARNING",
   RISK_ASSESS: "WARNING",

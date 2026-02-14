@@ -46,3 +46,15 @@ export const DESIGN_CONTROL_ROUTE = '/qms/design-control';
 export const ESIGN_ROUTE = '/qms/esign';
 export const DHR_ROUTE = '/qms/dhr';
 export const CUSTOMER_REQUIREMENTS_ROUTE = '/qms/customer-requirements';
+
+// MES модули
+export const MES_DMR_ROUTE = '/qms/dmr';
+export const MES_DMR_DETAIL_ROUTE = '/qms/dmr/:id';
+export const MES_WORK_ORDERS_ROUTE = '/qms/work-orders';
+export const MES_WORK_ORDER_DETAIL_ROUTE = '/qms/work-orders/:id';
+export const MES_ROUTE_SHEETS_ROUTE = '/qms/route-sheets';
+export const MES_ROUTE_SHEET_DETAIL_ROUTE = '/qms/route-sheets/:serialNumber';
+export const MES_QUALITY_CONTROL_ROUTE = '/qms/mes-quality';
+export const MES_ACCEPTANCE_TESTING_ROUTE = '/qms/acceptance-testing';
+export const MES_KPI_ROUTE = '/qms/mes-kpi';
+export const MES_WIP_ROUTE = '/qms/wip';

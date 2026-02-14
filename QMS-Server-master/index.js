@@ -154,6 +154,38 @@ const initInitialData = async () => {
 
       // Администрирование
       { code: "admin.access", description: "Доступ к панели администрирования" },
+
+      // MES: DMR
+      { code: "dmr.read", description: "Просмотр DMR" },
+      { code: "dmr.create", description: "Создание DMR" },
+      { code: "dmr.approve", description: "Утверждение DMR" },
+      { code: "dmr.manage", description: "Управление DMR" },
+
+      // MES: Произв. задания
+      { code: "workorder.read", description: "Просмотр произв. заданий" },
+      { code: "workorder.create", description: "Создание произв. заданий" },
+      { code: "workorder.manage", description: "Управление произв. заданиями" },
+      { code: "workorder.launch", description: "Запуск произв. заданий" },
+
+      // MES: Маршрутные карты
+      { code: "routesheet.read", description: "Просмотр маршрутных карт" },
+      { code: "routesheet.execute", description: "Выполнение операций" },
+      { code: "routesheet.manage", description: "Управление маршрутными картами" },
+
+      // MES: Контроль качества
+      { code: "mesqc.read", description: "Просмотр контроля качества MES" },
+      { code: "mesqc.inspect", description: "Проведение контроля" },
+      { code: "mesqc.manage", description: "Управление контролем качества" },
+
+      // MES: ПСИ
+      { code: "psi.read", description: "Просмотр ПСИ" },
+      { code: "psi.create", description: "Создание ПСИ" },
+      { code: "psi.decide", description: "Решение по ПСИ" },
+      { code: "psi.manage", description: "Управление ПСИ" },
+
+      // MES: KPI
+      { code: "meskpi.read", description: "Просмотр KPI производства" },
+      { code: "meskpi.manage", description: "Управление KPI" },
     ];
 
     for (const p of permissions) {
@@ -169,6 +201,8 @@ const initInitialData = async () => {
       { code: "QC_ENGINEER", name: "QC_ENGINEER", description: "Инженер ОТК" },
       { code: "WAREHOUSE_MASTER", name: "WAREHOUSE_MASTER", description: "Кладовщик" },
       { code: "VIEWER", name: "VIEWER", description: "Наблюдатель — только просмотр" },
+      { code: "PRODUCTION_OPERATOR", name: "PRODUCTION_OPERATOR", description: "Оператор производства" },
+      { code: "PRODUCTION_SUPERVISOR", name: "PRODUCTION_SUPERVISOR", description: "Мастер производственного участка" },
     ];
 
     for (const roleData of rolesData) {
@@ -218,6 +252,13 @@ const initInitialData = async () => {
       "analytics.view", "audit.log.view",
       "warehouse.view", "rbac.manage", "users.manage",
       "admin.access",
+      // MES
+      "dmr.read", "dmr.create", "dmr.approve", "dmr.manage",
+      "workorder.read", "workorder.create", "workorder.manage", "workorder.launch",
+      "routesheet.read", "routesheet.execute", "routesheet.manage",
+      "mesqc.read", "mesqc.inspect", "mesqc.manage",
+      "psi.read", "psi.create", "psi.decide", "psi.manage",
+      "meskpi.read", "meskpi.manage",
     ]);
 
     await assign("QMS_ENGINEER", [
@@ -267,6 +308,13 @@ const initInitialData = async () => {
       "risk.read",
       "equipment.read", "equipment.manage",
       "dhr.read", "dhr.create", "dhr.manage",
+      // MES
+      "dmr.read",
+      "workorder.read",
+      "routesheet.read", "routesheet.execute",
+      "mesqc.read", "mesqc.inspect", "mesqc.manage",
+      "psi.read", "psi.create", "psi.decide", "psi.manage",
+      "meskpi.read",
     ]);
 
     await assign("WAREHOUSE_MASTER", [
@@ -282,6 +330,29 @@ const initInitialData = async () => {
       "review.read", "complaint.read", "change.read",
       "validation.read", "product.read", "analytics.view",
       "design.view", "esign.view", "dhr.read",
+    ]);
+
+    await assign("PRODUCTION_OPERATOR", [
+      "routesheet.read", "routesheet.execute",
+      "mesqc.read",
+      "workorder.read",
+      "psi.read",
+      "meskpi.read",
+      "dhr.read",
+    ]);
+
+    await assign("PRODUCTION_SUPERVISOR", [
+      "dmr.read", "dmr.create", "dmr.approve", "dmr.manage",
+      "workorder.read", "workorder.create", "workorder.manage", "workorder.launch",
+      "routesheet.read", "routesheet.execute", "routesheet.manage",
+      "mesqc.read", "mesqc.inspect", "mesqc.manage",
+      "psi.read", "psi.create", "psi.decide", "psi.manage",
+      "meskpi.read", "meskpi.manage",
+      "dhr.read", "dhr.create", "dhr.manage",
+      "nc.view", "nc.create",
+      "equipment.read",
+      "training.read",
+      "warehouse.view",
     ]);
 
     await transaction.commit();
