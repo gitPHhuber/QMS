@@ -10,6 +10,31 @@ export const KEYCLOAK_CONFIG = {
 
 const DEBUG_HTTP = import.meta.env.DEV
 
+/* ── Rate-limit retry helpers ── */
+
+const RATE_LIMIT_MAX_RETRIES = 3
+
+/**
+ * Parse Retry-After header (RFC 7231 §7.1.3).
+ * Accepts delay-seconds ("120") or HTTP-date ("Fri, 14 Feb 2026 12:00:00 GMT").
+ * Falls back to the response body `retryAfter` field, then to `defaultSeconds`.
+ */
+function parseRetryAfter(
+  headerValue: string | undefined | null,
+  responseData: unknown,
+  defaultSeconds: number = 2,
+): number {
+  if (headerValue) {
+    const asNumber = Number(headerValue)
+    if (!Number.isNaN(asNumber) && asNumber >= 0) return asNumber
+    const dateMs = Date.parse(headerValue)
+    if (!Number.isNaN(dateMs)) return Math.max(Math.ceil((dateMs - Date.now()) / 1000), 1)
+  }
+  const body = responseData as Record<string, unknown> | null | undefined
+  if (body && typeof body.retryAfter === 'number' && body.retryAfter > 0) return body.retryAfter
+  return defaultSeconds
+}
+
 const maskToken = (t?: string | null): string => {
   if (!t) return '<none>'
   const head = t.slice(0, 10)
@@ -82,6 +107,27 @@ api.interceptors.request.use(
     return Promise.reject(error)
   }
 )
+
+// Rate-limit retry interceptor (registered before logging interceptor so retries are transparent)
+api.interceptors.response.use(undefined, async (err: AxiosError) => {
+  const config = err.config as any
+  if (
+    err.response?.status === 429 &&
+    config &&
+    (config._retryCount ?? 0) < RATE_LIMIT_MAX_RETRIES
+  ) {
+    config._retryCount = (config._retryCount ?? 0) + 1
+    const retryAfterSeconds = parseRetryAfter(
+      err.response.headers['retry-after'] as string | undefined,
+      err.response.data,
+    )
+    const backoff = Math.pow(2, config._retryCount - 1)
+    const delayMs = Math.min(retryAfterSeconds * 1000 * backoff, 60_000)
+    await new Promise(resolve => setTimeout(resolve, delayMs))
+    return api.request(config)
+  }
+  return Promise.reject(err)
+})
 
 api.interceptors.response.use(
   (response: AxiosResponse) => {
