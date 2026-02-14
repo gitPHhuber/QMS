@@ -7,6 +7,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import {
   Edit3, Save, X, Trash2, AlertTriangle,
   ArrowRight, MapPin, Package, Maximize2,
+  ListChecks, CheckSquare, Plus,
 } from "lucide-react";
 
 import { Modal } from "src/components/Modal/Modal";
@@ -18,12 +19,20 @@ import {
   updateTaskStatus,
   deleteTask,
 } from "src/api/tasksApi";
+import { Subtask, fetchSubtasks, createSubtask, updateSubtask, deleteSubtask } from "src/api/subtasksApi";
+import {
+  Checklist, ChecklistItem,
+  fetchChecklists, createChecklist, updateChecklist, deleteChecklist,
+  createChecklistItem, updateChecklistItem, deleteChecklistItem,
+} from "src/api/checklistsApi";
 import { fetchProjects, ProjectModel } from "src/api/projectsApi";
 import { fetchUsers } from "src/api/userApi";
 import { userGetModel } from "src/types/UserModel";
 import ActionBtn from "src/components/qms/ActionBtn";
 import Badge from "src/components/qms/Badge";
 import Avatar from "src/components/qms/Avatar";
+import CommentsList from "./CommentsList";
+import ActivityTimeline from "./ActivityTimeline";
 import {
   COLUMNS,
   originToBadge,
@@ -60,7 +69,7 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
-  const [tab, setTab] = useState<"main" | "breakdown" | "boxes">("main");
+  const [tab, setTab] = useState<"main" | "subtasks" | "checklists" | "comments" | "activity" | "breakdown" | "boxes">("main");
 
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState<any>({});
@@ -69,6 +78,16 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
   const [users, setUsers] = useState<userGetModel[]>([]);
   const [projects, setProjects] = useState<ProjectModel[]>([]);
   const [showConfirm, setShowConfirm] = useState(false);
+
+  /* ── Subtasks state ── */
+  const [subtasks, setSubtasks] = useState<Subtask[]>([]);
+  const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
+  const [subtaskLoading, setSubtaskLoading] = useState(false);
+
+  /* ── Checklists state ── */
+  const [checklists, setChecklists] = useState<Checklist[]>([]);
+  const [newItemTitles, setNewItemTitles] = useState<Record<number, string>>({});
+  const [checklistLoading, setChecklistLoading] = useState(false);
 
   const inputCls = "w-full px-3 py-2 bg-asvo-surface-2 border border-asvo-border rounded-lg text-[13px] text-asvo-text placeholder:text-asvo-text-dim focus:border-asvo-accent/50 focus:outline-none transition-colors";
   const labelCls = "block text-[13px] text-asvo-text-mid font-medium mb-1.5";
@@ -94,6 +113,10 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
       setTab("main");
       setEditing(false);
       setActionError(null);
+      setSubtasks([]);
+      setChecklists([]);
+      setNewSubtaskTitle("");
+      setNewItemTitles({});
     }
   }, [isOpen, fetchDetail]);
 
@@ -103,6 +126,121 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
       fetchProjects().then(setProjects).catch(() => {});
     }
   }, [isOpen, users.length]);
+
+  /* ── Subtask handlers ── */
+
+  const loadSubtasks = useCallback(async () => {
+    try {
+      const data = await fetchSubtasks(taskId);
+      setSubtasks(data);
+    } catch {}
+  }, [taskId]);
+
+  const handleAddSubtask = async () => {
+    const title = newSubtaskTitle.trim();
+    if (!title) return;
+    setSubtaskLoading(true);
+    try {
+      const created = await createSubtask(taskId, title);
+      setSubtasks(prev => [...prev, created]);
+      setNewSubtaskTitle("");
+    } catch {} finally { setSubtaskLoading(false); }
+  };
+
+  const handleToggleSubtask = async (st: Subtask) => {
+    try {
+      const updated = await updateSubtask(taskId, st.id, { isCompleted: !st.isCompleted });
+      setSubtasks(prev => prev.map(s => s.id === st.id ? updated : s));
+    } catch {}
+  };
+
+  const handleDeleteSubtask = async (id: number) => {
+    try {
+      await deleteSubtask(taskId, id);
+      setSubtasks(prev => prev.filter(s => s.id !== id));
+    } catch {}
+  };
+
+  /* ── Checklist handlers ── */
+
+  const loadChecklists = useCallback(async () => {
+    try {
+      const data = await fetchChecklists(taskId);
+      setChecklists(data);
+    } catch {}
+  }, [taskId]);
+
+  const handleAddChecklist = async () => {
+    setChecklistLoading(true);
+    try {
+      const created = await createChecklist(taskId);
+      setChecklists(prev => [...prev, created]);
+    } catch {} finally { setChecklistLoading(false); }
+  };
+
+  const handleDeleteChecklist = async (checklistId: number) => {
+    try {
+      await deleteChecklist(taskId, checklistId);
+      setChecklists(prev => prev.filter(c => c.id !== checklistId));
+    } catch {}
+  };
+
+  const handleUpdateChecklistTitle = async (cl: Checklist, title: string) => {
+    try {
+      const updated = await updateChecklist(taskId, cl.id, { title });
+      setChecklists(prev => prev.map(c => c.id === cl.id ? { ...c, title: updated.title } : c));
+    } catch {}
+  };
+
+  const handleAddChecklistItem = async (checklistId: number) => {
+    const title = (newItemTitles[checklistId] || "").trim();
+    if (!title) return;
+    try {
+      const item = await createChecklistItem(taskId, checklistId, title);
+      setChecklists(prev => prev.map(c =>
+        c.id === checklistId ? { ...c, items: [...c.items, item] } : c
+      ));
+      setNewItemTitles(prev => ({ ...prev, [checklistId]: "" }));
+    } catch {}
+  };
+
+  const handleToggleChecklistItem = async (checklistId: number, item: ChecklistItem) => {
+    try {
+      const updated = await updateChecklistItem(taskId, checklistId, item.id, { isCompleted: !item.isCompleted });
+      setChecklists(prev => prev.map(c =>
+        c.id === checklistId
+          ? { ...c, items: c.items.map(i => i.id === item.id ? updated : i) }
+          : c
+      ));
+    } catch {}
+  };
+
+  const handleDeleteChecklistItem = async (checklistId: number, itemId: number) => {
+    try {
+      await deleteChecklistItem(taskId, checklistId, itemId);
+      setChecklists(prev => prev.map(c =>
+        c.id === checklistId
+          ? { ...c, items: c.items.filter(i => i.id !== itemId) }
+          : c
+      ));
+    } catch {}
+  };
+
+  /* ── Load subtasks/checklists when tabs activated ── */
+
+  useEffect(() => {
+    if (isOpen && tab === "subtasks" && subtasks.length === 0) loadSubtasks();
+  }, [isOpen, tab, loadSubtasks, subtasks.length]);
+
+  useEffect(() => {
+    if (isOpen && tab === "checklists" && checklists.length === 0) loadChecklists();
+  }, [isOpen, tab, loadChecklists, checklists.length]);
+
+  /* Also sync from detail response if available */
+  useEffect(() => {
+    if (detail?.subtasks) setSubtasks(detail.subtasks);
+    if (detail?.checklists) setChecklists(detail.checklists);
+  }, [detail]);
 
   /* ── Edit ── */
 
@@ -195,11 +333,19 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
     return new Date(d).toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric" });
   };
 
+  const subtasksDone = subtasks.filter(s => s.isCompleted).length;
+  const allChecklistItems = checklists.flatMap(c => c.items);
+  const checklistItemsDone = allChecklistItems.filter(i => i.isCompleted).length;
+
   const tabs = [
-    { key: "main",      label: "Основное" },
-    { key: "breakdown", label: `Производство${detail?.breakdown.length ? ` (${detail.breakdown.length})` : ""}` },
-    { key: "boxes",     label: `Коробки${detail?.boxes.length ? ` (${detail.boxes.length})` : ""}` },
-  ] as const;
+    { key: "main" as const,       label: "Основное" },
+    { key: "subtasks" as const,   label: `Подзадачи${subtasks.length ? ` (${subtasksDone}/${subtasks.length})` : ""}` },
+    { key: "checklists" as const, label: `Чеклисты${allChecklistItems.length ? ` (${checklistItemsDone}/${allChecklistItems.length})` : ""}` },
+    { key: "comments" as const,   label: "Комментарии" },
+    { key: "activity" as const,   label: "История" },
+    { key: "breakdown" as const,  label: `Производство${detail?.breakdown.length ? ` (${detail.breakdown.length})` : ""}` },
+    { key: "boxes" as const,      label: `Коробки${detail?.boxes.length ? ` (${detail.boxes.length})` : ""}` },
+  ];
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="3xl">
@@ -410,6 +556,14 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                       )}
                     </div>
                   </div>
+
+                  {/* Sprint */}
+                  <div className="bg-asvo-surface border border-asvo-border rounded-lg px-3 py-2">
+                    <div className="text-[10px] text-asvo-text-dim uppercase tracking-wide">Спринт</div>
+                    <div className="text-[13px] font-medium mt-0.5 text-asvo-text">
+                      {detail.task.sprint?.title || "\u2014"}
+                    </div>
+                  </div>
                 </div>
 
                 {!isClosed && (
@@ -476,6 +630,206 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                   <ActionBtn variant="secondary" onClick={() => setEditing(false)} disabled={saving}>Отмена</ActionBtn>
                 </div>
               </div>
+            )}
+
+            {/* ─── Tab: Subtasks ─── */}
+            {tab === "subtasks" && (
+              <div className="space-y-3">
+                {/* Progress */}
+                {subtasks.length > 0 && (
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 h-2 rounded-full bg-asvo-bg">
+                      <div
+                        className="h-2 rounded-full bg-asvo-accent transition-all"
+                        style={{ width: `${subtasks.length > 0 ? Math.round((subtasksDone / subtasks.length) * 100) : 0}%` }}
+                      />
+                    </div>
+                    <span className="text-[12px] text-asvo-text-dim font-medium">
+                      {subtasksDone}/{subtasks.length}
+                    </span>
+                  </div>
+                )}
+
+                {/* Subtask list */}
+                <div className="space-y-1">
+                  {subtasks.map(st => (
+                    <div key={st.id} className="flex items-center gap-2 group py-1 px-1 rounded hover:bg-asvo-surface/50">
+                      <button
+                        onClick={() => handleToggleSubtask(st)}
+                        className={`w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center transition ${
+                          st.isCompleted
+                            ? "bg-asvo-accent border-asvo-accent"
+                            : "border-asvo-border hover:border-asvo-accent/50"
+                        }`}
+                      >
+                        {st.isCompleted && (
+                          <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                            <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        )}
+                      </button>
+                      <span className={`flex-1 text-[13px] ${st.isCompleted ? "line-through text-asvo-text-dim" : "text-asvo-text"}`}>
+                        {st.title}
+                      </span>
+                      <button
+                        onClick={() => handleDeleteSubtask(st.id)}
+                        className="opacity-0 group-hover:opacity-100 text-asvo-text-dim hover:text-red-400 transition p-0.5"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Add subtask */}
+                {!isClosed && (
+                  <div className="flex items-center gap-2">
+                    <input
+                      value={newSubtaskTitle}
+                      onChange={e => setNewSubtaskTitle(e.target.value)}
+                      onKeyDown={e => e.key === "Enter" && handleAddSubtask()}
+                      placeholder="Новая подзадача..."
+                      className={inputCls + " flex-1"}
+                      disabled={subtaskLoading}
+                    />
+                    <ActionBtn
+                      variant="secondary"
+                      icon={<Plus size={14} />}
+                      onClick={handleAddSubtask}
+                      disabled={subtaskLoading || !newSubtaskTitle.trim()}
+                    >
+                      Добавить
+                    </ActionBtn>
+                  </div>
+                )}
+
+                {subtasks.length === 0 && (
+                  <p className="text-[13px] text-asvo-text-dim">Подзадачи не добавлены</p>
+                )}
+              </div>
+            )}
+
+            {/* ─── Tab: Checklists ─── */}
+            {tab === "checklists" && (
+              <div className="space-y-4">
+                {checklists.map(cl => {
+                  const clDone = cl.items.filter(i => i.isCompleted).length;
+                  const clTotal = cl.items.length;
+                  return (
+                    <div key={cl.id} className="bg-asvo-surface border border-asvo-border rounded-lg p-3 space-y-2">
+                      {/* Checklist header */}
+                      <div className="flex items-center gap-2">
+                        <CheckSquare size={14} className="text-asvo-accent shrink-0" />
+                        <input
+                          defaultValue={cl.title}
+                          onBlur={e => {
+                            const v = e.target.value.trim();
+                            if (v && v !== cl.title) handleUpdateChecklistTitle(cl, v);
+                          }}
+                          className="flex-1 bg-transparent text-[13px] text-asvo-text font-semibold focus:outline-none focus:border-b focus:border-asvo-accent/30"
+                        />
+                        <button
+                          onClick={() => handleDeleteChecklist(cl.id)}
+                          className="text-asvo-text-dim hover:text-red-400 transition p-0.5"
+                          title="Удалить чеклист"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+
+                      {/* Progress */}
+                      {clTotal > 0 && (
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 h-1.5 rounded-full bg-asvo-bg">
+                            <div
+                              className="h-1.5 rounded-full bg-asvo-accent transition-all"
+                              style={{ width: `${Math.round((clDone / clTotal) * 100)}%` }}
+                            />
+                          </div>
+                          <span className="text-[10px] text-asvo-text-dim">{clDone}/{clTotal}</span>
+                        </div>
+                      )}
+
+                      {/* Items */}
+                      <div className="space-y-1">
+                        {cl.items.map(item => (
+                          <div key={item.id} className="flex items-center gap-2 group py-0.5 px-1 rounded hover:bg-asvo-surface-2/50">
+                            <button
+                              onClick={() => handleToggleChecklistItem(cl.id, item)}
+                              className={`w-3.5 h-3.5 rounded border flex-shrink-0 flex items-center justify-center transition ${
+                                item.isCompleted
+                                  ? "bg-asvo-accent border-asvo-accent"
+                                  : "border-asvo-border hover:border-asvo-accent/50"
+                              }`}
+                            >
+                              {item.isCompleted && (
+                                <svg width="8" height="6" viewBox="0 0 10 8" fill="none">
+                                  <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                </svg>
+                              )}
+                            </button>
+                            <span className={`flex-1 text-[12px] ${item.isCompleted ? "line-through text-asvo-text-dim" : "text-asvo-text"}`}>
+                              {item.title}
+                            </span>
+                            <button
+                              onClick={() => handleDeleteChecklistItem(cl.id, item.id)}
+                              className="opacity-0 group-hover:opacity-100 text-asvo-text-dim hover:text-red-400 transition p-0.5"
+                            >
+                              <X size={10} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Add item */}
+                      {!isClosed && (
+                        <div className="flex items-center gap-2">
+                          <input
+                            value={newItemTitles[cl.id] || ""}
+                            onChange={e => setNewItemTitles(prev => ({ ...prev, [cl.id]: e.target.value }))}
+                            onKeyDown={e => e.key === "Enter" && handleAddChecklistItem(cl.id)}
+                            placeholder="Добавить пункт..."
+                            className="flex-1 bg-transparent border-b border-asvo-border/50 text-[12px] text-asvo-text py-1 focus:outline-none focus:border-asvo-accent/50 placeholder:text-asvo-text-dim"
+                          />
+                          <button
+                            onClick={() => handleAddChecklistItem(cl.id)}
+                            className="text-asvo-accent hover:text-asvo-accent/70 transition"
+                            disabled={!(newItemTitles[cl.id] || "").trim()}
+                          >
+                            <Plus size={14} />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {/* Add checklist */}
+                {!isClosed && (
+                  <ActionBtn
+                    variant="secondary"
+                    icon={<Plus size={14} />}
+                    onClick={handleAddChecklist}
+                    disabled={checklistLoading}
+                  >
+                    Добавить чеклист
+                  </ActionBtn>
+                )}
+
+                {checklists.length === 0 && (
+                  <p className="text-[13px] text-asvo-text-dim">Чеклисты не добавлены</p>
+                )}
+              </div>
+            )}
+
+            {/* ─── Tab: Comments ─── */}
+            {tab === "comments" && (
+              <CommentsList taskId={taskId} users={users} />
+            )}
+
+            {/* ─── Tab: Activity ─── */}
+            {tab === "activity" && (
+              <ActivityTimeline taskId={taskId} />
             )}
 
             {/* ─── Tab: Breakdown ─── */}

@@ -1,5 +1,7 @@
 import { $authHost } from "./index";
 import { InventoryBoxModel } from "src/types/WarehouseModels";
+import type { Subtask } from "./subtasksApi";
+import type { Checklist } from "./checklistsApi";
 
 export interface TaskStats {
   total: number;
@@ -23,12 +25,20 @@ export interface ProductionTask {
   responsibleId?: number | null;
   sectionId?: number | null;
   projectId?: number | null;
+  epicId?: number | null;
+  sprintId?: number | null;
 
   responsible?: { id: number; name: string; surname: string } | null;
   project?: { id: number; title: string } | null;
+  epic?: { id: number; title: string; color: string } | null;
+  sprint?: { id: number; title: string; status: string } | null;
 
   stats?: TaskStats;
   progressPercent?: number;
+
+  subtaskProgress?: { total: number; completed: number };
+  checklistProgress?: { total: number; completed: number };
+  commentCount?: number;
 }
 
 export interface TaskListResponse {
@@ -50,6 +60,8 @@ export interface TaskDetailResponse {
   totalQty: number;
   breakdown: TaskBreakdownItem[];
   boxes: InventoryBoxModel[];
+  subtasks: Subtask[];
+  checklists: Checklist[];
 }
 
 export const createTask = async (payload: {
@@ -64,6 +76,8 @@ export const createTask = async (payload: {
   responsibleId?: number;
   sectionId?: number;
   projectId?: number;
+  epicId?: number;
+  sprintId?: number;
 }) => {
   const { data } = await $authHost.post("api/tasks", payload);
   return data as ProductionTask;
@@ -76,6 +90,9 @@ export const fetchTasks = async (params?: {
   search?: string;
   originType?: string;
   projectId?: number;
+  epicId?: number;
+  sprintId?: number;
+  backlog?: boolean;
 }) => {
   const { data } = await $authHost.get("api/tasks", { params });
   return data as TaskListResponse;
