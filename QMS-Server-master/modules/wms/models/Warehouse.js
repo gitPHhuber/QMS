@@ -50,6 +50,13 @@ const WarehouseBox = sequelize.define("warehouse_box", {
 
   acceptedAt: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW },
   acceptedById: { type: DataTypes.INTEGER, allowNull: false },
+
+  // ISO 13485 columns (added by migration)
+  currentZoneId: { type: DataTypes.INTEGER, allowNull: true },
+  expiryDate: { type: DataTypes.DATEONLY, allowNull: true },
+  manufacturingDate: { type: DataTypes.DATEONLY, allowNull: true },
+  shelfLifeMonths: { type: DataTypes.INTEGER, allowNull: true },
+  storageLocationId: { type: DataTypes.INTEGER, allowNull: true },
 });
 
 
@@ -73,6 +80,10 @@ const WarehouseMovement = sequelize.define("warehouse_movement", {
   performedById: { type: DataTypes.INTEGER, allowNull: false },
   performedAt: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW },
   comment: { type: DataTypes.TEXT, allowNull: true },
+
+  // ISO 13485 zone tracking (added by migration)
+  fromZoneId: { type: DataTypes.INTEGER, allowNull: true },
+  toZoneId: { type: DataTypes.INTEGER, allowNull: true },
 });
 
 
@@ -142,6 +153,15 @@ const PrintHistory = sequelize.define("print_history", {
   createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
 });
 
+const LabelTemplate = sequelize.define("label_template", {
+  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  name: { type: DataTypes.STRING, allowNull: false },
+  type: { type: DataTypes.STRING, allowNull: true },
+  width: { type: DataTypes.FLOAT, allowNull: false, defaultValue: 105 },
+  height: { type: DataTypes.FLOAT, allowNull: false, defaultValue: 60 },
+  elements: { type: DataTypes.JSONB, allowNull: false, defaultValue: [] },
+});
+
 module.exports = {
   Supply,
   WarehouseBox,
@@ -149,5 +169,6 @@ module.exports = {
   WarehouseDocument,
   InventoryLimit,
   ProductionTask,
-  PrintHistory
+  PrintHistory,
+  LabelTemplate,
 };

@@ -433,7 +433,7 @@ class MovementController {
           "unit",
           [sequelize.fn("SUM", sequelize.col("quantity")), "totalQuantity"],
           [sequelize.fn("COUNT", sequelize.col("id")), "boxCount"],
-          [sequelize.fn("MIN", sequelize.col("expiry_date")), "nearestExpiry"],
+          [sequelize.fn("MIN", sequelize.col("expiryDate")), "nearestExpiry"],
         ],
         where,
         group: ["label", "originType", "originId", "unit"],

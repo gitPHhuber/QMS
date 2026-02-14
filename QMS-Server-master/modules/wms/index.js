@@ -61,6 +61,21 @@ module.exports = {
     m.WarehouseMovement.belongsTo(m.Section, { foreignKey: 'fromSectionId', as: 'fromSection' });
     m.WarehouseMovement.belongsTo(m.Section, { foreignKey: 'toSectionId', as: 'toSection' });
 
+    // Box <-> Team
+    m.WarehouseBox.belongsTo(m.Team, { foreignKey: 'currentTeamId', as: 'currentTeam' });
+    m.Team.hasMany(m.WarehouseBox, { foreignKey: 'currentTeamId', as: 'warehouseBoxes' });
+
+    // Movement <-> Team
+    m.WarehouseMovement.belongsTo(m.Team, { foreignKey: 'fromTeamId', as: 'fromTeam' });
+    m.WarehouseMovement.belongsTo(m.Team, { foreignKey: 'toTeamId', as: 'toTeam' });
+
+    // Document <-> User
+    m.WarehouseDocument.belongsTo(m.User, { foreignKey: 'createdById', as: 'createdBy' });
+    m.User.hasMany(m.WarehouseDocument, { foreignKey: 'createdById', as: 'createdDocuments' });
+
+    // PrintHistory <-> User
+    m.PrintHistory.belongsTo(m.User, { foreignKey: 'createdById', as: 'createdBy' });
+
     // ProductionTask (lives in Warehouse model file)
     if (m.ProductionTask) {
       m.ProductionTask.belongsTo(m.User, { foreignKey: 'responsibleId', as: 'responsible' });
