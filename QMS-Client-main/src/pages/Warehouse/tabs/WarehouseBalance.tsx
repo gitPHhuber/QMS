@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { fetchStockBalance } from "src/api/warehouseApi";
-import { StockBalanceItem } from "src/types/WarehouseModels";
+import { fetchStockBalance, fetchZones } from "src/api/warehouseApi";
+import { StockBalanceItem, StorageZoneModel } from "src/types/WarehouseModels";
 import { PieChart, RefreshCw, PackageX } from "lucide-react";
+import { ZoneBadge } from "../components/ZoneBadge";
 
 export const WarehouseBalance: React.FC = () => {
     const [balance, setBalance] = useState<StockBalanceItem[]>([]);
+    const [zones, setZones] = useState<StorageZoneModel[]>([]);
+    const [selectedZoneId, setSelectedZoneId] = useState<number | "">("");
     const [loading, setLoading] = useState(false);
 
     const loadData = async () => {
@@ -16,7 +19,10 @@ export const WarehouseBalance: React.FC = () => {
         finally { setLoading(false); }
     };
 
-    useEffect(() => { loadData(); }, []);
+    useEffect(() => {
+        loadData();
+        fetchZones().then(setZones).catch(console.error);
+    }, []);
 
 
     const products = balance.filter(i => i.originType === "PRODUCT");
@@ -58,7 +64,19 @@ export const WarehouseBalance: React.FC = () => {
                 <h2 className="text-xl font-bold text-asvo-text flex items-center gap-2">
                     <PieChart className="text-asvo-accent"/> Сводные остатки склада
                 </h2>
-                <button onClick={loadData} className="p-2 bg-asvo-surface-2 rounded-full hover:bg-asvo-surface-3 transition"><RefreshCw size={18} className="text-asvo-text-mid"/></button>
+                <div className="flex items-center gap-3">
+                    {zones.length > 0 && (
+                        <select
+                            value={selectedZoneId}
+                            onChange={e => setSelectedZoneId(e.target.value ? Number(e.target.value) : "")}
+                            className="p-2 border border-asvo-border rounded-lg bg-asvo-surface-2 text-asvo-text text-sm outline-none"
+                        >
+                            <option value="">Все зоны</option>
+                            {zones.map(z => <option key={z.id} value={z.id}>{z.name} ({z.type})</option>)}
+                        </select>
+                    )}
+                    <button onClick={loadData} className="p-2 bg-asvo-surface-2 rounded-full hover:bg-asvo-surface-3 transition"><RefreshCw size={18} className="text-asvo-text-mid"/></button>
+                </div>
             </div>
 
             {loading ? (
