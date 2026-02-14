@@ -23,6 +23,7 @@ import TaskBoardView from "./TaskBoardView";
 import TaskListView from "./TaskListView";
 import TaskDrawer from "./TaskDrawer";
 import TaskCreateModal from "./TaskCreateModal";
+import TaskDetailModal from "./TaskDetailModal";
 
 /* ─── Types ─────────────────────────────────────────────────────────── */
 
@@ -62,6 +63,9 @@ const TasksList: React.FC<TasksListProps> = ({ projectId }) => {
   // Create modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [createForm, setCreateForm] = useState<any>({ priority: "1", targetQty: "" });
+
+  // Detail modal
+  const [detailModalTaskId, setDetailModalTaskId] = useState<number | null>(null);
 
   /* ── Data loading ── */
   const loadData = useCallback(async () => {
@@ -334,6 +338,12 @@ const TasksList: React.FC<TasksListProps> = ({ projectId }) => {
           onSaveChanges={saveChanges}
           onCancelEditing={() => setIsEditing(false)}
           onEditFormChange={setEditForm}
+          onOpenFull={() => {
+            if (drawerTask) {
+              setDetailModalTaskId(drawerTask.task.id);
+              closeDrawer();
+            }
+          }}
         />
       )}
 
@@ -347,6 +357,16 @@ const TasksList: React.FC<TasksListProps> = ({ projectId }) => {
         onCreateFormChange={setCreateForm}
         onSubmit={handleCreateSubmit}
       />
+
+      {/* Detail modal */}
+      {detailModalTaskId !== null && (
+        <TaskDetailModal
+          taskId={detailModalTaskId}
+          isOpen={detailModalTaskId !== null}
+          onClose={() => setDetailModalTaskId(null)}
+          onUpdated={loadData}
+        />
+      )}
 
       {/* Drawer animation */}
       <style>{`

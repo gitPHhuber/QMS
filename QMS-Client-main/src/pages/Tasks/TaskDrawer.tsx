@@ -1,5 +1,5 @@
 import React from "react";
-import { Edit3, Save, X, ChevronRight, MapPin } from "lucide-react";
+import { Edit3, Save, X, ChevronRight, MapPin, Maximize2 } from "lucide-react";
 import { TaskDetailResponse } from "src/api/tasksApi";
 import { ProjectModel } from "src/api/projectsApi";
 import { userGetModel } from "src/types/UserModel";
@@ -24,6 +24,7 @@ interface TaskDrawerProps {
   onSaveChanges: () => void;
   onCancelEditing: () => void;
   onEditFormChange: (form: any) => void;
+  onOpenFull?: () => void;
 }
 
 const TaskDrawer: React.FC<TaskDrawerProps> = ({
@@ -38,6 +39,7 @@ const TaskDrawer: React.FC<TaskDrawerProps> = ({
   onSaveChanges,
   onCancelEditing,
   onEditFormChange,
+  onOpenFull,
 }) => {
   if (!drawerOpen || !drawerTask) return null;
 
@@ -62,6 +64,9 @@ const TaskDrawer: React.FC<TaskDrawerProps> = ({
               </>
             ) : (
               <button onClick={onStartEditing} className="p-1.5 bg-asvo-accent/15 text-asvo-accent rounded-lg hover:bg-asvo-accent/25 transition"><Edit3 size={15} /></button>
+            )}
+            {onOpenFull && (
+              <button onClick={onOpenFull} className="p-1.5 bg-asvo-surface-2 text-asvo-text-mid rounded-lg hover:bg-asvo-surface-3 hover:text-asvo-text transition" title="Открыть полностью"><Maximize2 size={15} /></button>
             )}
             <button onClick={onClose} className="p-1.5 text-asvo-text-dim hover:text-asvo-text transition"><ChevronRight size={18} /></button>
           </div>
