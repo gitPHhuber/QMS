@@ -34,6 +34,7 @@ export interface ProductionTask {
 
   subtaskProgress?: { total: number; completed: number };
   checklistProgress?: { total: number; completed: number };
+  commentCount?: number;
 }
 
 export interface TaskListResponse {

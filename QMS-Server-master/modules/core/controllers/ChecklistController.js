@@ -5,6 +5,7 @@ const {
   TaskChecklistItem,
   User,
 } = require("../../../models/index");
+const TaskActivityService = require("../services/TaskActivityService");
 
 class ChecklistController {
 
@@ -122,11 +123,21 @@ class ChecklistController {
       const item = await TaskChecklistItem.findByPk(itemId);
       if (!item) return next(ApiError.notFound("Пункт не найден"));
 
+      const wasCompleted = item.isCompleted;
       const updates = {};
       if (title !== undefined) updates.title = title;
       if (isCompleted !== undefined) updates.isCompleted = isCompleted;
 
       await item.update(updates);
+
+      // Log when checklist item gets completed
+      if (isCompleted === true && !wasCompleted) {
+        const checklist = await TaskChecklist.findByPk(item.checklistId, { attributes: ["taskId"] });
+        if (checklist) {
+          TaskActivityService.logChecklistItemCompleted(checklist.taskId, req.user.id, item.title);
+        }
+      }
+
       return res.json(item);
     } catch (e) {
       console.error(e);

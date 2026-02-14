@@ -76,5 +76,21 @@ module.exports = {
       m.TaskChecklist.hasMany(m.TaskChecklistItem, { foreignKey: 'checklistId', as: 'items' });
       m.TaskChecklistItem.belongsTo(m.TaskChecklist, { foreignKey: 'checklistId', as: 'checklist' });
     }
+
+    // TaskComment <-> ProductionTask, User (self-referencing for threads)
+    if (m.TaskComment && m.ProductionTask) {
+      m.ProductionTask.hasMany(m.TaskComment, { foreignKey: 'taskId', as: 'comments' });
+      m.TaskComment.belongsTo(m.ProductionTask, { foreignKey: 'taskId', as: 'task' });
+      m.TaskComment.belongsTo(m.User, { foreignKey: 'authorId', as: 'author' });
+      m.TaskComment.belongsTo(m.TaskComment, { foreignKey: 'parentId', as: 'parent' });
+      m.TaskComment.hasMany(m.TaskComment, { foreignKey: 'parentId', as: 'replies' });
+    }
+
+    // TaskActivity <-> ProductionTask, User
+    if (m.TaskActivity && m.ProductionTask) {
+      m.ProductionTask.hasMany(m.TaskActivity, { foreignKey: 'taskId', as: 'activity' });
+      m.TaskActivity.belongsTo(m.ProductionTask, { foreignKey: 'taskId', as: 'task' });
+      m.TaskActivity.belongsTo(m.User, { foreignKey: 'userId', as: 'user' });
+    }
   },
 };

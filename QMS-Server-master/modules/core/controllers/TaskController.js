@@ -13,6 +13,7 @@ const {
   TaskChecklist,
   TaskChecklistItem,
 } = require("../../../models/index");
+const TaskActivityService = require("../services/TaskActivityService");
 
 class TaskController {
 
@@ -55,6 +56,8 @@ class TaskController {
         sectionId: sectionId || null,
         projectId: projectId || null
       });
+
+      TaskActivityService.logTaskCreated(task.id, req.user.id);
 
       return res.json(task);
     } catch (e) {
@@ -185,9 +188,20 @@ class TaskController {
         const checklistMap = {};
         for (const c of checklistCounts) checklistMap[c.taskId] = { total: c.total, completed: c.completed };
 
+        const commentCounts = await sequelize.query(`
+          SELECT "taskId", COUNT(*)::int AS "count"
+          FROM task_comments
+          WHERE "taskId" = ANY($1)
+          GROUP BY "taskId"
+        `, { bind: [taskIds], type: sequelize.QueryTypes.SELECT });
+
+        const commentMap = {};
+        for (const c of commentCounts) commentMap[c.taskId] = c.count;
+
         for (const task of rows) {
           task.setDataValue("subtaskProgress", subtaskMap[task.id] || { total: 0, completed: 0 });
           task.setDataValue("checklistProgress", checklistMap[task.id] || { total: 0, completed: 0 });
+          task.setDataValue("commentCount", commentMap[task.id] || 0);
         }
       }
 
@@ -309,6 +323,16 @@ class TaskController {
       const task = await ProductionTask.findByPk(id);
       if (!task) return next(ApiError.notFound("Задача не найдена"));
 
+      // Capture old values for activity logging
+      const oldValues = {
+        title: task.title,
+        priority: task.priority,
+        status: task.status,
+        responsibleId: task.responsibleId,
+        projectId: task.projectId,
+        dueDate: task.dueDate,
+      };
+
       await task.update({
         title: title !== undefined ? title : task.title,
         targetQty: targetQty !== undefined ? targetQty : task.targetQty,
@@ -321,6 +345,14 @@ class TaskController {
         projectId: projectId !== undefined ? (projectId || null) : task.projectId,
         status: status !== undefined ? status : task.status
       });
+
+      // Log changed fields
+      const fieldsToTrack = ["title", "priority", "status", "responsibleId", "projectId", "dueDate"];
+      for (const field of fieldsToTrack) {
+        if (req.body[field] !== undefined && String(oldValues[field]) !== String(task[field])) {
+          TaskActivityService.logFieldUpdate(task.id, req.user.id, field, oldValues[field], task[field]);
+        }
+      }
 
       return res.json(task);
     } catch (e) {
@@ -337,8 +369,11 @@ class TaskController {
       const task = await ProductionTask.findByPk(id);
       if (!task) return next(ApiError.notFound("Задача не найдена"));
 
+      const oldStatus = task.status;
       task.status = status;
       await task.save();
+
+      TaskActivityService.logStatusChange(task.id, req.user.id, oldStatus, status);
 
       return res.json(task);
     } catch (e) {

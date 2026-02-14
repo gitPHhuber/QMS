@@ -19,5 +19,7 @@ router.patch("/:id/status", ...protect, checkAbility("assembly.execute"), TaskCo
 // Nested routers
 router.use("/:taskId/subtasks", require("./subtaskRouter"));
 router.use("/:taskId/checklists", require("./checklistRouter"));
+router.use("/:taskId/comments", require("./commentRouter"));
+router.use("/:taskId/activity", require("./activityRouter"));
 
 module.exports = router;

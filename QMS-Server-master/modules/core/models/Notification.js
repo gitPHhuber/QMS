@@ -17,7 +17,9 @@ const Notification = sequelize.define("notification", {
       "REVIEW_SCHEDULED", "GENERAL",
       // SLA-эскалация (ISO 8.5.2/8.5.3)
       "NC_OVERDUE", "NC_ESCALATED",
-      "CAPA_ESCALATED", "CAPA_ACTION_OVERDUE"
+      "CAPA_ESCALATED", "CAPA_ACTION_OVERDUE",
+      // Task collaboration
+      "TASK_MENTION", "TASK_COMMENT"
     ),
     allowNull: false,
   },

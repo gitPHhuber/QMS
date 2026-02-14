@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Edit3, Save, X, ChevronRight, MapPin, Maximize2, ListChecks, CheckSquare, Plus, Trash2 } from "lucide-react";
+import { Edit3, Save, X, ChevronRight, MapPin, Maximize2, ListChecks, CheckSquare, Plus, Trash2, MessageSquare, Activity } from "lucide-react";
 import { TaskDetailResponse } from "src/api/tasksApi";
 import { ProjectModel } from "src/api/projectsApi";
 import { userGetModel } from "src/types/UserModel";
@@ -8,6 +8,8 @@ import { Checklist, createChecklist, updateChecklist, deleteChecklist, createChe
 import Badge from "src/components/qms/Badge";
 import Avatar from "src/components/qms/Avatar";
 import ProgressBar from "src/components/qms/ProgressBar";
+import CommentsList from "./CommentsList";
+import ActivityTimeline from "./ActivityTimeline";
 import {
   COLUMNS,
   originToBadge,
@@ -169,6 +171,9 @@ const TaskDrawer: React.FC<TaskDrawerProps> = ({
       console.error(e);
     }
   }, [taskId]);
+
+  // Drawer bottom tabs
+  const [drawerTab, setDrawerTab] = useState<"comments" | "activity">("comments");
 
   if (!drawerOpen || !drawerTask) return null;
 
@@ -483,6 +488,35 @@ const TaskDrawer: React.FC<TaskDrawerProps> = ({
             >
               <Plus size={12} /> Добавить чеклист
             </button>
+          </div>
+
+          {/* ── Comments & Activity ── */}
+          <div>
+            <div className="flex gap-1 border-b border-asvo-border mb-3">
+              <button
+                onClick={() => setDrawerTab("comments")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium border-b-2 transition ${
+                  drawerTab === "comments" ? "text-asvo-accent border-asvo-accent" : "text-asvo-text-dim border-transparent hover:text-asvo-text"
+                }`}
+              >
+                <MessageSquare size={12} /> Комментарии
+              </button>
+              <button
+                onClick={() => setDrawerTab("activity")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium border-b-2 transition ${
+                  drawerTab === "activity" ? "text-asvo-accent border-asvo-accent" : "text-asvo-text-dim border-transparent hover:text-asvo-text"
+                }`}
+              >
+                <Activity size={12} /> История
+              </button>
+            </div>
+
+            {drawerTab === "comments" && (
+              <CommentsList taskId={taskId} users={users} />
+            )}
+            {drawerTab === "activity" && (
+              <ActivityTimeline taskId={taskId} />
+            )}
           </div>
         </div>
       </div>

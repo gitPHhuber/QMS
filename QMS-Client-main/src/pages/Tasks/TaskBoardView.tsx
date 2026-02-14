@@ -1,5 +1,5 @@
 import React, { DragEvent } from "react";
-import { Plus, Loader2, Calendar, AlertTriangle, ListChecks, CheckSquare } from "lucide-react";
+import { Plus, Loader2, Calendar, AlertTriangle, ListChecks, CheckSquare, MessageSquare } from "lucide-react";
 import { ProductionTask, TaskDetailResponse } from "src/api/tasksApi";
 import Badge from "src/components/qms/Badge";
 import StatusDot from "src/components/qms/StatusDot";
@@ -156,7 +156,7 @@ const TaskBoardView: React.FC<TaskBoardViewProps> = ({
                     )}
 
                     {/* Row 4.5: Subtask/Checklist indicators */}
-                    {((task.subtaskProgress?.total ?? 0) > 0 || (task.checklistProgress?.total ?? 0) > 0) && (
+                    {((task.subtaskProgress?.total ?? 0) > 0 || (task.checklistProgress?.total ?? 0) > 0 || (task.commentCount ?? 0) > 0) && (
                       <div className="flex items-center gap-3 mb-1.5 text-[10px] text-asvo-text-dim">
                         {(task.subtaskProgress?.total ?? 0) > 0 && (
                           <span className="flex items-center gap-1">
@@ -168,6 +168,12 @@ const TaskBoardView: React.FC<TaskBoardViewProps> = ({
                           <span className="flex items-center gap-1">
                             <CheckSquare size={10} />
                             {task.checklistProgress!.completed}/{task.checklistProgress!.total}
+                          </span>
+                        )}
+                        {(task.commentCount ?? 0) > 0 && (
+                          <span className="flex items-center gap-1">
+                            <MessageSquare size={10} />
+                            {task.commentCount}
                           </span>
                         )}
                       </div>

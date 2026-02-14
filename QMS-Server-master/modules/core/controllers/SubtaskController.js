@@ -4,6 +4,7 @@ const {
   TaskSubtask,
   User,
 } = require("../../../models/index");
+const TaskActivityService = require("../services/TaskActivityService");
 
 class SubtaskController {
 
@@ -49,6 +50,8 @@ class SubtaskController {
         ],
       });
 
+      TaskActivityService.logSubtaskAdded(Number(taskId), req.user.id, title);
+
       return res.json(full);
     } catch (e) {
       console.error(e);
@@ -64,11 +67,17 @@ class SubtaskController {
       const subtask = await TaskSubtask.findByPk(id);
       if (!subtask) return next(ApiError.notFound("Подзадача не найдена"));
 
+      const wasCompleted = subtask.isCompleted;
       const updates = {};
       if (title !== undefined) updates.title = title;
       if (isCompleted !== undefined) updates.isCompleted = isCompleted;
 
       await subtask.update(updates);
+
+      // Log when subtask gets completed
+      if (isCompleted === true && !wasCompleted) {
+        TaskActivityService.logSubtaskCompleted(subtask.taskId, req.user.id, subtask.title);
+      }
 
       const full = await TaskSubtask.findByPk(id, {
         include: [

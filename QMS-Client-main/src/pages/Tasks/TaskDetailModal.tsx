@@ -31,6 +31,8 @@ import { userGetModel } from "src/types/UserModel";
 import ActionBtn from "src/components/qms/ActionBtn";
 import Badge from "src/components/qms/Badge";
 import Avatar from "src/components/qms/Avatar";
+import CommentsList from "./CommentsList";
+import ActivityTimeline from "./ActivityTimeline";
 import {
   COLUMNS,
   originToBadge,
@@ -67,7 +69,7 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
-  const [tab, setTab] = useState<"main" | "subtasks" | "checklists" | "breakdown" | "boxes">("main");
+  const [tab, setTab] = useState<"main" | "subtasks" | "checklists" | "comments" | "activity" | "breakdown" | "boxes">("main");
 
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState<any>({});
@@ -339,6 +341,8 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
     { key: "main" as const,       label: "Основное" },
     { key: "subtasks" as const,   label: `Подзадачи${subtasks.length ? ` (${subtasksDone}/${subtasks.length})` : ""}` },
     { key: "checklists" as const, label: `Чеклисты${allChecklistItems.length ? ` (${checklistItemsDone}/${allChecklistItems.length})` : ""}` },
+    { key: "comments" as const,   label: "Комментарии" },
+    { key: "activity" as const,   label: "История" },
     { key: "breakdown" as const,  label: `Производство${detail?.breakdown.length ? ` (${detail.breakdown.length})` : ""}` },
     { key: "boxes" as const,      label: `Коробки${detail?.boxes.length ? ` (${detail.boxes.length})` : ""}` },
   ];
@@ -808,6 +812,16 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                   <p className="text-[13px] text-asvo-text-dim">Чеклисты не добавлены</p>
                 )}
               </div>
+            )}
+
+            {/* ─── Tab: Comments ─── */}
+            {tab === "comments" && (
+              <CommentsList taskId={taskId} users={users} />
+            )}
+
+            {/* ─── Tab: Activity ─── */}
+            {tab === "activity" && (
+              <ActivityTimeline taskId={taskId} />
             )}
 
             {/* ─── Tab: Breakdown ─── */}
