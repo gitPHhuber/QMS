@@ -30,4 +30,7 @@ export const reviewsApi = {
 
   getDashboard: () =>
     $authHost.get("/api/reviews/dashboard").then(r => r.data),
+
+  getMinutesPdf: (id: number) =>
+    $authHost.get(`/api/reviews/${id}/minutes`, { responseType: "blob" }).then(r => r.data),
 };

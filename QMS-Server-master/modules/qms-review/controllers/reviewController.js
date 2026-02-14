@@ -332,7 +332,173 @@ const getDashboard = async (req, res) => {
   }
 };
 
+// ═══════════════════════════════════════════════════════════════
+// PDF Minutes (Протокол совещания)  ISO 13485 §5.6
+// ═══════════════════════════════════════════════════════════════
+
+const getMinutesPdf = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ error: "Invalid ID" });
+
+    const review = await ManagementReview.findByPk(id, {
+      include: [{ model: ReviewAction, as: "actions" }],
+    });
+    if (!review) return res.status(404).json({ error: "Review not found" });
+
+    const PdfPrinter = require("pdfmake");
+    const fonts = {
+      Roboto: {
+        normal: require("path").join(__dirname, "../../../node_modules/pdfmake/build/vfs_fonts.js") ? "Helvetica" : "Helvetica",
+        bold: "Helvetica-Bold",
+        italics: "Helvetica-Oblique",
+        bolditalics: "Helvetica-BoldOblique",
+      },
+    };
+    const printer = new PdfPrinter(fonts);
+
+    const fmtDate = (d) => d ? new Date(d).toLocaleDateString("ru-RU") : "—";
+    const participants = Array.isArray(review.participants) ? review.participants : [];
+    const inputData = review.inputData || {};
+    const outputData = review.outputData || {};
+    const actions = review.actions || [];
+    const decisions = Array.isArray(outputData.decisions) ? outputData.decisions : [];
+
+    const docDefinition = {
+      defaultStyle: { font: "Roboto", fontSize: 10 },
+      pageMargins: [40, 60, 40, 50],
+      content: [
+        { text: "ПРОТОКОЛ АНАЛИЗА СО СТОРОНЫ РУКОВОДСТВА", style: "header", alignment: "center", margin: [0, 0, 0, 5] },
+        { text: `ISO 13485:2016 §5.6`, style: "subheader", alignment: "center", margin: [0, 0, 0, 15] },
+
+        // General info
+        {
+          table: {
+            widths: [140, "*"],
+            body: [
+              [{ text: "Номер протокола:", bold: true }, review.reviewNumber || "—"],
+              [{ text: "Тема:", bold: true }, review.title || "—"],
+              [{ text: "Дата совещания:", bold: true }, fmtDate(review.reviewDate)],
+              [{ text: "Анализируемый период:", bold: true }, `${fmtDate(review.periodFrom)} — ${fmtDate(review.periodTo)}`],
+              [{ text: "Результативность СМК:", bold: true }, review.qmsEffectiveness === "EFFECTIVE" ? "Результативна" : review.qmsEffectiveness === "PARTIALLY_EFFECTIVE" ? "Частично результативна" : review.qmsEffectiveness === "INEFFECTIVE" ? "Не результативна" : "—"],
+            ],
+          },
+          layout: "lightHorizontalLines",
+          margin: [0, 0, 0, 15],
+        },
+
+        // Participants
+        { text: "УЧАСТНИКИ СОВЕЩАНИЯ", style: "sectionTitle", margin: [0, 0, 0, 5] },
+        participants.length > 0
+          ? {
+              table: {
+                widths: ["*", 150],
+                headerRows: 1,
+                body: [
+                  [{ text: "ФИО", bold: true }, { text: "Должность/Роль", bold: true }],
+                  ...participants.map((p) => [p.name || "—", p.role || "—"]),
+                ],
+              },
+              layout: "lightHorizontalLines",
+              margin: [0, 0, 0, 15],
+            }
+          : { text: "Участники не указаны", italics: true, margin: [0, 0, 0, 15] },
+
+        // Input data (§5.6.2)
+        { text: "ВХОДНЫЕ ДАННЫЕ (ISO 13485 §5.6.2)", style: "sectionTitle", margin: [0, 0, 0, 5] },
+        {
+          ul: [
+            `Результаты аудитов: ${inputData.auditResults?.total ?? "—"} (находок: ${inputData.auditResults?.findings ?? "—"}, закрыто: ${inputData.auditResults?.closed ?? "—"})`,
+            `Обратная связь потребителей: рекламации ${inputData.customerFeedback?.complaints ?? "—"}, удовлетворённость ${inputData.customerFeedback?.satisfaction ?? "—"}`,
+            `Функционирование процессов: NC ${inputData.processPerformance?.ncStats ?? "—"}, CAPA ${inputData.processPerformance?.capaStats ?? "—"}`,
+            `Соответствие продукции: брак ${inputData.productConformity?.defectRate ?? "—"}, выход годных ${inputData.productConformity?.yieldRate ?? "—"}`,
+            `Предупреждающие действия: ${inputData.preventiveActions?.count ?? "—"} (результативных: ${inputData.preventiveActions?.effective ?? "—"})`,
+            `Выполнение решений предыдущего анализа: выполнено ${inputData.previousActions?.completed ?? "—"}, в работе ${inputData.previousActions?.pending ?? "—"}`,
+          ],
+          margin: [0, 0, 0, 15],
+        },
+
+        // Conclusion
+        { text: "ЗАКЛЮЧЕНИЕ", style: "sectionTitle", margin: [0, 0, 0, 5] },
+        { text: review.conclusion || "Заключение не указано", margin: [0, 0, 0, 15] },
+
+        // Decisions (§5.6.3)
+        { text: "РЕШЕНИЯ (ISO 13485 §5.6.3)", style: "sectionTitle", margin: [0, 0, 0, 5] },
+        decisions.length > 0
+          ? {
+              table: {
+                widths: ["auto", "*", 100, 80],
+                headerRows: 1,
+                body: [
+                  [{ text: "№", bold: true }, { text: "Решение", bold: true }, { text: "Ответственный", bold: true }, { text: "Срок", bold: true }],
+                  ...decisions.map((d, i) => [i + 1, d.description || "—", d.responsible || "—", fmtDate(d.deadline)]),
+                ],
+              },
+              layout: "lightHorizontalLines",
+              margin: [0, 0, 0, 15],
+            }
+          : { text: "Решения не зафиксированы", italics: true, margin: [0, 0, 0, 15] },
+
+        // Action items
+        actions.length > 0
+          ? [
+              { text: "ДЕЙСТВИЯ", style: "sectionTitle", margin: [0, 0, 0, 5] },
+              {
+                table: {
+                  widths: ["auto", "*", 80, 80, 60],
+                  headerRows: 1,
+                  body: [
+                    [{ text: "№", bold: true }, { text: "Описание", bold: true }, { text: "Приоритет", bold: true }, { text: "Срок", bold: true }, { text: "Статус", bold: true }],
+                    ...actions.map((a, i) => [i + 1, a.description || "—", a.priority || "—", fmtDate(a.deadline), a.status || "—"]),
+                  ],
+                },
+                layout: "lightHorizontalLines",
+                margin: [0, 0, 0, 15],
+              },
+            ]
+          : [],
+
+        // Signatures
+        { text: " ", margin: [0, 20, 0, 0] },
+        {
+          columns: [
+            { text: "Председатель: _______________", width: "50%" },
+            { text: "Секретарь: _______________", width: "50%" },
+          ],
+          margin: [0, 0, 0, 5],
+        },
+        {
+          columns: [
+            { text: `Дата: ${fmtDate(review.reviewDate)}`, width: "50%", fontSize: 9 },
+            { text: `Дата: ${fmtDate(review.reviewDate)}`, width: "50%", fontSize: 9 },
+          ],
+        },
+      ],
+      styles: {
+        header: { fontSize: 14, bold: true },
+        subheader: { fontSize: 10, italics: true, color: "#666666" },
+        sectionTitle: { fontSize: 11, bold: true, color: "#333333" },
+      },
+    };
+
+    const pdfDoc = printer.createPdfKitDocument(docDefinition);
+    const chunks = [];
+    pdfDoc.on("data", (chunk) => chunks.push(chunk));
+    pdfDoc.on("end", () => {
+      const result = Buffer.concat(chunks);
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", `attachment; filename="Protocol_${review.reviewNumber || id}_${new Date().toISOString().slice(0, 10)}.pdf"`);
+      res.send(result);
+    });
+    pdfDoc.end();
+  } catch (e) {
+    console.error("ManagementReview getMinutesPdf error:", e);
+    res.status(500).json({ error: e.message });
+  }
+};
+
 module.exports = {
   getAll, getOne, create, update,
   addAction, updateAction, getStats, getDashboard,
+  getMinutesPdf,
 };
