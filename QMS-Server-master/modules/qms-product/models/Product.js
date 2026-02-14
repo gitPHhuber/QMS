@@ -35,6 +35,15 @@ const Product = sequelize.define("product", {
   // Документация
   technicalFileId: { type: DataTypes.INTEGER, comment: "FK на техническое досье в DMS" },
   iomDocumentId: { type: DataTypes.INTEGER, comment: "FK на инструкцию по эксплуатации" },
+  // DMF (Device Master File) — ISO 13485 §4.2.3
+  dmfStatus: {
+    type: DataTypes.ENUM("NOT_STARTED", "IN_PROGRESS", "COMPLETE", "NEEDS_UPDATE"),
+    defaultValue: "NOT_STARTED",
+    comment: "Общий статус технического досье",
+  },
+  intendedUse: { type: DataTypes.TEXT, comment: "Назначение изделия" },
+  indicationsForUse: { type: DataTypes.TEXT, comment: "Показания к применению" },
+  contraindications: { type: DataTypes.TEXT, comment: "Противопоказания" },
   // Ответственные
   designOwnerId: { type: DataTypes.INTEGER },
   qualityOwnerId: { type: DataTypes.INTEGER },

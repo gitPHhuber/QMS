@@ -238,6 +238,10 @@ const ChangeControlPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
+  /* ---- Analytics state ---- */
+  const [analytics, setAnalytics] = useState<any>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+
   const refreshData = () => setRefreshKey((k) => k + 1);
 
   /* ---- Fetch data on mount ---- */
@@ -289,6 +293,25 @@ const ChangeControlPage: React.FC = () => {
       cancelled = true;
     };
   }, [refreshKey]);
+
+  /* ---- Fetch analytics when analytics tab is selected ---- */
+  useEffect(() => {
+    if (tab !== "analytics") return;
+    let cancelled = false;
+    const fetchAnalytics = async () => {
+      setAnalyticsLoading(true);
+      try {
+        const result = await changeRequestsApi.getAnalytics();
+        if (!cancelled) setAnalytics(result);
+      } catch (err: any) {
+        console.error("Failed to load analytics:", err);
+      } finally {
+        if (!cancelled) setAnalyticsLoading(false);
+      }
+    };
+    fetchAnalytics();
+    return () => { cancelled = true; };
+  }, [tab, refreshKey]);
 
   /* ---- KPI (driven by stats from API) ---- */
   const kpis = [
@@ -459,12 +482,126 @@ const ChangeControlPage: React.FC = () => {
 
       {/* ---- TAB: Analytics ---- */}
       {!loading && !error && tab === "analytics" && (
-        <Card>
-          <div className="flex flex-col items-center justify-center py-12 text-asvo-text-dim">
-            <GitBranch size={40} className="mb-3 opacity-30" />
-            <p className="text-[13px]">Раздел аналитики находится в разработке</p>
-          </div>
-        </Card>
+        <>
+          {analyticsLoading && (
+            <Card>
+              <div className="flex flex-col items-center justify-center py-16">
+                <Loader2 size={36} className="animate-spin text-asvo-accent mb-3" />
+                <p className="text-[13px] text-asvo-text-dim">Загрузка аналитики...</p>
+              </div>
+            </Card>
+          )}
+
+          {!analyticsLoading && !analytics && (
+            <Card>
+              <div className="flex flex-col items-center justify-center py-12 text-asvo-text-dim">
+                <GitBranch size={40} className="mb-3 opacity-30" />
+                <p className="text-[13px]">Нет данных для аналитики</p>
+              </div>
+            </Card>
+          )}
+
+          {!analyticsLoading && analytics && (
+            <>
+              {/* Metric cards row */}
+              <div className="grid grid-cols-4 gap-4">
+                {/* By type distribution */}
+                <Card>
+                  <p className="text-[11px] text-asvo-text-dim uppercase tracking-wider mb-3">По типу</p>
+                  <div className="space-y-2">
+                    {(Object.entries(analytics.byType ?? {}) as [string, number][]).map(([type, count]) => {
+                      const tc = typeColors[type as ChangeType] ?? { color: "#64748B", bg: "rgba(100,116,139,0.14)" };
+                      return (
+                        <div key={type} className="flex items-center justify-between">
+                          <Badge color={tc.color} bg={tc.bg}>{TYPE_LABELS[type as ChangeType] ?? type}</Badge>
+                          <span className="text-[13px] font-semibold text-asvo-text">{count as number}</span>
+                        </div>
+                      );
+                    })}
+                    {Object.keys(analytics.byType ?? {}).length === 0 && (
+                      <span className="text-[12px] text-asvo-text-dim">Нет данных</span>
+                    )}
+                  </div>
+                </Card>
+
+                {/* Major vs Minor */}
+                <Card>
+                  <p className="text-[11px] text-asvo-text-dim uppercase tracking-wider mb-3">Категория</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="text-center">
+                      <p className="text-2xl font-bold" style={{ color: "#F06060" }}>
+                        {analytics.majorCount ?? analytics.byCategory?.MAJOR ?? 0}
+                      </p>
+                      <p className="text-[11px] text-asvo-text-dim mt-1">MAJOR</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold" style={{ color: "#4A90E8" }}>
+                        {analytics.minorCount ?? analytics.byCategory?.MINOR ?? 0}
+                      </p>
+                      <p className="text-[11px] text-asvo-text-dim mt-1">MINOR</p>
+                    </div>
+                  </div>
+                </Card>
+
+                {/* Avg implementation days */}
+                <Card>
+                  <p className="text-[11px] text-asvo-text-dim uppercase tracking-wider mb-3">Среднее время внедрения</p>
+                  <div className="text-center">
+                    <p className="text-3xl font-bold text-asvo-accent">
+                      {analytics.avgImplementationDays ?? analytics.avgDays ?? 0}
+                    </p>
+                    <p className="text-[11px] text-asvo-text-dim mt-1">дней</p>
+                  </div>
+                </Card>
+
+                {/* Regulatory impact */}
+                <Card>
+                  <p className="text-[11px] text-asvo-text-dim uppercase tracking-wider mb-3">Регуляторное воздействие</p>
+                  <div className="text-center">
+                    <p className="text-3xl font-bold" style={{ color: "#E8A830" }}>
+                      {analytics.regulatoryImpactCount ?? analytics.regulatoryImpact ?? 0}
+                    </p>
+                    <p className="text-[11px] text-asvo-text-dim mt-1">затронуто</p>
+                  </div>
+                </Card>
+              </div>
+
+              {/* Changes by category horizontal bars */}
+              <Card>
+                <SectionTitle>Распределение по статусам</SectionTitle>
+                <div className="space-y-3">
+                  {(Object.entries(analytics.byStatus ?? {}) as [string, number][]).map(([status, count]) => {
+                    const sc = statusColors[status as ChangeStatus] ?? { color: "#64748B", bg: "rgba(100,116,139,0.14)" };
+                    const maxVal = Math.max(...Object.values(analytics.byStatus ?? {}).map(Number), 1);
+                    return (
+                      <div key={status} className="flex items-center gap-3">
+                        <span className="text-[12px] text-asvo-text-mid w-28 text-right font-medium truncate">
+                          {STATUS_LABELS[status as ChangeStatus] ?? status}
+                        </span>
+                        <div className="flex-1 h-6 bg-asvo-surface rounded-lg overflow-hidden">
+                          <div
+                            className="h-full rounded-lg transition-all"
+                            style={{
+                              width: `${maxVal > 0 ? ((count as number) / maxVal) * 100 : 0}%`,
+                              backgroundColor: sc.color,
+                              minWidth: (count as number) > 0 ? "24px" : "0px",
+                            }}
+                          />
+                        </div>
+                        <span className="text-[13px] text-asvo-text font-semibold w-8 text-right">
+                          {count as number}
+                        </span>
+                      </div>
+                    );
+                  })}
+                  {Object.keys(analytics.byStatus ?? {}).length === 0 && (
+                    <p className="text-sm text-asvo-text-dim text-center py-4">Нет данных</p>
+                  )}
+                </div>
+              </Card>
+            </>
+          )}
+        </>
       )}
 
       {/* ---- Modals ---- */}

@@ -9,6 +9,7 @@ import {
   CalendarClock,
   Loader2,
   AlertTriangle,
+  FileText,
 } from "lucide-react";
 import KpiRow from "../../components/qms/KpiRow";
 import ActionBtn from "../../components/qms/ActionBtn";
@@ -16,6 +17,7 @@ import Badge from "../../components/qms/Badge";
 import DataTable from "../../components/qms/DataTable";
 import Card from "../../components/qms/Card";
 import SectionTitle from "../../components/qms/SectionTitle";
+import TabBar from "../../components/qms/TabBar";
 import ProgressBar from "../../components/qms/ProgressBar";
 import { validationsApi } from "../../api/qmsApi";
 import { useExport } from "../../hooks/useExport";
@@ -83,6 +85,40 @@ const STATUS_CFG: Record<ValidationStatus, { label: string; color: string; bg: s
   FAILED:           { label: "Не пройден",         color: "#F06060", bg: "rgba(240,96,96,0.12)" },
 };
 
+/* ---- Protocol template types ---- */
+
+type TemplatePhase = "IQ" | "OQ" | "PQ";
+type TemplateStatus = "DRAFT" | "ACTIVE" | "ARCHIVED";
+
+interface TemplateRow {
+  [key: string]: unknown;
+  id: number;
+  code: string;
+  title: string;
+  phase: TemplatePhase;
+  version: string;
+  status: TemplateStatus;
+}
+
+const TEMPLATE_PHASE_CFG: Record<TemplatePhase, { label: string; color: string; bg: string }> = {
+  IQ: { label: "IQ", color: "#4A90E8", bg: "rgba(74,144,232,0.12)" },
+  OQ: { label: "OQ", color: "#E8A830", bg: "rgba(232,168,48,0.12)" },
+  PQ: { label: "PQ", color: "#A06AE8", bg: "rgba(160,106,232,0.12)" },
+};
+
+const TEMPLATE_STATUS_CFG: Record<TemplateStatus, { label: string; color: string; bg: string }> = {
+  DRAFT:    { label: "Черновик",    color: "#64748B", bg: "rgba(100,116,139,0.12)" },
+  ACTIVE:   { label: "Активный",   color: "#2DD4A8", bg: "rgba(45,212,168,0.12)" },
+  ARCHIVED: { label: "В архиве",   color: "#64748B", bg: "rgba(100,116,139,0.12)" },
+};
+
+/* ---- Tabs ---- */
+
+const TABS = [
+  { key: "registry",   label: "Реестр" },
+  { key: "templates",  label: "Шаблоны протоколов" },
+];
+
 /* ---- Helper: phase to percentage ---- */
 
 const phaseToPercent = (phase: QualPhase): number => {
@@ -111,6 +147,10 @@ const ValidationPage: React.FC = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [detailValidationId, setDetailValidationId] = useState<number | null>(null);
 
+  const [tab, setTab] = useState("registry");
+  const [templates, setTemplates] = useState<TemplateRow[]>([]);
+  const [templatesLoading, setTemplatesLoading] = useState(false);
+
   /* ---- fetch data ---- */
 
   const fetchData = async () => {
@@ -133,9 +173,35 @@ const ValidationPage: React.FC = () => {
     }
   };
 
+  const fetchTemplates = async () => {
+    try {
+      setTemplatesLoading(true);
+      const res = await validationsApi.getTemplates();
+      const rows: TemplateRow[] = (res.rows ?? res ?? []).map((r: any) => ({
+        id: r.id,
+        code: r.code ?? r.number ?? `VPT-${r.id}`,
+        title: r.title ?? r.name ?? "",
+        phase: r.phase ?? "IQ",
+        version: r.version ?? "1.0",
+        status: r.status ?? "DRAFT",
+      }));
+      setTemplates(rows);
+    } catch (err: any) {
+      console.error("Failed to load templates:", err);
+    } finally {
+      setTemplatesLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchData();
   }, []);
+
+  useEffect(() => {
+    if (tab === "templates") {
+      fetchTemplates();
+    }
+  }, [tab]);
 
   /* ---- columns for DataTable ---- */
 
@@ -194,6 +260,46 @@ const ValidationPage: React.FC = () => {
       key: "revalidationDate",
       label: "Ревалидация",
       render: (r: ValidationRow) => <span className="text-asvo-text-mid">{r.revalidationDate}</span>,
+    },
+  ];
+
+  /* ---- template columns ---- */
+
+  const templateColumns = [
+    {
+      key: "code",
+      label: "VPT #",
+      width: "120px",
+      render: (r: TemplateRow) => <span className="font-mono text-asvo-accent">{r.code}</span>,
+    },
+    {
+      key: "title",
+      label: "Название",
+      render: (r: TemplateRow) => <span className="text-asvo-text">{r.title}</span>,
+    },
+    {
+      key: "phase",
+      label: "Фаза",
+      align: "center" as const,
+      render: (r: TemplateRow) => {
+        const p = TEMPLATE_PHASE_CFG[r.phase] ?? TEMPLATE_PHASE_CFG.IQ;
+        return <Badge color={p.color} bg={p.bg}>{p.label}</Badge>;
+      },
+    },
+    {
+      key: "version",
+      label: "Версия",
+      align: "center" as const,
+      render: (r: TemplateRow) => <span className="text-asvo-text-mid">{r.version}</span>,
+    },
+    {
+      key: "status",
+      label: "Статус",
+      align: "center" as const,
+      render: (r: TemplateRow) => {
+        const s = TEMPLATE_STATUS_CFG[r.status] ?? TEMPLATE_STATUS_CFG.DRAFT;
+        return <Badge color={s.color} bg={s.bg}>{s.label}</Badge>;
+      },
     },
   ];
 
@@ -264,58 +370,95 @@ const ValidationPage: React.FC = () => {
         ]}
       />
 
-      {/* Data Table */}
-      <DataTable
-        columns={columns}
-        data={validations}
-        onRowClick={(row: ValidationRow) => setDetailValidationId(Number(row.id))}
-      />
+      {/* Tab Bar */}
+      <TabBar tabs={TABS} active={tab} onChange={setTab} />
 
-      {/* Progress IQ -> OQ -> PQ */}
-      <Card>
-        <SectionTitle>Прогресс IQ &rarr; OQ &rarr; PQ</SectionTitle>
+      {/* ---- TAB: Registry ---- */}
+      {tab === "registry" && (
+        <>
+          {/* Data Table */}
+          <DataTable
+            columns={columns}
+            data={validations}
+            onRowClick={(row: ValidationRow) => setDetailValidationId(Number(row.id))}
+          />
 
-        <div className="space-y-5">
-          {validations
-            .filter((v) => v.status !== "PLANNED" && v.status !== "VALIDATED")
-            .map((v) => (
-              <div key={v.id} className="space-y-2">
-                <span className="text-[13px] font-medium text-asvo-text">
-                  {v.id} &mdash; {v.process}
-                </span>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] text-asvo-text-dim">IQ</span>
-                      <span className="text-[11px] text-asvo-text-mid">{phaseToPercent(v.iq)}%</span>
+          {/* Progress IQ -> OQ -> PQ */}
+          <Card>
+            <SectionTitle>Прогресс IQ &rarr; OQ &rarr; PQ</SectionTitle>
+
+            <div className="space-y-5">
+              {validations
+                .filter((v) => v.status !== "PLANNED" && v.status !== "VALIDATED")
+                .map((v) => (
+                  <div key={v.id} className="space-y-2">
+                    <span className="text-[13px] font-medium text-asvo-text">
+                      {v.id} &mdash; {v.process}
+                    </span>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] text-asvo-text-dim">IQ</span>
+                          <span className="text-[11px] text-asvo-text-mid">{phaseToPercent(v.iq)}%</span>
+                        </div>
+                        <ProgressBar value={phaseToPercent(v.iq)} color="blue" />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] text-asvo-text-dim">OQ</span>
+                          <span className="text-[11px] text-asvo-text-mid">{phaseToPercent(v.oq)}%</span>
+                        </div>
+                        <ProgressBar value={phaseToPercent(v.oq)} color="amber" />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] text-asvo-text-dim">PQ</span>
+                          <span className="text-[11px] text-asvo-text-mid">{phaseToPercent(v.pq)}%</span>
+                        </div>
+                        <ProgressBar value={phaseToPercent(v.pq)} color="accent" />
+                      </div>
                     </div>
-                    <ProgressBar value={phaseToPercent(v.iq)} color="blue" />
                   </div>
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] text-asvo-text-dim">OQ</span>
-                      <span className="text-[11px] text-asvo-text-mid">{phaseToPercent(v.oq)}%</span>
-                    </div>
-                    <ProgressBar value={phaseToPercent(v.oq)} color="amber" />
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] text-asvo-text-dim">PQ</span>
-                      <span className="text-[11px] text-asvo-text-mid">{phaseToPercent(v.pq)}%</span>
-                    </div>
-                    <ProgressBar value={phaseToPercent(v.pq)} color="accent" />
-                  </div>
-                </div>
+                ))}
+
+              {validations.filter((v) => v.status !== "PLANNED" && v.status !== "VALIDATED").length === 0 && (
+                <p className="text-sm text-asvo-text-dim text-center py-4">
+                  Нет процессов в активной фазе валидации
+                </p>
+              )}
+            </div>
+          </Card>
+        </>
+      )}
+
+      {/* ---- TAB: Templates ---- */}
+      {tab === "templates" && (
+        <>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <FileText size={18} style={{ color: "#A06AE8" }} />
+              <span className="text-[13px] font-medium text-asvo-text">Шаблоны протоколов валидации</span>
+            </div>
+            <ActionBtn variant="primary" icon={<Plus size={15} />} onClick={() => { /* TODO: Create template modal */ }}>
+              + Создать шаблон
+            </ActionBtn>
+          </div>
+
+          {templatesLoading ? (
+            <Card>
+              <div className="flex flex-col items-center justify-center py-16">
+                <Loader2 size={32} className="animate-spin text-asvo-accent mb-3" />
+                <p className="text-[13px] text-asvo-text-dim">Загрузка шаблонов...</p>
               </div>
-            ))}
-
-          {validations.filter((v) => v.status !== "PLANNED" && v.status !== "VALIDATED").length === 0 && (
-            <p className="text-sm text-asvo-text-dim text-center py-4">
-              Нет процессов в активной фазе валидации
-            </p>
+            </Card>
+          ) : (
+            <DataTable
+              columns={templateColumns}
+              data={templates}
+            />
           )}
-        </div>
-      </Card>
+        </>
+      )}
 
       {/* Modals */}
       <CreateValidationModal

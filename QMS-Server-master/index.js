@@ -140,6 +140,14 @@ const initInitialData = async () => {
       { code: "esign.request", description: "Создание запросов на подпись" },
       { code: "esign.manage", description: "Управление политиками подписей" },
 
+      // Оборудование — управление средой
+      { code: "equipment.manage", description: "Управление оборудованием и мониторингом среды" },
+
+      // DHR — История устройства (§7.5.9)
+      { code: "dhr.read", description: "Просмотр записей истории устройства" },
+      { code: "dhr.create", description: "Создание DHR" },
+      { code: "dhr.manage", description: "Управление DHR и выпуск продукции" },
+
       // Аналитика
       { code: "analytics.view", description: "Просмотр дашбордов и KPI" },
       { code: "audit.log.view", description: "Просмотр журнала аудита" },
@@ -204,6 +212,8 @@ const initInitialData = async () => {
       "product.read", "product.manage",
       "design.view", "design.create", "design.manage", "design.approve",
       "esign.view", "esign.sign", "esign.request", "esign.manage",
+      "equipment.manage",
+      "dhr.read", "dhr.create", "dhr.manage",
       "qms.audit.view", "qms.audit.verify", "qms.audit.report",
       "analytics.view", "audit.log.view",
       "warehouse.view", "rbac.manage", "users.manage",
@@ -217,7 +227,7 @@ const initInitialData = async () => {
       "risk.read", "risk.create", "risk.update", "risk.assess",
       "supplier.read",
       "training.read", "training.manage",
-      "equipment.read", "equipment.calibrate",
+      "equipment.read", "equipment.calibrate", "equipment.manage",
       "complaint.read", "complaint.create",
       "change.read", "change.create",
       "validation.read", "validation.manage",
@@ -225,6 +235,7 @@ const initInitialData = async () => {
       "review.read",
       "design.view", "design.create", "design.manage",
       "esign.view", "esign.sign", "esign.request",
+      "dhr.read", "dhr.create",
       "qms.audit.view",
       "analytics.view", "audit.log.view",
     ]);
@@ -254,7 +265,8 @@ const initInitialData = async () => {
       "capa.view", "capa.create", "capa.manage", "capa.verify",
       "qms.audit.view",
       "risk.read",
-      "equipment.read",
+      "equipment.read", "equipment.manage",
+      "dhr.read", "dhr.create", "dhr.manage",
     ]);
 
     await assign("WAREHOUSE_MASTER", [
@@ -269,7 +281,7 @@ const initInitialData = async () => {
       "supplier.read", "training.read", "equipment.read",
       "review.read", "complaint.read", "change.read",
       "validation.read", "product.read", "analytics.view",
-      "design.view", "esign.view",
+      "design.view", "esign.view", "dhr.read",
     ]);
 
     await transaction.commit();

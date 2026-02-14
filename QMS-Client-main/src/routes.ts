@@ -38,6 +38,7 @@ import ValidationPage from "./pages/Quality/ValidationPage";
 import ProductRegistryPage from "./pages/Quality/ProductRegistryPage";
 import { DesignControlPage } from "./pages/DesignControl/DesignControlPage";
 import { ESignPage } from "./pages/ESign/ESignPage";
+import DhrPage from "./pages/Quality/DhrPage";
 
 import {
   ADMIN_PCs_ROUTE,
@@ -76,6 +77,7 @@ import {
   PRODUCT_REGISTRY_ROUTE,
   DESIGN_CONTROL_ROUTE,
   ESIGN_ROUTE,
+  DHR_ROUTE,
 } from "./utils/consts";
 
 // QMS routes (rendered inside QmsLayout)
@@ -98,6 +100,7 @@ export const qmsRoutes = [
   { path: PRODUCT_REGISTRY_ROUTE, Component: ProductRegistryPage },
   { path: DESIGN_CONTROL_ROUTE, Component: DesignControlPage },
   { path: ESIGN_ROUTE, Component: ESignPage },
+  { path: DHR_ROUTE, Component: DhrPage },
 ];
 
 export const authRoutes = [

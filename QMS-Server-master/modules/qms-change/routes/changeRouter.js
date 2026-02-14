@@ -9,11 +9,20 @@ const protect = [authMiddleware, syncUserMiddleware];
 
 // Static routes first
 router.get("/stats", ...protect, checkAbility("change.read"), changeController.getStats);
+router.get("/analytics", ...protect, checkAbility("change.read"), changeController.getAnalytics);
+
+// Impact item routes (static paths before parameterized)
+router.put("/impacts/:itemId", ...protect, checkAbility("change.approve"), changeController.updateImpactItem);
+router.delete("/impacts/:itemId", ...protect, checkAbility("change.approve"), changeController.deleteImpactItem);
 
 // CRUD
 router.get("/", ...protect, checkAbility("change.read"), changeController.getAll);
-router.get("/:id", ...protect, checkAbility("change.read"), changeController.getOne);
 router.post("/", ...protect, checkAbility("change.create"), changeController.create);
+
+// Parameterized routes
+router.get("/:id/impacts", ...protect, checkAbility("change.read"), changeController.getImpactItems);
+router.post("/:id/impacts", ...protect, checkAbility("change.approve"), changeController.addImpactItem);
+router.get("/:id", ...protect, checkAbility("change.read"), changeController.getOne);
 router.put("/:id", ...protect, checkAbility("change.approve"), changeController.update);
 
 module.exports = router;

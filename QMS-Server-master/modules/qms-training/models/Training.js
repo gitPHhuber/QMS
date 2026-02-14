@@ -87,8 +87,58 @@ const CompetencyMatrix = sequelize.define("competency_matrix", {
   notes: { type: DataTypes.TEXT, allowNull: true },
 });
 
+// ═══════════════════════════════════════════════════════════════
+// Элементы плана обучения — детализация годового плана
+// ═══════════════════════════════════════════════════════════════
+
+const TrainingPlanItem = sequelize.define("training_plan_item", {
+  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  trainingPlanId: { type: DataTypes.INTEGER, allowNull: false },
+  title: { type: DataTypes.STRING(500), allowNull: false },
+  description: { type: DataTypes.TEXT },
+  type: {
+    type: DataTypes.ENUM(
+      "ONBOARDING",
+      "PROCEDURE",
+      "EQUIPMENT",
+      "GMP",
+      "SAFETY",
+      "REGULATORY",
+      "SOFTWARE",
+      "RETRAINING"
+    ),
+    allowNull: true,
+  },
+  scheduledMonth: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    validate: { min: 1, max: 12 },
+  },
+  scheduledQuarter: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    validate: { min: 1, max: 4 },
+  },
+  targetUserIds: { type: DataTypes.JSONB, defaultValue: [] },
+  targetDepartment: { type: DataTypes.STRING },
+  responsibleId: { type: DataTypes.INTEGER },
+  trainerId: { type: DataTypes.INTEGER },
+  durationHours: { type: DataTypes.FLOAT },
+  relatedDocumentId: { type: DataTypes.INTEGER },
+  status: {
+    type: DataTypes.ENUM("PLANNED", "SCHEDULED", "IN_PROGRESS", "COMPLETED", "CANCELLED", "OVERDUE"),
+    defaultValue: "PLANNED",
+  },
+  completedDate: { type: DataTypes.DATEONLY },
+  linkedRecordIds: { type: DataTypes.JSONB, defaultValue: [] },
+  notes: { type: DataTypes.TEXT },
+});
+
 // Ассоциации
 TrainingPlan.hasMany(TrainingRecord, { as: "records", foreignKey: "trainingPlanId" });
 TrainingRecord.belongsTo(TrainingPlan, { as: "trainingPlan", foreignKey: "trainingPlanId" });
 
-module.exports = { TrainingPlan, TrainingRecord, CompetencyMatrix };
+TrainingPlan.hasMany(TrainingPlanItem, { as: "planItems", foreignKey: "trainingPlanId" });
+TrainingPlanItem.belongsTo(TrainingPlan, { as: "trainingPlan", foreignKey: "trainingPlanId" });
+
+module.exports = { TrainingPlan, TrainingRecord, CompetencyMatrix, TrainingPlanItem };

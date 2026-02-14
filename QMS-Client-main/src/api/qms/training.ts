@@ -33,4 +33,21 @@ export const trainingApi = {
 
   getStats: () =>
     $authHost.get("/api/training/stats").then(r => r.data),
+
+  // Plan items (annual plan)
+  getPlanItems: (params?: Record<string, any>) =>
+    $authHost.get("/api/training/plan-items", { params }).then(r => r.data),
+
+  createPlanItem: (data: Record<string, any>) =>
+    $authHost.post("/api/training/plan-items", data).then(r => r.data),
+
+  updatePlanItem: (id: number, data: Record<string, any>) =>
+    $authHost.put(`/api/training/plan-items/${id}`, data).then(r => r.data),
+
+  deletePlanItem: (id: number) =>
+    $authHost.delete(`/api/training/plan-items/${id}`).then(r => r.data),
+
+  // Gap analysis
+  getGapAnalysis: () =>
+    $authHost.get("/api/training/gap-analysis").then(r => r.data),
 };
