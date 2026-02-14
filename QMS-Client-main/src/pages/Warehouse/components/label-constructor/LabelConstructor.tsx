@@ -470,7 +470,7 @@ export const LabelConstructor: React.FC<Props> = ({
   };
 
   return (
-    <div className="flex flex-col h-[90vh] bg-gradient-to-br from-slate-100 to-slate-200 font-sans text-slate-800 rounded-xl overflow-hidden shadow-2xl border border-slate-300 select-none">
+    <div className="flex flex-col h-[90vh] bg-gradient-to-br from-asvo-surface-2 to-asvo-surface-3 font-sans text-asvo-text rounded-xl overflow-hidden shadow-2xl border border-asvo-border select-none">
 
       <input
         ref={fileInputRef}
@@ -499,7 +499,7 @@ export const LabelConstructor: React.FC<Props> = ({
       />
 
 
-      <div className="h-auto min-h-[64px] bg-white border-b flex flex-wrap items-center px-4 py-2 justify-between shrink-0 z-20 shadow-sm gap-2">
+      <div className="h-auto min-h-[64px] bg-asvo-card border-b border-asvo-border flex flex-wrap items-center px-4 py-2 justify-between shrink-0 z-20 shadow-sm gap-2">
 
         <div className="flex gap-1 flex-wrap">
           <ToolBtn icon={<Type />} label="Текст" onClick={() => addElement("TEXT")} />
@@ -524,7 +524,7 @@ export const LabelConstructor: React.FC<Props> = ({
             title="Нумерация этикеток: 1/100, 2/100..."
           />
 
-          <div className="w-px h-8 bg-slate-200 mx-1 self-center"></div>
+          <div className="w-px h-8 bg-asvo-surface-3 mx-1 self-center"></div>
 
 
           <ToolBtn
@@ -545,9 +545,9 @@ export const LabelConstructor: React.FC<Props> = ({
 
 
             {showIconPicker && (
-              <div className="absolute top-full left-0 mt-1 bg-white rounded-xl shadow-2xl border border-slate-200 p-3 z-50 w-72 max-h-96 overflow-y-auto">
+              <div className="absolute top-full left-0 mt-1 bg-asvo-card rounded-xl shadow-2xl border border-asvo-border p-3 z-50 w-72 max-h-96 overflow-y-auto">
 
-                <div className="text-xs font-bold text-slate-500 mb-2 uppercase">Стандартные символы (ГОСТ 14192)</div>
+                <div className="text-xs font-bold text-asvo-text-mid mb-2 uppercase">Стандартные символы (ГОСТ 14192)</div>
                 <div className="grid grid-cols-4 gap-2 mb-3">
                   {DEFAULT_ICON_LIBRARY.map((iconItem) => (
                     <button
@@ -561,14 +561,14 @@ export const LabelConstructor: React.FC<Props> = ({
                         });
                         setShowIconPicker(false);
                       }}
-                      className="flex flex-col items-center p-2 hover:bg-indigo-50 rounded-lg transition-colors group border border-transparent hover:border-indigo-200"
+                      className="flex flex-col items-center p-2 hover:bg-asvo-accent-dim rounded-lg transition-colors group border border-transparent hover:border-asvo-accent/30"
                       title={iconItem.label}
                     >
                       <div
                         className="w-8 h-8"
                         dangerouslySetInnerHTML={{ __html: iconItem.svg }}
                       />
-                      <span className="text-[8px] mt-1 text-slate-500 group-hover:text-indigo-600 text-center leading-tight">
+                      <span className="text-[8px] mt-1 text-asvo-text-mid group-hover:text-indigo-600 text-center leading-tight">
                         {iconItem.label}
                       </span>
                     </button>
@@ -593,11 +593,11 @@ export const LabelConstructor: React.FC<Props> = ({
                               });
                               setShowIconPicker(false);
                             }}
-                            className="flex flex-col items-center p-2 hover:bg-emerald-50 rounded-lg transition-colors w-full"
+                            className="flex flex-col items-center p-2 hover:bg-asvo-green-dim rounded-lg transition-colors w-full"
                             title={iconItem.label}
                           >
                             <img src={iconItem.imageUrl} alt={iconItem.label} className="w-6 h-6 object-contain" />
-                            <span className="text-[8px] mt-1 text-slate-500 text-center leading-tight truncate w-full">
+                            <span className="text-[8px] mt-1 text-asvo-text-mid text-center leading-tight truncate w-full">
                               {iconItem.label}
                             </span>
                           </button>
@@ -621,17 +621,17 @@ export const LabelConstructor: React.FC<Props> = ({
 
                 <button
                   onClick={() => iconUploadRef.current?.click()}
-                  className="w-full flex items-center justify-center gap-2 p-2 border-2 border-dashed border-slate-300 rounded-lg text-slate-500 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors text-sm"
+                  className="w-full flex items-center justify-center gap-2 p-2 border-2 border-dashed border-asvo-border rounded-lg text-asvo-text-mid hover:border-indigo-400 hover:text-indigo-600 hover:bg-asvo-accent-dim transition-colors text-sm"
                 >
                   <Upload size={16} />
                   <span>Загрузить свою иконку</span>
                 </button>
-                <div className="text-[10px] text-slate-400 text-center mt-1">PNG/SVG, макс. 100KB</div>
+                <div className="text-[10px] text-asvo-text-dim text-center mt-1">PNG/SVG, макс. 100KB</div>
               </div>
             )}
           </div>
 
-          <div className="w-px h-8 bg-slate-200 mx-1 self-center"></div>
+          <div className="w-px h-8 bg-asvo-surface-3 mx-1 self-center"></div>
 
 
           <ToolBtn
@@ -647,15 +647,15 @@ export const LabelConstructor: React.FC<Props> = ({
             onClick={() => addElement("RECTANGLE", { strokeWidth: 0.3 })}
           />
 
-          <div className="w-px h-8 bg-slate-200 mx-1 self-center"></div>
+          <div className="w-px h-8 bg-asvo-surface-3 mx-1 self-center"></div>
 
 
-          <div className="flex items-center gap-1 bg-slate-50 rounded-lg px-2 py-1 border">
-            <button onClick={() => setZoom((z) => Math.max(0.5, z - 0.25))} className="p-1 hover:bg-slate-200 rounded" type="button">
+          <div className="flex items-center gap-1 bg-asvo-surface rounded-lg px-2 py-1 border border-asvo-border">
+            <button onClick={() => setZoom((z) => Math.max(0.5, z - 0.25))} className="p-1 hover:bg-asvo-surface-3 rounded" type="button">
               <ZoomOut size={16} />
             </button>
             <span className="text-xs font-medium w-10 text-center tabular-nums">{Math.round(zoom * 100)}%</span>
-            <button onClick={() => setZoom((z) => Math.min(3, z + 0.25))} className="p-1 hover:bg-slate-200 rounded" type="button">
+            <button onClick={() => setZoom((z) => Math.min(3, z + 0.25))} className="p-1 hover:bg-asvo-surface-3 rounded" type="button">
               <ZoomIn size={16} />
             </button>
           </div>
@@ -667,7 +667,7 @@ export const LabelConstructor: React.FC<Props> = ({
             onClick={() => setShowHelp(!showHelp)}
             className={clsx(
               "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-              showHelp ? "bg-amber-100 text-amber-700 border border-amber-300" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              showHelp ? "bg-asvo-amber-dim text-amber-700 border border-amber-300" : "bg-asvo-surface-2 text-asvo-text-mid hover:bg-asvo-surface-3"
             )}
             type="button"
           >
@@ -678,7 +678,7 @@ export const LabelConstructor: React.FC<Props> = ({
           {onClose && (
             <button
               onClick={onClose}
-              className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+              className="p-2 text-asvo-text-dim hover:text-asvo-text-mid hover:bg-asvo-surface-2 rounded-lg transition-colors"
               title="Закрыть конструктор"
               type="button"
             >
@@ -690,10 +690,10 @@ export const LabelConstructor: React.FC<Props> = ({
 
 
       {activeElement && (
-        <div className="bg-gradient-to-r from-indigo-50 to-violet-50 border-b px-4 py-3 shrink-0 z-10">
+        <div className="bg-gradient-to-r from-asvo-accent-dim to-asvo-purple-dim border-b border-asvo-border px-4 py-3 shrink-0 z-10">
           <div className="flex items-center gap-3 flex-wrap">
 
-            <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-indigo-200 shadow-sm">
+            <div className="flex items-center gap-2 bg-asvo-card px-3 py-1.5 rounded-lg border border-asvo-accent/30 shadow-sm">
               {activeElement.type === "TEXT" && <Type size={16} className="text-indigo-600" />}
               {activeElement.type === "QR" && <QrCode size={16} className="text-indigo-600" />}
               {activeElement.type === "IMAGE" && <ImageIcon size={16} className="text-indigo-600" />}
@@ -719,7 +719,7 @@ export const LabelConstructor: React.FC<Props> = ({
                   <textarea
                     value={activeElement.content || ""}
                     onChange={(e) => updateSelected({ content: e.target.value })}
-                    className="w-full text-sm px-3 py-2 border border-indigo-200 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none bg-white shadow-sm resize-none"
+                    className="w-full text-sm px-3 py-2 border border-asvo-accent/30 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none bg-asvo-surface shadow-sm resize-none text-asvo-text"
                     placeholder="Введите текст..."
                     rows={1}
                     style={{
@@ -741,7 +741,7 @@ export const LabelConstructor: React.FC<Props> = ({
 
                 <div className="relative shrink-0">
                   <select
-                    className="text-sm pl-3 pr-7 py-2 border border-indigo-200 rounded-lg bg-white cursor-pointer hover:border-indigo-400 outline-none appearance-none"
+                    className="text-sm pl-3 pr-7 py-2 border border-asvo-accent/30 rounded-lg bg-asvo-surface text-asvo-text cursor-pointer hover:border-indigo-400 outline-none appearance-none"
                     style={{ width: '130px' }}
                     value=""
                     onChange={(e) => {
@@ -766,7 +766,7 @@ export const LabelConstructor: React.FC<Props> = ({
                       const newFont = e.target.value;
                       updateSelected({ fontFamily: newFont });
                     }}
-                    className="text-sm px-2 py-2 border border-indigo-200 rounded-lg bg-white cursor-pointer hover:border-indigo-400 outline-none shadow-sm"
+                    className="text-sm px-2 py-2 border border-asvo-accent/30 rounded-lg bg-asvo-surface text-asvo-text cursor-pointer hover:border-indigo-400 outline-none shadow-sm"
                     style={{ width: '130px' }}
                     onPointerDown={(e) => e.stopPropagation()}
                     onClick={(e) => e.stopPropagation()}
@@ -795,7 +795,7 @@ export const LabelConstructor: React.FC<Props> = ({
                       e.stopPropagation();
                       fontUploadRef.current?.click();
                     }}
-                    className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                    className="p-2 text-asvo-text-dim hover:text-indigo-600 hover:bg-asvo-accent-dim rounded-lg transition-colors"
                     title="Загрузить свой шрифт (TTF, OTF, WOFF)"
                     type="button"
                   >
@@ -804,10 +804,10 @@ export const LabelConstructor: React.FC<Props> = ({
                 </div>
 
 
-                <div className="flex items-center bg-white border border-indigo-200 rounded-lg overflow-hidden shadow-sm">
+                <div className="flex items-center bg-asvo-surface border border-asvo-accent/30 rounded-lg overflow-hidden shadow-sm">
                   <button
                     onClick={() => updateSelected({ fontSize: Math.max(6, (activeElement.fontSize || 10) - 1) })}
-                    className="px-3 py-2 hover:bg-slate-50 text-sm font-bold text-indigo-600"
+                    className="px-3 py-2 hover:bg-asvo-surface/50 text-sm font-bold text-indigo-600"
                     type="button"
                   >
                     −
@@ -843,12 +843,12 @@ export const LabelConstructor: React.FC<Props> = ({
                         setFontSizeInput('');
                       }
                     }}
-                    className="w-14 text-sm font-bold text-center tabular-nums border-x border-indigo-100 py-2 outline-none focus:bg-indigo-50 focus:ring-2 focus:ring-indigo-300"
+                    className="w-14 text-sm font-bold text-center tabular-nums border-x border-asvo-accent/20 py-2 outline-none focus:bg-asvo-accent-dim focus:ring-2 focus:ring-indigo-300"
                     onPointerDown={(e) => e.stopPropagation()}
                   />
                   <button
                     onClick={() => updateSelected({ fontSize: Math.min(200, (activeElement.fontSize || 10) + 1) })}
-                    className="px-3 py-2 hover:bg-slate-50 text-sm font-bold text-indigo-600"
+                    className="px-3 py-2 hover:bg-asvo-surface/50 text-sm font-bold text-indigo-600"
                     type="button"
                   >
                     +
@@ -860,7 +860,7 @@ export const LabelConstructor: React.FC<Props> = ({
                   onClick={() => updateSelected({ isBold: !activeElement.isBold })}
                   className={clsx(
                     "w-9 h-9 border rounded-lg flex items-center justify-center font-bold transition-all shadow-sm",
-                    activeElement.isBold ? "bg-indigo-600 text-white border-indigo-600" : "bg-white border-indigo-200 hover:bg-slate-50"
+                    activeElement.isBold ? "bg-indigo-600 text-white border-indigo-600" : "bg-asvo-surface border-asvo-accent/30 hover:bg-asvo-surface/50"
                   )}
                   type="button"
                 >
@@ -868,12 +868,12 @@ export const LabelConstructor: React.FC<Props> = ({
                 </button>
 
 
-                <div className="flex bg-white border border-indigo-200 rounded-lg overflow-hidden shadow-sm">
+                <div className="flex bg-asvo-surface border border-asvo-accent/30 rounded-lg overflow-hidden shadow-sm">
                   {["left", "center", "right"].map((align) => (
                     <button
                       key={align}
                       onClick={() => updateSelected({ align: align as "left" | "center" | "right" })}
-                      className={clsx("p-2 hover:bg-slate-50", activeElement.align === align && "bg-indigo-100 text-indigo-700")}
+                      className={clsx("p-2 hover:bg-asvo-surface/50", activeElement.align === align && "bg-asvo-accent-dim text-indigo-700")}
                       type="button"
                     >
                       {align === "left" && <AlignLeft size={16} />}
@@ -902,7 +902,7 @@ export const LabelConstructor: React.FC<Props> = ({
                         });
                       }
                     }}
-                    className="text-sm px-3 py-2 border border-indigo-200 rounded-lg bg-white cursor-pointer hover:border-indigo-400 outline-none shadow-sm min-w-[180px]"
+                    className="text-sm px-3 py-2 border border-asvo-accent/30 rounded-lg bg-asvo-surface text-asvo-text cursor-pointer hover:border-indigo-400 outline-none shadow-sm min-w-[180px]"
                     onPointerDown={(e) => e.stopPropagation()}
                   >
                     {QR_SOURCES.map((s) => (
@@ -915,14 +915,14 @@ export const LabelConstructor: React.FC<Props> = ({
                   <input
                     value={activeElement.content || ""}
                     onChange={(e) => updateSelected({ content: e.target.value })}
-                    className="w-48 text-sm px-3 py-2 border border-indigo-200 rounded-lg focus:border-indigo-500 outline-none bg-white shadow-sm"
+                    className="w-48 text-sm px-3 py-2 border border-asvo-accent/30 rounded-lg focus:border-indigo-500 outline-none bg-asvo-surface text-asvo-text shadow-sm"
                     placeholder="Введите текст для QR..."
                     onPointerDown={(e) => e.stopPropagation()}
                   />
                 )}
 
 
-                <div className="flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 max-w-sm">
+                <div className="flex items-start gap-2 bg-asvo-blue-dim border border-asvo-blue/20 rounded-lg px-3 py-2 max-w-sm">
                   <Info size={16} className="text-blue-500 shrink-0 mt-0.5" />
                   <div className="text-xs text-blue-700">
                     <div className="font-semibold">{getQrDisplayInfo(activeElement).description}</div>
@@ -940,7 +940,7 @@ export const LabelConstructor: React.FC<Props> = ({
                   <select
                     value={activeElement.counterFormat || COUNTER_FORMATS[0].value}
                     onChange={(e) => updateSelected({ counterFormat: e.target.value, content: e.target.value })}
-                    className="text-sm px-3 py-2 border border-indigo-200 rounded-lg bg-white cursor-pointer hover:border-indigo-400 outline-none shadow-sm min-w-[200px]"
+                    className="text-sm px-3 py-2 border border-asvo-accent/30 rounded-lg bg-asvo-surface text-asvo-text cursor-pointer hover:border-indigo-400 outline-none shadow-sm min-w-[200px]"
                     onPointerDown={(e) => e.stopPropagation()}
                   >
                     {COUNTER_FORMATS.map((f) => (
@@ -949,23 +949,23 @@ export const LabelConstructor: React.FC<Props> = ({
                   </select>
                 </div>
 
-                <div className="flex items-center bg-white border border-indigo-200 rounded-lg overflow-hidden shadow-sm">
-                  <button onClick={() => updateSelected({ fontSize: Math.max(6, (activeElement.fontSize || 14) - 1) })} className="px-3 py-2 hover:bg-slate-50 text-sm font-bold" type="button">−</button>
-                  <span className="text-sm font-bold w-8 text-center tabular-nums border-x border-indigo-100">{activeElement.fontSize || 14}</span>
-                  <button onClick={() => updateSelected({ fontSize: (activeElement.fontSize || 14) + 1 })} className="px-3 py-2 hover:bg-slate-50 text-sm font-bold" type="button">+</button>
+                <div className="flex items-center bg-asvo-surface border border-asvo-accent/30 rounded-lg overflow-hidden shadow-sm">
+                  <button onClick={() => updateSelected({ fontSize: Math.max(6, (activeElement.fontSize || 14) - 1) })} className="px-3 py-2 hover:bg-asvo-surface/50 text-sm font-bold" type="button">−</button>
+                  <span className="text-sm font-bold w-8 text-center tabular-nums border-x border-asvo-accent/20">{activeElement.fontSize || 14}</span>
+                  <button onClick={() => updateSelected({ fontSize: (activeElement.fontSize || 14) + 1 })} className="px-3 py-2 hover:bg-asvo-surface/50 text-sm font-bold" type="button">+</button>
                 </div>
 
                 <button
                   onClick={() => updateSelected({ isBold: !activeElement.isBold })}
                   className={clsx(
                     "w-9 h-9 border rounded-lg flex items-center justify-center font-bold transition-all shadow-sm",
-                    activeElement.isBold ? "bg-indigo-600 text-white border-indigo-600" : "bg-white border-indigo-200 hover:bg-slate-50"
+                    activeElement.isBold ? "bg-indigo-600 text-white border-indigo-600" : "bg-asvo-surface border-asvo-accent/30 hover:bg-asvo-surface/50"
                   )}
                   type="button"
                 >B</button>
 
 
-                <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
+                <div className="flex items-center gap-2 bg-asvo-green-dim border border-asvo-green/20 rounded-lg px-3 py-2">
                   <Eye size={14} className="text-emerald-600" />
                   <span className="text-sm font-mono font-bold text-emerald-800">
                     {(activeElement.counterFormat || "{{current}} / {{total}}")
@@ -978,22 +978,22 @@ export const LabelConstructor: React.FC<Props> = ({
 
 
             {activeElement.type === "IMAGE" && activeElement.imageName && (
-              <div className="flex items-center gap-2 bg-slate-100 px-3 py-2 rounded-lg">
-                <ImageIcon size={16} className="text-slate-500" />
-                <span className="text-sm text-slate-600 truncate max-w-[200px]">{activeElement.imageName}</span>
+              <div className="flex items-center gap-2 bg-asvo-surface-2 px-3 py-2 rounded-lg">
+                <ImageIcon size={16} className="text-asvo-text-mid" />
+                <span className="text-sm text-asvo-text-mid truncate max-w-[200px]">{activeElement.imageName}</span>
               </div>
             )}
 
 
             {activeElement.type === "ICON" && (
-              <div className="flex items-center gap-2 bg-slate-100 px-3 py-2 rounded-lg">
-                <span className="text-sm font-medium text-slate-600">{activeElement.content || "Иконка"}</span>
+              <div className="flex items-center gap-2 bg-asvo-surface-2 px-3 py-2 rounded-lg">
+                <span className="text-sm font-medium text-asvo-text-mid">{activeElement.content || "Иконка"}</span>
               </div>
             )}
 
 
             {(activeElement.type === "LINE" || activeElement.type === "RECTANGLE") && (
-              <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-indigo-200 shadow-sm">
+              <div className="flex items-center gap-2 bg-asvo-surface px-3 py-2 rounded-lg border border-asvo-accent/30 shadow-sm">
                 <span className="text-xs text-indigo-900 font-medium">Толщина:</span>
                 <input
                   type="number"
@@ -1004,7 +1004,7 @@ export const LabelConstructor: React.FC<Props> = ({
                   className="w-14 text-sm border-b border-indigo-300 px-1 py-0.5 text-center focus:outline-none focus:border-indigo-600 bg-transparent"
                   onPointerDown={(e) => e.stopPropagation()}
                 />
-                <span className="text-xs text-slate-400">мм</span>
+                <span className="text-xs text-asvo-text-dim">мм</span>
               </div>
             )}
 
@@ -1026,8 +1026,8 @@ export const LabelConstructor: React.FC<Props> = ({
 
 
       {!activeElement && (
-        <div className="bg-slate-50 border-b px-4 py-3 shrink-0">
-          <div className="flex items-center gap-2 text-slate-400 text-sm">
+        <div className="bg-asvo-surface border-b border-asvo-border px-4 py-3 shrink-0">
+          <div className="flex items-center gap-2 text-asvo-text-dim text-sm">
             <MousePointer2 size={16} />
             <span>Выберите элемент на этикетке для редактирования или добавьте новый с панели инструментов</span>
           </div>
@@ -1038,7 +1038,7 @@ export const LabelConstructor: React.FC<Props> = ({
       <div className="flex-1 flex overflow-hidden">
 
         <div
-          className="flex-1 overflow-auto bg-slate-300/50 flex items-center justify-center relative touch-none p-8"
+          className="flex-1 overflow-auto bg-asvo-surface-3/50 flex items-center justify-center relative touch-none p-8"
           style={{
             backgroundImage: "radial-gradient(circle, #94a3b8 1px, transparent 1px)",
             backgroundSize: "20px 20px",
@@ -1161,7 +1161,7 @@ export const LabelConstructor: React.FC<Props> = ({
                         return <img src={customIcon.imageUrl} alt={customIcon.label} className="w-full h-full object-contain" />;
                       }
 
-                      return <AlertTriangle size={20} className="text-slate-400" />;
+                      return <AlertTriangle size={20} className="text-asvo-text-dim" />;
                     })()}
                   </div>
                 )}
@@ -1215,9 +1215,9 @@ export const LabelConstructor: React.FC<Props> = ({
       </div>
 
 
-      <div className="bg-white border-t px-4 py-3 flex items-center justify-between shrink-0 z-20 gap-4 flex-wrap">
+      <div className="bg-asvo-card border-t border-asvo-border px-4 py-3 flex items-center justify-between shrink-0 z-20 gap-4 flex-wrap">
         <div className="flex gap-4 text-sm items-center">
-          <label className="flex items-center gap-2 text-slate-600 bg-slate-50 px-3 py-2 rounded-lg border">
+          <label className="flex items-center gap-2 text-asvo-text-mid bg-asvo-surface px-3 py-2 rounded-lg border border-asvo-border">
             <span className="font-bold text-indigo-600">Ш:</span>
             <input
               type="number"
@@ -1225,9 +1225,9 @@ export const LabelConstructor: React.FC<Props> = ({
               onChange={(e) => setSize({ ...size, w: +e.target.value })}
               className="bg-transparent w-12 text-center outline-none font-medium"
             />
-            <span className="text-slate-400">мм</span>
+            <span className="text-asvo-text-dim">мм</span>
           </label>
-          <label className="flex items-center gap-2 text-slate-600 bg-slate-50 px-3 py-2 rounded-lg border">
+          <label className="flex items-center gap-2 text-asvo-text-mid bg-asvo-surface px-3 py-2 rounded-lg border border-asvo-border">
             <span className="font-bold text-indigo-600">В:</span>
             <input
               type="number"
@@ -1235,16 +1235,16 @@ export const LabelConstructor: React.FC<Props> = ({
               onChange={(e) => setSize({ ...size, h: +e.target.value })}
               className="bg-transparent w-12 text-center outline-none font-medium"
             />
-            <span className="text-slate-400">мм</span>
+            <span className="text-asvo-text-dim">мм</span>
           </label>
-          <span className="text-slate-400 hidden sm:inline">Shift = привязка к сетке</span>
+          <span className="text-asvo-text-dim hidden sm:inline">Shift = привязка к сетке</span>
         </div>
 
         <div className="flex gap-3 items-center">
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="border rounded-lg px-4 py-2 text-sm w-56 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
+            className="border border-asvo-border rounded-lg px-4 py-2 text-sm w-56 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all bg-asvo-surface text-asvo-text"
             placeholder="Название шаблона..."
           />
           <button

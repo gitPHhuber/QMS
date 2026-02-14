@@ -241,7 +241,7 @@ export const AdminRightsPage: React.FC = observer(() => {
     }
 
     return (
-        <div className="p-6 bg-gray-50 min-h-screen">
+        <div className="p-6 bg-asvo-surface min-h-screen">
             <div className="max-w-full mx-auto">
                 {kcStatus && kcStatus.mode === 'dev-bypass' && (
                     <div className="mb-4 flex items-center gap-3 px-4 py-3 bg-amber-50 border border-amber-300 rounded-xl text-amber-800 text-sm font-medium">
@@ -256,18 +256,18 @@ export const AdminRightsPage: React.FC = observer(() => {
                             <Shield size={32} />
                         </div>
                         <div>
-                            <h1 className="text-3xl font-bold text-gray-800">Контроль доступа</h1>
-                            <p className="text-gray-500 font-medium">RBAC: Роли и полномочия</p>
+                            <h1 className="text-3xl font-bold text-asvo-text">Контроль доступа</h1>
+                            <p className="text-asvo-text-mid font-medium">RBAC: Роли и полномочия</p>
                         </div>
                     </div>
 
-                    <div className="bg-white p-1 rounded-xl shadow-sm border border-gray-200 flex">
+                    <div className="bg-asvo-card p-1 rounded-xl shadow-sm border border-asvo-border flex">
                         <button
                             onClick={() => setViewMode("USERS")}
                             className={`px-6 py-2 rounded-lg font-bold transition flex items-center gap-2 ${
                                 viewMode === "USERS"
                                     ? "bg-indigo-50 text-indigo-700 shadow-sm"
-                                    : "text-gray-500 hover:bg-gray-50"
+                                    : "text-asvo-text-mid hover:bg-asvo-surface/50"
                             }`}
                         >
                             <Users size={18} /> Пользователи
@@ -277,7 +277,7 @@ export const AdminRightsPage: React.FC = observer(() => {
                             className={`px-6 py-2 rounded-lg font-bold transition flex items-center gap-2 ${
                                 viewMode === "MATRIX"
                                     ? "bg-indigo-50 text-indigo-700 shadow-sm"
-                                    : "text-gray-500 hover:bg-gray-50"
+                                    : "text-asvo-text-mid hover:bg-asvo-surface/50"
                             }`}
                         >
                             <Key size={18} /> Матрица прав

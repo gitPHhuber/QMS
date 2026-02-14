@@ -1,15 +1,20 @@
 /**
  * CreateCapaModal.tsx — Модалка создания CAPA
  * ISO 13485 §8.5.2/§8.5.3 — Корректирующие и предупреждающие действия
+ *
+ * Validation: Zod + react-hook-form
  */
 
 import React, { useState, useEffect } from "react";
 import { CheckCircle2 } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 import { Modal } from "../../components/Modal/Modal";
 import { capaApi, ncApi } from "../../api/qmsApi";
 import { getUsers } from "../../api/userApi";
 import ActionBtn from "../../components/qms/ActionBtn";
+import { createCapaSchema, type CreateCapaFormData } from "../../validation/schemas";
 
 /* ── Constants ── */
 
@@ -31,7 +36,6 @@ interface CreateCapaModalProps {
   isOpen: boolean;
   onClose: () => void;
   onCreated: () => void;
-  /** Pre-select NC when creating CAPA from NC detail */
   defaultNcId?: number;
 }
 
@@ -40,18 +44,28 @@ interface CreateCapaModalProps {
 const CreateCapaModal: React.FC<CreateCapaModalProps> = ({
   isOpen, onClose, onCreated, defaultNcId,
 }) => {
-  const [type, setType] = useState("CORRECTIVE");
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [priority, setPriority] = useState("MEDIUM");
-  const [nonconformityId, setNonconformityId] = useState<number>(defaultNcId || 0);
-  const [assignedToId, setAssignedToId] = useState<number>(0);
-  const [dueDate, setDueDate] = useState("");
-
   const [users, setUsers] = useState<any[]>([]);
   const [ncList, setNcList] = useState<any[]>([]);
   const [submitting, setSubmitting] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
+  const [serverError, setServerError] = useState<string | null>(null);
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<CreateCapaFormData>({
+    resolver: zodResolver(createCapaSchema),
+    defaultValues: {
+      type: "CORRECTIVE",
+      title: "",
+      description: "",
+      priority: "MEDIUM",
+      nonconformityId: defaultNcId || 0,
+      assignedToId: 0,
+      dueDate: "",
+    },
+  });
 
   useEffect(() => {
     if (isOpen) {
@@ -61,80 +75,71 @@ const CreateCapaModal: React.FC<CreateCapaModalProps> = ({
       ncApi.getAll({ status: "OPEN,INVESTIGATING,DISPOSITION,IMPLEMENTING,VERIFICATION" })
         .then((res) => setNcList(res.rows || []))
         .catch(() => {});
-      if (defaultNcId) setNonconformityId(defaultNcId);
     }
-  }, [isOpen, users.length, defaultNcId]);
+  }, [isOpen, users.length]);
 
-  const resetForm = () => {
-    setType("CORRECTIVE"); setTitle(""); setDescription("");
-    setPriority("MEDIUM"); setNonconformityId(defaultNcId || 0);
-    setAssignedToId(0); setDueDate(""); setFormError(null);
+  const handleClose = () => {
+    reset();
+    setServerError(null);
+    onClose();
   };
 
-  const handleClose = () => { resetForm(); onClose(); };
-
-  const handleSubmit = async () => {
-    if (!title.trim()) { setFormError("Укажите название CAPA"); return; }
-
+  const onSubmit = async (data: CreateCapaFormData) => {
     setSubmitting(true);
-    setFormError(null);
+    setServerError(null);
     try {
-      await capaApi.create({
-        type,
-        title: title.trim(),
-        description: description.trim() || undefined,
-        priority,
-        nonconformityId: nonconformityId || undefined,
-        assignedToId: assignedToId || undefined,
-        dueDate: dueDate || undefined,
-      });
-      resetForm();
+      await capaApi.create(data);
+      reset();
       onCreated();
       onClose();
     } catch (e: any) {
-      setFormError(e.response?.data?.message || e.message || "Ошибка при создании CAPA");
+      setServerError(e.response?.data?.message || e.message || "Ошибка при создании CAPA");
     } finally {
       setSubmitting(false);
     }
   };
 
   const inputCls = "w-full px-3 py-2 bg-asvo-surface-2 border border-asvo-border rounded-lg text-[13px] text-asvo-text placeholder:text-asvo-text-dim focus:border-asvo-accent/50 focus:outline-none transition-colors";
+  const inputErrCls = "w-full px-3 py-2 bg-asvo-surface-2 border border-red-500/50 rounded-lg text-[13px] text-asvo-text placeholder:text-asvo-text-dim focus:border-red-400 focus:outline-none transition-colors";
   const labelCls = "block text-[13px] text-asvo-text-mid font-medium mb-1.5";
+  const errCls = "text-red-400 text-[11px] mt-1";
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="Создать CAPA" size="xl">
-      <div className="space-y-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         {/* Type */}
         <div>
           <label className={labelCls}>Тип <span className="text-red-400">*</span></label>
-          <select value={type} onChange={(e) => setType(e.target.value)} className={inputCls}>
+          <select {...register("type")} className={errors.type ? inputErrCls : inputCls}>
             {CAPA_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
           </select>
+          {errors.type && <p className={errCls}>{errors.type.message}</p>}
         </div>
 
         {/* Title */}
         <div>
           <label className={labelCls}>Название <span className="text-red-400">*</span></label>
-          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Краткое название корректирующего/предупреждающего действия" className={inputCls} autoFocus />
+          <input {...register("title")} placeholder="Краткое название корректирующего/предупреждающего действия" className={errors.title ? inputErrCls : inputCls} autoFocus />
+          {errors.title && <p className={errCls}>{errors.title.message}</p>}
         </div>
 
         {/* Description */}
         <div>
           <label className={labelCls}>Описание</label>
-          <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Подробное описание проблемы и необходимых действий..." rows={3} className={`${inputCls} resize-none`} />
+          <textarea {...register("description")} placeholder="Подробное описание проблемы и необходимых действий..." rows={3} className={`${inputCls} resize-none`} />
         </div>
 
         {/* Priority + NC Link */}
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className={labelCls}>Приоритет</label>
-            <select value={priority} onChange={(e) => setPriority(e.target.value)} className={inputCls}>
+            <select {...register("priority")} className={inputCls}>
               {PRIORITIES.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
             </select>
           </div>
           <div>
             <label className={labelCls}>Связанное NC</label>
-            <select value={nonconformityId} onChange={(e) => setNonconformityId(Number(e.target.value))} className={inputCls}>
+            <select {...register("nonconformityId")} className={inputCls}>
               <option value={0}>— Без привязки —</option>
               {ncList.map((nc: any) => <option key={nc.id} value={nc.id}>{nc.number} — {nc.title}</option>)}
             </select>
@@ -145,14 +150,14 @@ const CreateCapaModal: React.FC<CreateCapaModalProps> = ({
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className={labelCls}>Ответственный</label>
-            <select value={assignedToId} onChange={(e) => setAssignedToId(Number(e.target.value))} className={inputCls}>
+            <select {...register("assignedToId")} className={inputCls}>
               <option value={0}>— Не назначен —</option>
               {users.map((u: any) => <option key={u.id} value={u.id}>{u.surname} {u.name}</option>)}
             </select>
           </div>
           <div>
             <label className={labelCls}>Срок выполнения</label>
-            <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className={inputCls} />
+            <input type="date" {...register("dueDate")} className={inputCls} />
           </div>
         </div>
 
@@ -164,21 +169,21 @@ const CreateCapaModal: React.FC<CreateCapaModalProps> = ({
           </p>
         </div>
 
-        {/* Error */}
-        {formError && (
+        {/* Server Error */}
+        {serverError && (
           <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
-            <span className="text-red-400 text-[12px]">{formError}</span>
+            <span className="text-red-400 text-[12px]">{serverError}</span>
           </div>
         )}
 
         {/* Actions */}
         <div className="flex items-center justify-end gap-2 pt-2 border-t border-asvo-border">
           <ActionBtn variant="secondary" onClick={handleClose} disabled={submitting}>Отмена</ActionBtn>
-          <ActionBtn variant="primary" icon={<CheckCircle2 size={14} />} onClick={handleSubmit} disabled={submitting}>
+          <ActionBtn variant="primary" icon={<CheckCircle2 size={14} />} onClick={handleSubmit(onSubmit)} disabled={submitting}>
             {submitting ? "Создание..." : "Создать CAPA"}
           </ActionBtn>
         </div>
-      </div>
+      </form>
     </Modal>
   );
 };

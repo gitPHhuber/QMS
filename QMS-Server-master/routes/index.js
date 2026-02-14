@@ -14,6 +14,7 @@ const MODULE_DIRS = {
   'qms.dms':        'qms-dms',
   'qms.nc':         'qms-nc',
   'qms.risk':       'qms-risk',
+  'qms.design':     'qms-design',
   'qms.supplier':   'qms-supplier',
   'qms.audit':      'qms-audit',
   'qms.training':   'qms-training',
@@ -24,6 +25,7 @@ const MODULE_DIRS = {
   'qms.validation': 'qms-validation',
   'qms.product':    'qms-product',
   'qms.dashboard':  'qms-dashboard',
+  'core.esign':     'core-esign',
   'wms.warehouse':  'wms',
 };
 

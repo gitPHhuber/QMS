@@ -45,7 +45,7 @@ export const WarehousePage: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen p-6 pb-20 font-sans text-asvo-text">
+    <div className="min-h-screen bg-asvo-bg p-6 pb-20 font-sans text-asvo-text">
 
 
       <div className="max-w-7xl mx-auto mb-6">

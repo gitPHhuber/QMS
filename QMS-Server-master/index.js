@@ -11,6 +11,9 @@ const path = require("path");
 const { startAuditRetentionScheduler } = require("./modules/core/utils/auditRetentionService");
 const RiskMonitoringService = require("./modules/qms-risk/services/RiskMonitoringService");
 
+const { apiLimiter } = require("./middleware/rateLimitMiddleware");
+const { refreshToken, logoutToken } = require("./middleware/refreshTokenMiddleware");
+
 const PORT = process.env.PORT || 5000;
 const app = express();
 
@@ -28,6 +31,17 @@ app.use(cors(corsOptions));
 app.use(express.static(path.resolve(__dirname, "static")));
 app.use(fileUpload({}));
 
+
+// Healthcheck endpoints (no auth required)
+const healthRouter = require("./modules/core/routes/healthRouter");
+app.use("/api", healthRouter);
+
+// Rate limiting
+app.use("/api", apiLimiter);
+
+// Auth token refresh endpoints
+app.post("/api/auth/refresh", refreshToken);
+app.post("/api/auth/logout", logoutToken);
 
 app.use("/api", router);
 
@@ -114,6 +128,18 @@ const initInitialData = async () => {
       { code: "product.read", description: "Просмотр реестра изделий" },
       { code: "product.manage", description: "Управление реестром изделий" },
 
+      // Управление проектированием (§7.3)
+      { code: "design.view", description: "Просмотр проектов Design Control" },
+      { code: "design.create", description: "Создание проектов и элементов Design Control" },
+      { code: "design.manage", description: "Управление проектированием" },
+      { code: "design.approve", description: "Одобрение результатов проектирования" },
+
+      // Электронные подписи (21 CFR Part 11)
+      { code: "esign.view", description: "Просмотр электронных подписей" },
+      { code: "esign.sign", description: "Подписание документов" },
+      { code: "esign.request", description: "Создание запросов на подпись" },
+      { code: "esign.manage", description: "Управление политиками подписей" },
+
       // Аналитика
       { code: "analytics.view", description: "Просмотр дашбордов и KPI" },
       { code: "audit.log.view", description: "Просмотр журнала аудита" },
@@ -176,6 +202,8 @@ const initInitialData = async () => {
       "change.read", "change.create", "change.approve",
       "validation.read", "validation.manage",
       "product.read", "product.manage",
+      "design.view", "design.create", "design.manage", "design.approve",
+      "esign.view", "esign.sign", "esign.request", "esign.manage",
       "qms.audit.view", "qms.audit.verify", "qms.audit.report",
       "analytics.view", "audit.log.view",
       "warehouse.view", "rbac.manage", "users.manage",
@@ -195,6 +223,8 @@ const initInitialData = async () => {
       "validation.read", "validation.manage",
       "product.read",
       "review.read",
+      "design.view", "design.create", "design.manage",
+      "esign.view", "esign.sign", "esign.request",
       "qms.audit.view",
       "analytics.view", "audit.log.view",
     ]);
@@ -239,6 +269,7 @@ const initInitialData = async () => {
       "supplier.read", "training.read", "equipment.read",
       "review.read", "complaint.read", "change.read",
       "validation.read", "product.read", "analytics.view",
+      "design.view", "esign.view",
     ]);
 
     await transaction.commit();

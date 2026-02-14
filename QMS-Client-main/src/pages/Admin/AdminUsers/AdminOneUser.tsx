@@ -44,7 +44,7 @@ export const AdminOneUser: React.FC<AdminOneUserProps> = ({
   const closeModal = () => setModalType(null);
 
   return (
-    <div className="bg-white shadow-md rounded-xl p-4 flex items-center gap-4 border-l-4 border-blue-500 transition duration-300 hover:shadow-lg overflow-hidden flex-wrap relative">
+    <div className="bg-asvo-card shadow-lg shadow-black/20 rounded-xl p-4 flex items-center gap-4 border-l-4 border-blue-500 transition duration-300 hover:shadow-lg overflow-hidden flex-wrap relative">
 
       {img ? (
         <div className="relative w-24 h-24 rounded-full overflow-hidden shadow-2xl border-4 border-white hover:border-purple-500 transition-all duration-300 transform hover:scale-105 group">
@@ -62,10 +62,10 @@ export const AdminOneUser: React.FC<AdminOneUserProps> = ({
 
 
       <div className="flex-1">
-        <h3 className="text-2xl font-bold text-gray-900">
+        <h3 className="text-2xl font-bold text-asvo-text">
           {name} {surName}
         </h3>
-        <p className="text-gray-600 text-sm mt-1">{login}</p>
+        <p className="text-asvo-text-mid text-sm mt-1">{login}</p>
       </div>
 
 
@@ -96,7 +96,7 @@ export const AdminOneUser: React.FC<AdminOneUserProps> = ({
         ) : (
           <User className="text-blue-600 w-6 h-6" />
         )}
-        <span className="text-gray-700 font-medium">{role}</span>
+        <span className="text-asvo-text font-medium">{role}</span>
       </div>
 
 

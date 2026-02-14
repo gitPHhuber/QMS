@@ -19,3 +19,5 @@ export { reviewsApi } from "./reviews";
 export { complaintsApi } from "./complaints";
 export { changeRequestsApi, validationsApi, productsApi, notificationsApi } from "./misc";
 export { dashboardApi } from "./dashboard";
+export { designApi } from "./design";
+export { esignApi } from "./esign";

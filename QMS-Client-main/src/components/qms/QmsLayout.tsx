@@ -18,6 +18,8 @@ import {
   FlaskConical,
   Package,
   ShieldCheck,
+  Compass,
+  PenTool,
 } from "lucide-react";
 
 const SIDEBAR_ITEMS = [
@@ -36,6 +38,8 @@ const SIDEBAR_ITEMS = [
   { label: "Управление изм.", to: "/qms/change-control",  icon: GitBranch,      moduleCode: "qms.changes" },
   { label: "Валидация",       to: "/qms/validation",     icon: FlaskConical,    moduleCode: "qms.validation" },
   { label: "Реестр изделий",  to: "/qms/products",       icon: Package,         moduleCode: "qms.product" },
+  { label: "Design Control", to: "/qms/design-control", icon: Compass,         moduleCode: "qms.design" },
+  { label: "Эл. подписи",   to: "/qms/esign",          icon: PenTool,         moduleCode: "core.esign" },
 ];
 
 const QmsLayout: React.FC = observer(() => {

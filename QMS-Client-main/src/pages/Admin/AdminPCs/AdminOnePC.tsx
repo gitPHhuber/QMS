@@ -27,12 +27,12 @@ export const AdminOnePC: React.FC<OnePCProps> = ({
   const closeModal = () => setModalType(null);
 
   return (
-    <div className="bg-white p-4 rounded-lg shadow-lg border-l-4 border-blue-500 transition duration-300 hover:shadow-xl relative">
-      <h3 className="text-xl font-bold text-gray-800 mb-2">Имя пк: {PCname}</h3>
-      <p className="text-gray-600">
+    <div className="bg-asvo-card p-4 rounded-lg shadow-lg border-l-4 border-blue-500 transition duration-300 hover:shadow-xl relative">
+      <h3 className="text-xl font-bold text-asvo-text mb-2">Имя пк: {PCname}</h3>
+      <p className="text-asvo-text-mid">
         <span className="font-semibold">IP:</span> {IP}
       </p>
-      <p className="text-gray-600">
+      <p className="text-asvo-text-mid">
         <span className="font-semibold">Кабинет:</span> {cabinet}
       </p>
 

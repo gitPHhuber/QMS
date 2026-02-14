@@ -191,7 +191,7 @@ export const StructurePage: React.FC = observer(() => {
       .find(s => s.id === Number(selectedSectionId))?.production_teams || [];
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8 pb-20">
+    <div className="min-h-screen bg-asvo-surface p-8 pb-20">
       <div className="max-w-6xl mx-auto">
 
 
@@ -201,21 +201,21 @@ export const StructurePage: React.FC = observer(() => {
               <Network className="w-6 h-6 text-indigo-600" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-800">Структура предприятия</h1>
-              <p className="text-sm text-gray-500">Управление иерархией и персоналом</p>
+              <h1 className="text-2xl font-bold text-asvo-text">Структура предприятия</h1>
+              <p className="text-sm text-asvo-text-mid">Управление иерархией и персоналом</p>
             </div>
           </div>
 
-          <div className="bg-white p-1 rounded-xl border border-gray-200 shadow-sm flex gap-1">
+          <div className="bg-asvo-card p-1 rounded-xl border border-asvo-border shadow-sm flex gap-1">
               <button
                 onClick={() => setActiveTab("HIERARCHY")}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition ${activeTab === 'HIERARCHY' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition ${activeTab === 'HIERARCHY' ? 'bg-indigo-50 text-indigo-600' : 'text-asvo-text-mid hover:text-asvo-text'}`}
               >
                   <Layers size={16}/> Иерархия
               </button>
               <button
                 onClick={() => setActiveTab("UNASSIGNED")}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition ${activeTab === 'UNASSIGNED' ? 'bg-orange-50 text-orange-600' : 'text-gray-500 hover:text-gray-700'}`}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition ${activeTab === 'UNASSIGNED' ? 'bg-orange-50 text-orange-600' : 'text-asvo-text-mid hover:text-asvo-text'}`}
               >
                   <UserX size={16}/> Нераспределенные
                   {unassignedUsers.length > 0 && (
@@ -241,20 +241,20 @@ export const StructurePage: React.FC = observer(() => {
                 </div>
 
                 {structureStore.sections.map((section) => (
-                    <div key={section.id} className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+                    <div key={section.id} className="bg-asvo-card border border-asvo-border rounded-2xl shadow-sm overflow-hidden">
 
-                        <div className="p-5 bg-gray-50 flex items-center justify-between gap-4 border-b border-gray-200 group">
+                        <div className="p-5 bg-asvo-surface flex items-center justify-between gap-4 border-b border-asvo-border group">
                             <div className="flex items-center gap-4 cursor-pointer flex-1" onClick={() => toggleSection(section.id)}>
-                                <button className="text-gray-400 hover:text-blue-600 transition">
+                                <button className="text-asvo-text-dim hover:text-blue-600 transition">
                                     {expandedSections.includes(section.id) ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
                                 </button>
                                 <div>
-                                    <h2 className="font-semibold text-lg text-gray-800 flex items-center gap-2">{section.title}</h2>
-                                    <div className="text-sm text-gray-500 flex items-center gap-2 mt-1">
+                                    <h2 className="font-semibold text-lg text-asvo-text flex items-center gap-2">{section.title}</h2>
+                                    <div className="text-sm text-asvo-text-mid flex items-center gap-2 mt-1">
                                         <Crown size={14} className="text-yellow-600" /> Начальник:
                                         {section.manager ? (
                                             <span
-                                                className="font-bold text-gray-700 underline decoration-dotted cursor-pointer hover:text-blue-600"
+                                                className="font-bold text-asvo-text underline decoration-dotted cursor-pointer hover:text-blue-600"
                                                 onClick={(e) => { e.stopPropagation(); openUserSelect(section.id, "MANAGER"); }}
                                             >
                                                 {section.manager.name} {section.manager.surname}
@@ -272,7 +272,7 @@ export const StructurePage: React.FC = observer(() => {
                             </div>
                             <div className="flex gap-2 items-center">
                                 <span className="px-2 py-1 text-xs bg-blue-50 text-blue-600 rounded-full border border-blue-100">Бригад: {section.production_teams?.length || 0}</span>
-                                <button onClick={() => openCreateTeam(section.id)} className="p-2 text-gray-500 hover:text-blue-600 bg-white rounded-lg border hover:border-blue-300 transition flex items-center gap-2 text-sm font-medium">
+                                <button onClick={() => openCreateTeam(section.id)} className="p-2 text-asvo-text-mid hover:text-blue-600 bg-asvo-card rounded-lg border hover:border-blue-300 transition flex items-center gap-2 text-sm font-medium">
                                     <Plus size={16} /> Бригада
                                 </button>
                             </div>
@@ -280,19 +280,19 @@ export const StructurePage: React.FC = observer(() => {
 
 
                         {expandedSections.includes(section.id) && (
-                            <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4 bg-white">
+                            <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4 bg-asvo-card">
                                 {section.production_teams?.length > 0 ? (
                                     section.production_teams.map((team) => (
-                                        <div key={team.id} className="border rounded-xl p-4 bg-gray-50/60 hover:bg-gray-50 transition shadow-sm">
-                                            <div className="flex justify-between items-start mb-3 pb-2 border-b border-dashed border-gray-300">
+                                        <div key={team.id} className="border rounded-xl p-4 bg-asvo-surface/60 hover:bg-asvo-surface transition shadow-sm">
+                                            <div className="flex justify-between items-start mb-3 pb-2 border-b border-dashed border-asvo-border">
                                                 <div>
-                                                    <h3 className="font-bold text-lg text-gray-700 flex items-center gap-2">
+                                                    <h3 className="font-bold text-lg text-asvo-text flex items-center gap-2">
                                                         <Users size={18} className="text-blue-500" /> {team.title}
                                                     </h3>
-                                                    <div className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                                                    <div className="text-xs text-asvo-text-mid mt-1 flex items-center gap-1">
                                                         <UserCheck size={12} /> Старший:
                                                         {team.teamLead ? (
-                                                            <button onClick={() => openUserSelect(team.id, "LEAD")} className="font-medium text-gray-800 cursor-pointer hover:text-blue-600 border-b border-dotted border-gray-400 ml-1">
+                                                            <button onClick={() => openUserSelect(team.id, "LEAD")} className="font-medium text-asvo-text cursor-pointer hover:text-blue-600 border-b border-dotted border-asvo-text-dim ml-1">
                                                                 {team.teamLead.name} {team.teamLead.surname}
                                                             </button>
                                                         ) : (
@@ -303,12 +303,12 @@ export const StructurePage: React.FC = observer(() => {
                                             </div>
                                             <div className="space-y-2 min-h-[50px]">
                                                 {team.users?.map((member) => (
-                                                    <div key={member.id} className="flex items-center justify-between text-sm text-gray-600 bg-white border border-gray-200 p-2 rounded-lg shadow-sm">
+                                                    <div key={member.id} className="flex items-center justify-between text-sm text-asvo-text-mid bg-asvo-card border border-asvo-border p-2 rounded-lg shadow-sm">
                                                         <div className="flex items-center gap-2">
                                                             <div className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center text-xs font-bold text-indigo-600">{member.name[0]}</div>
                                                             <span>{member.name} {member.surname}</span>
                                                         </div>
-                                                        <button onClick={() => handleRemoveMember(member.id)} className="p-1 rounded-full text-gray-400 hover:text-red-600 hover:bg-red-50 transition" title="Убрать из бригады">
+                                                        <button onClick={() => handleRemoveMember(member.id)} className="p-1 rounded-full text-asvo-text-dim hover:text-red-600 hover:bg-red-50 transition" title="Убрать из бригады">
                                                             <Trash2 size={14} />
                                                         </button>
                                                     </div>
@@ -320,7 +320,7 @@ export const StructurePage: React.FC = observer(() => {
                                         </div>
                                     ))
                                 ) : (
-                                    <div className="col-span-full text-center py-8 text-gray-400 border-2 border-dashed rounded-xl">В этом участке пока нет бригад. Создайте первую!</div>
+                                    <div className="col-span-full text-center py-8 text-asvo-text-dim border-2 border-dashed rounded-xl">В этом участке пока нет бригад. Создайте первую!</div>
                                 )}
                             </div>
                         )}
@@ -331,12 +331,12 @@ export const StructurePage: React.FC = observer(() => {
 
 
         {activeTab === "UNASSIGNED" && (
-            <div className="animate-fade-in bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                <div className="p-6 border-b border-gray-100 bg-orange-50/30">
-                    <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+            <div className="animate-fade-in bg-asvo-card rounded-2xl shadow-sm border border-asvo-border overflow-hidden">
+                <div className="p-6 border-b border-asvo-border/50 bg-orange-50/30">
+                    <h2 className="text-xl font-bold text-asvo-text flex items-center gap-2">
                         <UserX className="text-orange-500"/> Сотрудники без бригады
                     </h2>
-                    <p className="text-gray-500 text-sm mt-1">
+                    <p className="text-asvo-text-mid text-sm mt-1">
                         Список пользователей, которые не привязаны ни к одной структурной единице.
                         Вы можете назначить их прямо здесь.
                     </p>
@@ -346,28 +346,28 @@ export const StructurePage: React.FC = observer(() => {
                     {unassignedUsers.length === 0 && (
                         <div className="col-span-full text-center py-20">
                             <div className="inline-flex p-4 bg-green-50 rounded-full mb-3"><UserCheck size={32} className="text-green-500"/></div>
-                            <h3 className="text-lg font-bold text-gray-700">Все распределены!</h3>
-                            <p className="text-gray-400">Нет сотрудников без привязки к бригаде.</p>
+                            <h3 className="text-lg font-bold text-asvo-text">Все распределены!</h3>
+                            <p className="text-asvo-text-dim">Нет сотрудников без привязки к бригаде.</p>
                         </div>
                     )}
 
                     {unassignedUsers.map(user => (
-                        <div key={user.id} className={`p-4 border rounded-xl transition-all ${assigningUserId === user.id ? 'bg-indigo-50 border-indigo-300 ring-2 ring-indigo-100 shadow-md' : 'bg-white border-gray-200 shadow-sm hover:shadow-md'}`}>
+                        <div key={user.id} className={`p-4 border rounded-xl transition-all ${assigningUserId === user.id ? 'bg-indigo-50 border-indigo-300 ring-2 ring-indigo-100 shadow-md' : 'bg-asvo-card border-asvo-border shadow-sm hover:shadow-md'}`}>
                             <div className="flex justify-between items-center mb-3">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-bold overflow-hidden border border-gray-300">
+                                    <div className="w-10 h-10 rounded-full bg-asvo-surface-3 flex items-center justify-center text-asvo-text-mid font-bold overflow-hidden border border-asvo-border">
                                         {user.img ? <img src={`${import.meta.env.VITE_API_URL}/${user.img}`} className="w-full h-full object-cover"/> : user.name[0]}
                                     </div>
                                     <div>
-                                        <div className="font-bold text-gray-800">{user.name} {user.surname}</div>
-                                        <div className="text-xs text-gray-500">{user.login} • {user.role}</div>
+                                        <div className="font-bold text-asvo-text">{user.name} {user.surname}</div>
+                                        <div className="text-xs text-asvo-text-mid">{user.login} • {user.role}</div>
                                     </div>
                                 </div>
 
                                 {assigningUserId !== user.id && (
                                     <button
                                         onClick={() => { setAssigningUserId(user.id); setSelectedSectionId(""); setSelectedTeamId(""); }}
-                                        className="px-3 py-1.5 bg-white border border-gray-300 text-gray-600 text-xs font-bold rounded-lg hover:border-indigo-500 hover:text-indigo-600 transition"
+                                        className="px-3 py-1.5 bg-asvo-card border border-asvo-border text-asvo-text-mid text-xs font-bold rounded-lg hover:border-indigo-500 hover:text-indigo-600 transition"
                                     >
                                         Назначить
                                     </button>
@@ -379,9 +379,9 @@ export const StructurePage: React.FC = observer(() => {
                                 <div className="pt-3 border-t border-indigo-200 flex flex-col gap-2 animate-fade-in">
                                     <div className="space-y-2">
                                         <div>
-                                            <label className="text-[10px] font-bold text-gray-500 uppercase block mb-1">Участок</label>
+                                            <label className="text-[10px] font-bold text-asvo-text-mid uppercase block mb-1">Участок</label>
                                             <select
-                                                className="w-full p-2 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                                                className="w-full p-2 border rounded-lg text-sm bg-asvo-card focus:ring-2 focus:ring-indigo-500 outline-none"
                                                 value={selectedSectionId}
                                                 onChange={e => { setSelectedSectionId(Number(e.target.value)); setSelectedTeamId(""); }}
                                             >
@@ -391,9 +391,9 @@ export const StructurePage: React.FC = observer(() => {
                                         </div>
 
                                         <div>
-                                            <label className="text-[10px] font-bold text-gray-500 uppercase block mb-1">Бригада</label>
+                                            <label className="text-[10px] font-bold text-asvo-text-mid uppercase block mb-1">Бригада</label>
                                             <select
-                                                className="w-full p-2 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-indigo-500 outline-none disabled:bg-gray-100 disabled:text-gray-400"
+                                                className="w-full p-2 border rounded-lg text-sm bg-asvo-card focus:ring-2 focus:ring-indigo-500 outline-none disabled:bg-asvo-surface-2 disabled:text-asvo-text-dim"
                                                 value={selectedTeamId}
                                                 onChange={e => setSelectedTeamId(Number(e.target.value))}
                                                 disabled={!selectedSectionId}
@@ -405,7 +405,7 @@ export const StructurePage: React.FC = observer(() => {
                                     </div>
 
                                     <div className="flex justify-end gap-2 mt-2">
-                                        <button onClick={() => setAssigningUserId(null)} className="px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-200 rounded font-medium">Отмена</button>
+                                        <button onClick={() => setAssigningUserId(null)} className="px-3 py-1.5 text-xs text-asvo-text-mid hover:bg-asvo-surface-3 rounded font-medium">Отмена</button>
                                         <button
                                             onClick={handleQuickAssign}
                                             disabled={!selectedTeamId}
@@ -433,8 +433,8 @@ export const StructurePage: React.FC = observer(() => {
               onChange={(e) => setInputTitle(e.target.value)}
             />
             <div className="flex justify-end gap-2">
-              <button onClick={closeModal} className="px-3 py-1.5 text-sm rounded border border-gray-300 bg-white hover:bg-gray-50">Отмена</button>
-              <button onClick={handleCreateSection} className="px-3 py-1.5 text-sm rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-300" disabled={!inputTitle.trim()}>Создать</button>
+              <button onClick={closeModal} className="px-3 py-1.5 text-sm rounded border border-asvo-border bg-asvo-card hover:bg-asvo-surface/50">Отмена</button>
+              <button onClick={handleCreateSection} className="px-3 py-1.5 text-sm rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-asvo-surface-3" disabled={!inputTitle.trim()}>Создать</button>
             </div>
           </div>
         </Modal>
@@ -449,8 +449,8 @@ export const StructurePage: React.FC = observer(() => {
               onChange={(e) => setInputTitle(e.target.value)}
             />
             <div className="flex justify-end gap-2">
-              <button onClick={closeModal} className="px-3 py-1.5 text-sm rounded border border-gray-300 bg-white hover:bg-gray-50">Отмена</button>
-              <button onClick={handleCreateTeam} className="px-3 py-1.5 text-sm rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-300" disabled={!inputTitle.trim()}>Создать</button>
+              <button onClick={closeModal} className="px-3 py-1.5 text-sm rounded border border-asvo-border bg-asvo-card hover:bg-asvo-surface/50">Отмена</button>
+              <button onClick={handleCreateTeam} className="px-3 py-1.5 text-sm rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-asvo-surface-3" disabled={!inputTitle.trim()}>Создать</button>
             </div>
           </div>
         </Modal>
@@ -465,9 +465,9 @@ export const StructurePage: React.FC = observer(() => {
             <input className="w-full p-2 border rounded mb-2 text-sm" placeholder="Поиск по имени или логину" value={userSearch} onChange={(e) => setUserSearch(e.target.value)} />
             <div className="overflow-y-auto flex-1 space-y-2 pr-1 custom-scrollbar">
               {filteredUsers.map((user) => (
-                <button key={user.id} type="button" onClick={() => handleUserSelect(user.id)} className="w-full flex flex-col items-start px-3 py-2 border border-gray-200 rounded-lg bg-white hover:bg-blue-50 hover:border-blue-300 text-left transition">
-                  <span className="font-medium text-gray-700">{user.name} {user.surname}</span>
-                  <span className="text-xs text-gray-400">{user.login}</span>
+                <button key={user.id} type="button" onClick={() => handleUserSelect(user.id)} className="w-full flex flex-col items-start px-3 py-2 border border-asvo-border rounded-lg bg-asvo-card hover:bg-blue-50 hover:border-blue-300 text-left transition">
+                  <span className="font-medium text-asvo-text">{user.name} {user.surname}</span>
+                  <span className="text-xs text-asvo-text-dim">{user.login}</span>
                 </button>
               ))}
             </div>

@@ -41,3 +41,5 @@ export const CHANGE_CONTROL_ROUTE = '/qms/change-control';
 export const VALIDATION_ROUTE = '/qms/validation';
 export const PRODUCT_REGISTRY_ROUTE = '/qms/products';
 export const QMS_PROTOTYPE_ROUTE = '/qms/prototype';
+export const DESIGN_CONTROL_ROUTE = '/qms/design-control';
+export const ESIGN_ROUTE = '/qms/esign';

@@ -14,6 +14,7 @@ import {
   ChevronDown, FileText, AlertTriangle, ClipboardCheck, BarChart3,
   Truck, GraduationCap, Wrench,
   MessageSquareWarning, GitBranch, FlaskConical, Package,
+  Compass, PenTool,
 } from "lucide-react";
 
 import NotificationBell from "../NotificationBell";
@@ -26,6 +27,7 @@ import {
   RISKS_ROUTE, SUPPLIERS_ROUTE, INTERNAL_AUDITS_ROUTE,
   TRAINING_ROUTE, EQUIPMENT_ROUTE, REVIEW_ROUTE,
   COMPLAINTS_ROUTE, CHANGE_CONTROL_ROUTE, VALIDATION_ROUTE, PRODUCT_REGISTRY_ROUTE,
+  DESIGN_CONTROL_ROUTE, ESIGN_ROUTE,
 } from "src/utils/consts";
 
 type NavItem = {
@@ -115,6 +117,8 @@ export const Header: React.FC = observer(() => {
         modules.isEnabled('qms.changes')     ? { label: "Управление изм.", to: CHANGE_CONTROL_ROUTE, icon: GitBranch } : null,
         modules.isEnabled('qms.validation')  ? { label: "Валидация", to: VALIDATION_ROUTE, icon: FlaskConical } : null,
         modules.isEnabled('qms.product')     ? { label: "Реестр изделий", to: PRODUCT_REGISTRY_ROUTE, icon: Package } : null,
+        modules.isEnabled('qms.design')      ? { label: "Design Control", to: DESIGN_CONTROL_ROUTE, icon: Compass } : null,
+        modules.isEnabled('core.esign')      ? { label: "Эл. подписи", to: ESIGN_ROUTE, icon: PenTool } : null,
       ].filter(Boolean) as { label: string; to: string; icon?: React.ElementType }[],
     } as NavItem] : []),
     // WMS
