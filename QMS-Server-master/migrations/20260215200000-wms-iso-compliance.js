@@ -461,6 +461,24 @@ module.exports = {
     }
 
     // ═════════════════════════════════════════════════════════════
+    // LABEL TEMPLATES
+    // ═════════════════════════════════════════════════════════════
+
+    if (!(await has("label_templates"))) {
+      await queryInterface.createTable("label_templates", {
+        id: { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true },
+        name: { type: Sequelize.STRING(255), allowNull: false },
+        type: { type: Sequelize.STRING(100), allowNull: true },
+        width: { type: Sequelize.FLOAT, allowNull: false, defaultValue: 105 },
+        height: { type: Sequelize.FLOAT, allowNull: false, defaultValue: 60 },
+        elements: { type: Sequelize.JSONB, allowNull: false, defaultValue: [] },
+        createdAt: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.fn("NOW") },
+        updatedAt: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.fn("NOW") },
+      });
+      console.log("  created label_templates");
+    }
+
+    // ═════════════════════════════════════════════════════════════
     // INDEXES
     // ═════════════════════════════════════════════════════════════
 
@@ -484,6 +502,7 @@ module.exports = {
 
   async down(queryInterface) {
     const tables = [
+      "label_templates",
       "return_items", "returns",
       "shipment_items", "shipments",
       "storage_locations",
