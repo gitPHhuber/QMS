@@ -15,6 +15,7 @@ const MODULE_DIRS = {
   'qms.nc':         'qms-nc',
   'qms.capa':       'qms-nc',       // CAPA shares folder with NC
   'qms.risk':       'qms-risk',
+  'qms.design':     'qms-design',
   'qms.supplier':   'qms-supplier',
   'qms.audit':      'qms-audit',
   'qms.training':   'qms-training',
@@ -25,6 +26,7 @@ const MODULE_DIRS = {
   'qms.validation': 'qms-validation',
   'qms.product':    'qms-product',
   'qms.dashboard':  'qms-dashboard',
+  'core.esign':     'core-esign',
   'wms.warehouse':  'wms',
 };
 

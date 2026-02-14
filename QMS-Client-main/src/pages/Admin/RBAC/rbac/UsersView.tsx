@@ -26,7 +26,7 @@ export const UsersView: React.FC<UsersViewProps> = ({
     return (
         <div className="space-y-4 animate-fade-in">
             <div className="relative max-w-md">
-                <Search className="absolute left-3 top-2.5 text-gray-400 w-5 h-5"/>
+                <Search className="absolute left-3 top-2.5 text-asvo-text-dim w-5 h-5"/>
                 <input
                     value={userSearch}
                     onChange={e => setUserSearch(e.target.value)}
@@ -35,23 +35,23 @@ export const UsersView: React.FC<UsersViewProps> = ({
                 />
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="bg-asvo-card rounded-xl shadow-sm border border-asvo-border overflow-hidden">
                 <table className="w-full text-left border-collapse">
-                    <thead className="bg-gray-50 border-b border-gray-200 text-xs font-bold text-gray-500 uppercase">
+                    <thead className="bg-asvo-surface border-b border-asvo-border text-xs font-bold text-asvo-text-mid uppercase">
                         <tr>
                             <th className="p-4">Сотрудник</th>
                             <th className="p-4">Роль (Keycloak)</th>
                             <th className="p-4">Активные права</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody className="divide-y divide-asvo-border/50">
                         {filteredUsers.map(user => {
                             const effectiveAbilities = getUserAbilities(user.role);
                             return (
                                 <tr key={user.id} className="hover:bg-indigo-50/30 transition">
                                     <td className="p-4">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 overflow-hidden border border-gray-200">
+                                            <div className="w-10 h-10 rounded-full bg-asvo-surface-2 flex items-center justify-center text-asvo-text-mid overflow-hidden border border-asvo-border">
                                                 {user.img ? (
                                                     <img src={user.img} alt="" className="w-full h-full object-cover"/>
                                                 ) : (
@@ -59,10 +59,10 @@ export const UsersView: React.FC<UsersViewProps> = ({
                                                 )}
                                             </div>
                                             <div>
-                                                <div className="font-semibold text-gray-800">
+                                                <div className="font-semibold text-asvo-text">
                                                     {user.surname} {user.name}
                                                 </div>
-                                                <div className="text-xs text-gray-400">{user.login}</div>
+                                                <div className="text-xs text-asvo-text-dim">{user.login}</div>
                                             </div>
                                         </div>
                                     </td>
@@ -76,13 +76,13 @@ export const UsersView: React.FC<UsersViewProps> = ({
                                             {effectiveAbilities.length > 0 ? effectiveAbilities.map(ab => (
                                                 <span
                                                     key={ab.id}
-                                                    className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-[10px] border border-gray-200"
+                                                    className="px-2 py-0.5 bg-asvo-surface-2 text-asvo-text-mid rounded text-[10px] border border-asvo-border"
                                                     title={ab.code}
                                                 >
                                                     {ab.description}
                                                 </span>
                                             )) : (
-                                                <span className="text-gray-400 text-sm italic">Нет прав</span>
+                                                <span className="text-asvo-text-dim text-sm italic">Нет прав</span>
                                             )}
                                         </div>
                                     </td>
@@ -92,7 +92,7 @@ export const UsersView: React.FC<UsersViewProps> = ({
                     </tbody>
                 </table>
                 {filteredUsers.length === 0 && (
-                    <div className="p-8 text-center text-gray-400">Сотрудники не найдены</div>
+                    <div className="p-8 text-center text-asvo-text-dim">Сотрудники не найдены</div>
                 )}
             </div>
         </div>

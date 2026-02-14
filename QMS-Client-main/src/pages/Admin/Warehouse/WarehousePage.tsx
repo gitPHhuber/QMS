@@ -141,18 +141,18 @@ export const WarehousePage: React.FC = () => {
   const currentSupply = supplies.find((s) => s.id === selectedSupplyId);
 
   return (
-    <div className="p-6 bg-gray-100/80 min-h-screen">
-      <h1 className="text-2xl font-bold text-gray-800 mb-4">
+    <div className="p-6 bg-asvo-bg min-h-screen">
+      <h1 className="text-2xl font-bold text-asvo-text mb-4">
         Склад и приёмка
       </h1>
-      <p className="text-gray-600 mb-6">
+      <p className="text-asvo-text-mid mb-6">
         Здесь принимаем изделия и комплектующие, раскладываем по коробкам и
         генерируем этикетки с префиксом «ASVO-QMS».
       </p>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
 
-        <div className="xl:col-span-1 bg-white rounded-lg shadow p-4">
+        <div className="xl:col-span-1 bg-asvo-card rounded-lg shadow p-4">
           <h2 className="text-lg font-semibold mb-3">Поставки</h2>
 
           <div className="space-y-3 max-h-[420px] overflow-y-auto">
@@ -163,26 +163,26 @@ export const WarehousePage: React.FC = () => {
                 className={`w-full text-left border rounded-md p-3 mb-1 transition ${
                   selectedSupplyId === s.id
                     ? "bg-emerald-50 border-emerald-400"
-                    : "bg-gray-50 hover:bg-gray-100 border-gray-200"
+                    : "bg-asvo-surface hover:bg-asvo-surface-2 border-asvo-border"
                 }`}
               >
-                <div className="text-sm text-gray-500">
+                <div className="text-sm text-asvo-text-mid">
                   #{s.id} • {new Date(s.createdAt).toLocaleDateString()}
                 </div>
                 <div className="font-semibold">
                   {s.supplier || "Без поставщика"}
                 </div>
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-asvo-text-mid">
                   Документ: {s.docNumber || "—"}
                 </div>
-                <div className="text-xs text-gray-500 mt-1">
+                <div className="text-xs text-asvo-text-mid mt-1">
                   Статус: {s.status}
                 </div>
               </button>
             ))}
 
             {supplies.length === 0 && (
-              <div className="text-sm text-gray-500">
+              <div className="text-sm text-asvo-text-mid">
                 Поставок пока нет. Создайте первую.
               </div>
             )}
@@ -228,7 +228,7 @@ export const WarehousePage: React.FC = () => {
 
 
         <div className="xl:col-span-2 space-y-6">
-          <div className="bg-white rounded-lg shadow p-4">
+          <div className="bg-asvo-card rounded-lg shadow p-4">
             <h2 className="text-lg font-semibold mb-3">
               Коробки в поставке{" "}
               {currentSupply
@@ -238,7 +238,7 @@ export const WarehousePage: React.FC = () => {
 
             <div className="flex flex-col md:flex-row gap-4 mb-4">
               <div className="flex-1 space-y-2">
-                <label className="text-sm text-gray-700">
+                <label className="text-sm text-asvo-text">
                   Участок, куда пойдёт коробка
                 </label>
                 <select
@@ -258,7 +258,7 @@ export const WarehousePage: React.FC = () => {
                   ))}
                 </select>
 
-                <label className="text-sm text-gray-700">
+                <label className="text-sm text-asvo-text">
                   Наименование (без «ASVO-QMS»)
                 </label>
                 <input
@@ -270,7 +270,7 @@ export const WarehousePage: React.FC = () => {
 
                 <div className="flex gap-2">
                   <div className="flex-1">
-                    <label className="text-sm text-gray-700">Количество</label>
+                    <label className="text-sm text-asvo-text">Количество</label>
                     <input
                       type="number"
                       min={1}
@@ -282,7 +282,7 @@ export const WarehousePage: React.FC = () => {
                     />
                   </div>
                   <div className="w-28">
-                    <label className="text-sm text-gray-700">Ед. изм</label>
+                    <label className="text-sm text-asvo-text">Ед. изм</label>
                     <input
                       className="w-full border rounded px-2 py-1 text-sm"
                       value={unit}
@@ -291,7 +291,7 @@ export const WarehousePage: React.FC = () => {
                   </div>
                 </div>
 
-                <label className="text-sm text-gray-700">
+                <label className="text-sm text-asvo-text">
                   Номер комплекта (если нужно)
                 </label>
                 <input
@@ -301,7 +301,7 @@ export const WarehousePage: React.FC = () => {
                   onChange={(e) => setKitNumber(e.target.value)}
                 />
 
-                <label className="text-sm text-gray-700">Комментарий</label>
+                <label className="text-sm text-asvo-text">Комментарий</label>
                 <textarea
                   className="w-full border rounded px-2 py-1 text-sm"
                   rows={2}
@@ -311,11 +311,11 @@ export const WarehousePage: React.FC = () => {
               </div>
 
               <div className="w-full md:w-52 flex flex-col justify-between">
-                <div className="border rounded-lg p-3 bg-gray-50 text-sm text-gray-700 mb-3">
+                <div className="border rounded-lg p-3 bg-asvo-surface text-sm text-asvo-text mb-3">
                   <div className="font-semibold mb-1">
                     Предпросмотр этикетки
                   </div>
-                  <div className="text-xs text-gray-500">Имя:</div>
+                  <div className="text-xs text-asvo-text-mid">Имя:</div>
                   <div className="font-medium">
                     {sectionId && itemName
                       ? `ASVO-QMS ${itemName.trim()}${
@@ -327,7 +327,7 @@ export const WarehousePage: React.FC = () => {
                         }`
                       : "Заполните наименование и участок"}
                   </div>
-                  <div className="mt-2 text-xs text-gray-500">
+                  <div className="mt-2 text-xs text-asvo-text-mid">
                     Кол-во: {quantity} {unit}
                   </div>
                 </div>
@@ -351,7 +351,7 @@ export const WarehousePage: React.FC = () => {
             <div className="mt-4">
               <div className="overflow-x-auto max-h-[380px] border rounded-lg">
                 <table className="min-w-full text-sm">
-                  <thead className="bg-gray-100 sticky top-0">
+                  <thead className="bg-asvo-surface-2 sticky top-0">
                     <tr>
                       <th className="px-2 py-1 border-b">Коробка</th>
                       <th className="px-2 py-1 border-b">Имя этикетки</th>
@@ -362,7 +362,7 @@ export const WarehousePage: React.FC = () => {
                   </thead>
                   <tbody>
                     {boxes.map((b) => (
-                      <tr key={b.id} className="hover:bg-gray-50">
+                      <tr key={b.id} className="hover:bg-asvo-surface/50">
                         <td className="px-2 py-1 border-b">
                           {b.boxNumber || `#${b.id}`}
                         </td>
@@ -381,7 +381,7 @@ export const WarehousePage: React.FC = () => {
                       <tr>
                         <td
                           colSpan={5}
-                          className="px-2 py-3 text-center text-gray-500"
+                          className="px-2 py-3 text-center text-asvo-text-mid"
                         >
                           Для выбранной поставки коробок пока нет.
                         </td>
@@ -391,7 +391,7 @@ export const WarehousePage: React.FC = () => {
                 </table>
               </div>
               {boxes.length > 0 && (
-                <div className="mt-2 text-xs text-gray-500">
+                <div className="mt-2 text-xs text-asvo-text-mid">
                   Всего коробок: {boxes.length}
                 </div>
               )}

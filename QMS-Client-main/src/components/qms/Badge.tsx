@@ -2,7 +2,7 @@ import React from "react";
 
 type BadgeVariant =
   | "nc" | "capa" | "risk" | "audit" | "training" | "sop"
-  | "closed" | "product" | "component" | "custom";
+  | "closed" | "product" | "component" | "custom" | "design" | "esign";
 
 interface BadgeProps {
   variant?: BadgeVariant;
@@ -21,6 +21,8 @@ const VARIANT_STYLES: Record<string, string> = {
   closed:    "bg-[rgba(58,78,98,0.15)] text-[#3A4E62] border-[#3A4E62]/30",
   product:   "bg-[rgba(224,104,144,0.12)] text-[#E06890] border-[#E06890]/30",
   component: "bg-[rgba(58,78,98,0.15)] text-[#8899AB] border-[#3A4E62]/30",
+  design:    "bg-[rgba(232,144,48,0.12)] text-[#E89030] border-[#E89030]/30",
+  esign:     "bg-[rgba(100,180,232,0.12)] text-[#64B4E8] border-[#64B4E8]/30",
 };
 
 const Badge: React.FC<BadgeProps> = ({ variant = "closed", children, color, bg }) => {

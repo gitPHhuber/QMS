@@ -25,7 +25,7 @@ export const risksApi = {
   addMitigation: (riskId: number, data: Record<string, any>) =>
     $authHost.post(`/api/risks/${riskId}/mitigation`, data).then(r => r.data),
 
-  acceptRisk: (riskId: number, data: { decision: string }) =>
+  acceptRisk: (riskId: number, data: { decision: string; justification?: string }) =>
     $authHost.post(`/api/risks/${riskId}/accept`, data).then(r => r.data),
 
   completeMitigation: (mitigationId: number) =>
