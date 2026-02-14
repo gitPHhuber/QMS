@@ -11,6 +11,7 @@ module.exports = {
     router.use('/tasks',     require('./routes/taskRouter'));
     router.use('/projects',  require('./routes/projectRouter'));
     router.use('/notifications', require('./routes/notificationRouter'));
+    router.use('/epics', require('./routes/epicRouter'));
   },
 
   getModels() {
@@ -19,7 +20,8 @@ module.exports = {
     const project = require('./models/Project');
     const notification = require('./models/Notification');
     const taskExtensions = require('./models/TaskExtensions');
-    return { ...general, ...structure, ...project, ...notification, ...taskExtensions };
+    const epic = require('./models/Epic');
+    return { ...general, ...structure, ...project, ...notification, ...taskExtensions, ...epic };
   },
 
   setupAssociations(m) {
@@ -84,6 +86,13 @@ module.exports = {
       m.TaskComment.belongsTo(m.User, { foreignKey: 'authorId', as: 'author' });
       m.TaskComment.belongsTo(m.TaskComment, { foreignKey: 'parentId', as: 'parent' });
       m.TaskComment.hasMany(m.TaskComment, { foreignKey: 'parentId', as: 'replies' });
+    }
+
+    // Epic <-> ProductionTask, User
+    if (m.Epic && m.ProductionTask) {
+      m.Epic.belongsTo(m.User, { foreignKey: 'createdById', as: 'author' });
+      m.Epic.hasMany(m.ProductionTask, { foreignKey: 'epicId', as: 'tasks' });
+      m.ProductionTask.belongsTo(m.Epic, { foreignKey: 'epicId', as: 'epic' });
     }
 
     // TaskActivity <-> ProductionTask, User

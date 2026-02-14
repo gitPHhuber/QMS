@@ -25,9 +25,11 @@ export interface ProductionTask {
   responsibleId?: number | null;
   sectionId?: number | null;
   projectId?: number | null;
+  epicId?: number | null;
 
   responsible?: { id: number; name: string; surname: string } | null;
   project?: { id: number; title: string } | null;
+  epic?: { id: number; title: string; color: string } | null;
 
   stats?: TaskStats;
   progressPercent?: number;
@@ -72,6 +74,7 @@ export const createTask = async (payload: {
   responsibleId?: number;
   sectionId?: number;
   projectId?: number;
+  epicId?: number;
 }) => {
   const { data } = await $authHost.post("api/tasks", payload);
   return data as ProductionTask;
@@ -84,6 +87,7 @@ export const fetchTasks = async (params?: {
   search?: string;
   originType?: string;
   projectId?: number;
+  epicId?: number;
 }) => {
   const { data } = await $authHost.get("api/tasks", { params });
   return data as TaskListResponse;

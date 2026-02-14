@@ -155,7 +155,19 @@ const TaskBoardView: React.FC<TaskBoardViewProps> = ({
                       </div>
                     )}
 
-                    {/* Row 4.5: Subtask/Checklist indicators */}
+                    {/* Row 4.5: Epic badge */}
+                    {task.epic && (
+                      <div className="mb-1">
+                        <span
+                          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-semibold"
+                          style={{ backgroundColor: `${task.epic.color}15`, color: task.epic.color }}
+                        >
+                          {task.epic.title}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Row 4.6: Subtask/Checklist indicators */}
                     {((task.subtaskProgress?.total ?? 0) > 0 || (task.checklistProgress?.total ?? 0) > 0 || (task.commentCount ?? 0) > 0) && (
                       <div className="flex items-center gap-3 mb-1.5 text-[10px] text-asvo-text-dim">
                         {(task.subtaskProgress?.total ?? 0) > 0 && (

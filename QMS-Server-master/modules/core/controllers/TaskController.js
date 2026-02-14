@@ -12,6 +12,7 @@ const {
   TaskSubtask,
   TaskChecklist,
   TaskChecklistItem,
+  Epic,
 } = require("../../../models/index");
 const TaskActivityService = require("../services/TaskActivityService");
 
@@ -30,7 +31,8 @@ class TaskController {
         comment,
         responsibleId,
         sectionId,
-        projectId
+        projectId,
+        epicId,
       } = req.body;
 
       if (!req.user || !req.user.id) {
@@ -54,7 +56,8 @@ class TaskController {
         createdById: req.user.id,
         responsibleId: responsibleId || null,
         sectionId: sectionId || null,
-        projectId: projectId || null
+        projectId: projectId || null,
+        epicId: epicId || null,
       });
 
       TaskActivityService.logTaskCreated(task.id, req.user.id);
@@ -69,7 +72,7 @@ class TaskController {
 
   async getTasks(req, res, next) {
     try {
-      let { page = 1, limit = 50, status, search, originType, projectId } = req.query;
+      let { page = 1, limit = 50, status, search, originType, projectId, epicId } = req.query;
       page = Number(page) || 1;
       limit = Number(limit) || 50;
       const offset = (page - 1) * limit;
@@ -78,6 +81,7 @@ class TaskController {
       if (status) where.status = status;
       if (originType) where.originType = originType;
       if (projectId) where.projectId = Number(projectId);
+      if (epicId) where.epicId = Number(epicId);
       if (search) {
         const s = String(search).trim();
         where[Op.or] = [
@@ -110,7 +114,12 @@ class TaskController {
                 model: User,
                 as: "createdBy",
                 attributes: ["id", "name", "surname"]
-            }
+            },
+            ...(Epic ? [{
+                model: Epic,
+                as: "epic",
+                attributes: ["id", "title", "color"]
+            }] : [])
         ]
       });
 
@@ -219,7 +228,8 @@ class TaskController {
       const task = await ProductionTask.findByPk(id, {
         include: [
             { model: User, as: "responsible", attributes: ["id", "name", "surname"] },
-            { model: Project, as: "project", attributes: ["id", "title"] }
+            { model: Project, as: "project", attributes: ["id", "title"] },
+            ...(Epic ? [{ model: Epic, as: "epic", attributes: ["id", "title", "color"] }] : [])
         ]
       });
 
@@ -317,7 +327,7 @@ class TaskController {
       const { id } = req.params;
       const {
         title, targetQty, unit, dueDate, priority, comment,
-        responsibleId, sectionId, projectId, status
+        responsibleId, sectionId, projectId, epicId, status
       } = req.body;
 
       const task = await ProductionTask.findByPk(id);
@@ -343,6 +353,7 @@ class TaskController {
         responsibleId: responsibleId !== undefined ? (responsibleId || null) : task.responsibleId,
         sectionId: sectionId !== undefined ? (sectionId || null) : task.sectionId,
         projectId: projectId !== undefined ? (projectId || null) : task.projectId,
+        epicId: epicId !== undefined ? (epicId || null) : task.epicId,
         status: status !== undefined ? status : task.status
       });
 
