@@ -127,7 +127,7 @@ const DmrListPage: React.FC = () => {
       }));
 
       setRows(list);
-      setTotalPages(res.totalPages ?? Math.ceil((res.count ?? list.length) / 20) || 1);
+      setTotalPages((res.totalPages ?? Math.ceil((res.count ?? list.length) / 20)) || 1);
     } catch (err: any) {
       setError(err?.response?.data?.message || err?.message || "Ошибка загрузки данных");
     } finally {
