@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { notificationsApi } from "../api/qmsApi";
+import { parseRetryAfter } from "../api/rateLimitUtils";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -95,9 +96,12 @@ const NotificationBell: React.FC = () => {
     let cancelled = false;
 
     const getInterval = () => {
-      if (document.hidden) return HIDDEN_MS;
-      if (consecutiveNoChange >= IDLE_THRESHOLD) return IDLE_MS;
-      return currentInterval;
+      let base: number;
+      if (document.hidden) base = HIDDEN_MS;
+      else if (consecutiveNoChange >= IDLE_THRESHOLD) base = IDLE_MS;
+      else base = BASE_MS;
+      // Never poll sooner than a server-requested rate-limit delay
+      return Math.max(base, currentInterval);
     };
 
     const poll = async () => {
@@ -120,13 +124,12 @@ const NotificationBell: React.FC = () => {
         if (cancelled) return;
 
         if (error?.response?.status === 429) {
-          const headerVal = error.response.headers?.['retry-after'];
-          const bodyVal = error.response.data?.retryAfter;
-          const seconds = headerVal ? Number(headerVal) : (bodyVal ?? 0);
-          currentInterval =
-            !Number.isNaN(seconds) && seconds > 0
-              ? Math.min(seconds * 1000, RATE_LIMIT_MS)
-              : RATE_LIMIT_MS;
+          const seconds = parseRetryAfter(
+            error.response.headers?.['retry-after'] as string | undefined,
+            error.response.data,
+            RATE_LIMIT_MS / 1000,
+          );
+          currentInterval = Math.min(seconds * 1000, RATE_LIMIT_MS);
         }
       }
 
@@ -142,9 +145,11 @@ const NotificationBell: React.FC = () => {
     const handleVisibility = () => {
       if (!document.hidden && !cancelled) {
         consecutiveNoChange = 0;
-        currentInterval = BASE_MS;
-        if (timeoutId) clearTimeout(timeoutId);
-        poll();
+        // Only reset and poll immediately when not rate-limited
+        if (currentInterval <= BASE_MS) {
+          if (timeoutId) clearTimeout(timeoutId);
+          poll();
+        }
       }
     };
     document.addEventListener('visibilitychange', handleVisibility);
