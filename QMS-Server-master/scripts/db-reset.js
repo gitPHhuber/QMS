@@ -101,8 +101,12 @@ async function main() {
       { code: "training.manage", description: "Управление обучением" },
       { code: "equipment.read", description: "Просмотр оборудования" },
       { code: "equipment.calibrate", description: "Калибровка/поверка" },
+      { code: "equipment.manage", description: "Управление оборудованием и мониторингом среды" },
       { code: "review.read", description: "Просмотр анализа руководства" },
       { code: "review.manage", description: "Проведение анализа руководства" },
+      { code: "dhr.read", description: "Просмотр записей истории устройства" },
+      { code: "dhr.create", description: "Создание DHR" },
+      { code: "dhr.manage", description: "Управление DHR и выпуск продукции" },
       { code: "analytics.view", description: "Просмотр дашбордов и KPI" },
       { code: "audit.log.view", description: "Просмотр журнала аудита" },
     ];
@@ -156,8 +160,9 @@ async function main() {
       "supplier.read", "supplier.manage",
       "internal-audit.read", "internal-audit.manage",
       "training.read", "training.manage",
-      "equipment.read", "equipment.calibrate",
+      "equipment.read", "equipment.calibrate", "equipment.manage",
       "review.read", "review.manage",
+      "dhr.read", "dhr.create", "dhr.manage",
       "qms.audit.view", "qms.audit.verify", "qms.audit.report",
       "analytics.view", "audit.log.view",
       "warehouse.view", "rbac.manage", "users.manage",
@@ -170,8 +175,9 @@ async function main() {
       "supplier.read",
       "internal-audit.read",
       "training.read", "training.manage",
-      "equipment.read", "equipment.calibrate",
+      "equipment.read", "equipment.calibrate", "equipment.manage",
       "review.read",
+      "dhr.read", "dhr.create",
       "qms.audit.view",
       "analytics.view", "audit.log.view",
     ]);
@@ -190,7 +196,9 @@ async function main() {
       "warehouse.view",
       "nc.view", "nc.create", "nc.manage",
       "capa.view", "capa.create", "capa.manage", "capa.verify",
-      "qms.audit.view", "risk.read", "equipment.read",
+      "qms.audit.view", "risk.read",
+      "equipment.read", "equipment.manage",
+      "dhr.read", "dhr.create", "dhr.manage",
     ]);
     await assign("WAREHOUSE_MASTER", [
       "warehouse.view", "warehouse.manage", "labels.print",
@@ -199,7 +207,7 @@ async function main() {
     await assign("VIEWER", [
       "dms.view", "nc.view", "capa.view", "risk.read",
       "supplier.read", "internal-audit.read", "training.read", "equipment.read",
-      "review.read", "analytics.view",
+      "review.read", "analytics.view", "dhr.read",
     ]);
 
     console.log("  ✅ Role-ability assignments complete");

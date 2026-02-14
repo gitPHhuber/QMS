@@ -16,5 +16,11 @@ module.exports = {
       m.User.hasMany(m.CompetencyMatrix, { as: 'competencies', foreignKey: 'userId' });
       m.CompetencyMatrix.belongsTo(m.User, { as: 'user', foreignKey: 'userId' });
     }
+    if (m.TrainingPlanItem && m.User) {
+      m.User.hasMany(m.TrainingPlanItem, { as: 'responsiblePlanItems', foreignKey: 'responsibleId' });
+      m.TrainingPlanItem.belongsTo(m.User, { as: 'responsible', foreignKey: 'responsibleId' });
+      m.User.hasMany(m.TrainingPlanItem, { as: 'trainerPlanItems', foreignKey: 'trainerId' });
+      m.TrainingPlanItem.belongsTo(m.User, { as: 'trainer', foreignKey: 'trainerId' });
+    }
   },
 };

@@ -1,4 +1,4 @@
-const { TrainingPlan, TrainingRecord, CompetencyMatrix } = require("../models/Training");
+const { TrainingPlan, TrainingRecord, CompetencyMatrix, TrainingPlanItem } = require("../models/Training");
 const { User } = require("../../../models/index");
 const { logAudit } = require("../../core/utils/auditLogger");
 
@@ -214,9 +214,165 @@ const getStats = async (req, res) => {
   }
 };
 
+// ═══════════════════════════════════════════════════════════════
+// TrainingPlanItem CRUD
+// ═══════════════════════════════════════════════════════════════
+
+const getPlanItems = async (req, res) => {
+  try {
+    const { trainingPlanId, status, type, page = 1, limit = 50 } = req.query;
+    const where = {};
+    if (trainingPlanId) where.trainingPlanId = trainingPlanId;
+    if (status) where.status = status;
+    if (type) where.type = type;
+
+    const offset = (page - 1) * limit;
+    const { count, rows } = await TrainingPlanItem.findAndCountAll({
+      where,
+      include: [
+        { model: TrainingPlan, as: "trainingPlan", attributes: ["id", "title", "year"] },
+      ],
+      order: [["scheduledMonth", "ASC"]],
+      limit: parseInt(limit),
+      offset,
+    });
+    res.json({ count, rows, page: parseInt(page), totalPages: Math.ceil(count / limit) });
+  } catch (e) {
+    console.error("TrainingPlanItem getPlanItems error:", e);
+    res.status(500).json({ error: e.message });
+  }
+};
+
+const createPlanItem = async (req, res) => {
+  try {
+    const item = await TrainingPlanItem.create(req.body);
+    await logAudit({
+      req,
+      action: "TRAINING_PLAN_ITEM_CREATE",
+      entity: "TrainingPlanItem",
+      entityId: item.id,
+      description: `Created training plan item: ${item.title}`,
+    });
+    res.status(201).json(item);
+  } catch (e) {
+    console.error("TrainingPlanItem createPlanItem error:", e);
+    res.status(500).json({ error: e.message });
+  }
+};
+
+const updatePlanItem = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ error: "Invalid ID" });
+
+    const item = await TrainingPlanItem.findByPk(id);
+    if (!item) return res.status(404).json({ error: "Training plan item not found" });
+
+    await item.update(req.body);
+    await logAudit({
+      req,
+      action: "TRAINING_PLAN_ITEM_UPDATE",
+      entity: "TrainingPlanItem",
+      entityId: item.id,
+      description: `Updated training plan item: ${item.title}`,
+    });
+    res.json(item);
+  } catch (e) {
+    console.error("TrainingPlanItem updatePlanItem error:", e);
+    res.status(500).json({ error: e.message });
+  }
+};
+
+const deletePlanItem = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ error: "Invalid ID" });
+
+    const item = await TrainingPlanItem.findByPk(id);
+    if (!item) return res.status(404).json({ error: "Training plan item not found" });
+
+    const title = item.title;
+    await item.destroy();
+    await logAudit({
+      req,
+      action: "TRAINING_PLAN_ITEM_DELETE",
+      entity: "TrainingPlanItem",
+      entityId: id,
+      description: `Deleted training plan item: ${title}`,
+    });
+    res.json({ message: "Training plan item deleted", id });
+  } catch (e) {
+    console.error("TrainingPlanItem deletePlanItem error:", e);
+    res.status(500).json({ error: e.message });
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════
+// Gap Analysis
+// ═══════════════════════════════════════════════════════════════
+
+const LEVEL_VALUES = { NONE: 0, AWARENESS: 1, TRAINED: 2, COMPETENT: 3, EXPERT: 4 };
+
+const getGapAnalysis = async (req, res) => {
+  try {
+    const { userId, processName } = req.query;
+    const where = {};
+    if (userId) where.userId = userId;
+    if (processName) where.processName = processName;
+
+    const entries = await CompetencyMatrix.findAll({
+      where,
+      include: [{ model: User, as: "user", attributes: ["id", "name", "surname"] }],
+      order: [["processName", "ASC"]],
+    });
+
+    const gaps = [];
+    let totalEntries = 0;
+    let compliantCount = 0;
+    let criticalGaps = 0;
+
+    for (const entry of entries) {
+      totalEntries++;
+      const currentVal = LEVEL_VALUES[entry.level] || 0;
+      const requiredVal = LEVEL_VALUES[entry.requiredLevel] || 0;
+      const gapSize = requiredVal - currentVal;
+
+      if (gapSize > 0) {
+        gaps.push({
+          userId: entry.userId,
+          userName: entry.user ? `${entry.user.name} ${entry.user.surname}` : `User #${entry.userId}`,
+          processName: entry.processName,
+          currentLevel: entry.level,
+          requiredLevel: entry.requiredLevel,
+          gapSize,
+        });
+        if (gapSize >= 3) criticalGaps++;
+      } else {
+        compliantCount++;
+      }
+    }
+
+    const compliancePercent = totalEntries > 0
+      ? Math.round((compliantCount / totalEntries) * 10000) / 100
+      : 100;
+
+    res.json({
+      gaps,
+      totalGaps: gaps.length,
+      compliancePercent,
+      criticalGaps,
+    });
+  } catch (e) {
+    console.error("Training getGapAnalysis error:", e);
+    res.status(500).json({ error: e.message });
+  }
+};
+
 module.exports = {
   getPlans, getPlanOne, createPlan, updatePlan,
   getRecords, createRecord, updateRecord,
   getCompetency, createCompetency, updateCompetency,
   getStats,
+  getPlanItems, createPlanItem, updatePlanItem, deletePlanItem,
+  getGapAnalysis,
 };

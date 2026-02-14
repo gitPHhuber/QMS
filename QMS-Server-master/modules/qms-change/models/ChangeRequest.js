@@ -64,6 +64,21 @@ const ChangeRequest = sequelize.define("change_request", {
   // Связи
   linkedNcId: { type: DataTypes.INTEGER },
   linkedCapaId: { type: DataTypes.INTEGER },
+
+  // Structured Impact Fields (Phase 4)
+  regulatoryDossierImpact: {
+    type: DataTypes.ENUM("NONE", "NOTIFICATION_ONLY", "VARIATION", "NEW_SUBMISSION"),
+    defaultValue: "NONE",
+    comment: "Impact on regulatory dossier",
+  },
+  regulatoryDossierNotes: { type: DataTypes.TEXT, comment: "Details on regulatory dossier impact" },
+  overallImpactLevel: {
+    type: DataTypes.ENUM("LOW", "MEDIUM", "HIGH", "CRITICAL"),
+    allowNull: true,
+    comment: "Overall computed impact level",
+  },
+  affectedProductIds: { type: DataTypes.JSONB, defaultValue: [], comment: "Array of affected product IDs" },
+  affectedDocumentIds: { type: DataTypes.JSONB, defaultValue: [], comment: "Array of affected document IDs" },
 });
 
 module.exports = { ChangeRequest };

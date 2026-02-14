@@ -43,3 +43,5 @@ export const PRODUCT_REGISTRY_ROUTE = '/qms/products';
 export const QMS_PROTOTYPE_ROUTE = '/qms/prototype';
 export const DESIGN_CONTROL_ROUTE = '/qms/design-control';
 export const ESIGN_ROUTE = '/qms/esign';
+export const DHR_ROUTE = '/qms/dhr';
+export const CUSTOMER_REQUIREMENTS_ROUTE = '/qms/customer-requirements';

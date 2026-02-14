@@ -8,6 +8,7 @@ import {
   AlertTriangle,
   Shield,
   Loader2,
+  FileCheck,
 } from "lucide-react";
 import KpiRow from "../../components/qms/KpiRow";
 import ActionBtn from "../../components/qms/ActionBtn";
@@ -61,6 +62,24 @@ const statusLabels: Record<ProductionStatus, string> = {
   DISCONTINUED: "Снят",
 };
 
+/* ───── DMF status ───── */
+
+type DmfStatus = "NOT_STARTED" | "IN_PROGRESS" | "COMPLETE" | "NEEDS_UPDATE";
+
+const dmfStatusColors: Record<DmfStatus, { color: string; bg: string }> = {
+  NOT_STARTED:  { color: "#64748B", bg: "rgba(100,116,139,0.14)" },
+  IN_PROGRESS:  { color: "#4A90E8", bg: "rgba(74,144,232,0.14)" },
+  COMPLETE:     { color: "#2DD4A8", bg: "rgba(45,212,168,0.14)" },
+  NEEDS_UPDATE: { color: "#E8A830", bg: "rgba(232,168,48,0.14)" },
+};
+
+const dmfStatusLabels: Record<DmfStatus, string> = {
+  NOT_STARTED:  "\u2014",
+  IN_PROGRESS:  "В работе",
+  COMPLETE:     "Готово",
+  NEEDS_UPDATE: "Обновить",
+};
+
 /* ───── table columns ───── */
 
 const columns = [
@@ -101,6 +120,19 @@ const columns = [
     render: (r: ProductRow) => {
       const c = statusColors[r.status];
       return <Badge color={c.color} bg={c.bg}>{statusLabels[r.status]}</Badge>;
+    },
+  },
+  {
+    key: "dmfStatus",
+    label: "DMF",
+    align: "center" as const,
+    render: (r: ProductRow) => {
+      const dmf = (r as any).dmfStatus as DmfStatus | undefined;
+      if (!dmf || dmf === "NOT_STARTED") {
+        return <span className="text-asvo-text-dim">{dmfStatusLabels.NOT_STARTED}</span>;
+      }
+      const c = dmfStatusColors[dmf] ?? dmfStatusColors.NOT_STARTED;
+      return <Badge color={c.color} bg={c.bg}>{dmfStatusLabels[dmf] ?? dmf}</Badge>;
     },
   },
   {
@@ -167,6 +199,7 @@ const ProductRegistryPage: React.FC = () => {
     { label: "В разработке",      value: stats?.inDevelopment   ?? 0, icon: <Lightbulb size={18} />,      color: "#E8A830" },
     { label: "Истекает РУ",       value: stats?.expiringRu      ?? 0, icon: <AlertTriangle size={18} />,  color: "#F06060" },
     { label: "Класс риска 2б+",   value: stats?.highRiskClass   ?? 0, icon: <Shield size={18} />,         color: "#A06AE8" },
+    { label: "DMF готово",        value: stats?.dmfComplete    ?? 0, icon: <FileCheck size={18} />,      color: "#2DD4A8" },
   ];
 
   /* ───── risk class distribution (derived from stats) ───── */

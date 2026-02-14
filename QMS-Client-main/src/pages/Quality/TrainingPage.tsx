@@ -11,6 +11,10 @@ import {
   Calendar,
   Award,
   Loader2,
+  CalendarRange,
+  BarChart3,
+  ShieldAlert,
+  Target,
 } from "lucide-react";
 import KpiRow from "../../components/qms/KpiRow";
 import ActionBtn from "../../components/qms/ActionBtn";
@@ -66,9 +70,42 @@ const LEVEL_CFG: Record<number, { dots: string; cls: string }> = {
 
 const DEFAULT_SKILLS = ["ISO 13485", "IPC-A-610", "Пайка SMD", "ESD", "GMP"];
 
+/* ---- Plan item types ---- */
+
+type PlanItemStatus = "PLANNED" | "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED" | "OVERDUE";
+
+const PLAN_STATUS_CFG: Record<PlanItemStatus, { label: string; color: string; bg: string }> = {
+  PLANNED:     { label: "Запланировано", color: "#64748B", bg: "rgba(100,116,139,0.12)" },
+  SCHEDULED:   { label: "Назначено",    color: "#4A90E8", bg: "rgba(74,144,232,0.12)" },
+  IN_PROGRESS: { label: "В процессе",   color: "#E8A830", bg: "rgba(232,168,48,0.12)" },
+  COMPLETED:   { label: "Завершено",    color: "#2DD4A8", bg: "rgba(45,212,168,0.12)" },
+  CANCELLED:   { label: "Отменено",     color: "#64748B", bg: "rgba(100,116,139,0.12)" },
+  OVERDUE:     { label: "Просрочено",   color: "#F06060", bg: "rgba(240,96,96,0.12)" },
+};
+
+const PLAN_MONTH_COLORS: Record<PlanItemStatus, string> = {
+  PLANNED:     "#64748B",
+  SCHEDULED:   "#4A90E8",
+  IN_PROGRESS: "#E8A830",
+  COMPLETED:   "#2DD4A8",
+  CANCELLED:   "#3B4252",
+  OVERDUE:     "#F06060",
+};
+
+const MONTHS = ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"];
+
+/* ---- Plan item type config ---- */
+
+const PLAN_TYPE_CFG: Record<string, { label: string; color: string; bg: string }> = {
+  MANDATORY:  { label: "Обязательное", color: "#F06060", bg: "rgba(240,96,96,0.12)" },
+  ELECTIVE:   { label: "По выбору",    color: "#4A90E8", bg: "rgba(74,144,232,0.12)" },
+  REFRESHER:  { label: "Повторное",    color: "#E8A830", bg: "rgba(232,168,48,0.12)" },
+  ONBOARDING: { label: "Вводное",      color: "#A06AE8", bg: "rgba(160,106,232,0.12)" },
+};
+
 /* ---- View toggle ---- */
 
-type View = "table" | "matrix";
+type View = "table" | "matrix" | "plan" | "gaps";
 
 /* ================================================================== */
 /*  Component                                                          */
@@ -84,6 +121,8 @@ const TrainingPage: React.FC = () => {
   const [plans, setPlans] = useState<TrainingRow[]>([]);
   const [records, setRecords] = useState<any[]>([]);
   const [competency, setCompetency] = useState<CompetencyRow[]>([]);
+  const [planItems, setPlanItems] = useState<any[]>([]);
+  const [gapData, setGapData] = useState<any>(null);
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -105,9 +144,15 @@ const TrainingPage: React.FC = () => {
         ]);
         setPlans(plansRes.rows ?? []);
         setRecords(recordsRes.rows ?? []);
-      } else {
+      } else if (view === "matrix") {
         const compRes = await trainingApi.getCompetency();
         setCompetency(compRes.rows ?? []);
+      } else if (view === "plan") {
+        const planRes = await trainingApi.getPlanItems();
+        setPlanItems(planRes.rows ?? planRes ?? []);
+      } else if (view === "gaps") {
+        const gapRes = await trainingApi.getGapAnalysis();
+        setGapData(gapRes);
       }
     } catch (e: any) {
       console.error(e);
@@ -188,6 +233,44 @@ const TrainingPage: React.FC = () => {
     },
   ];
 
+  /* ---- Gap analysis table columns ---- */
+
+  const gapColumns = [
+    {
+      key: "employee",
+      label: "Сотрудник",
+      render: (r: any) => <span className="font-medium text-asvo-text">{r.employee ?? r.employeeName ?? "\u2014"}</span>,
+    },
+    {
+      key: "process",
+      label: "Процесс",
+      render: (r: any) => <span className="text-asvo-text">{r.process ?? r.skill ?? "\u2014"}</span>,
+    },
+    {
+      key: "currentLevel",
+      label: "Текущий",
+      align: "center" as const,
+      render: (r: any) => <span className="text-asvo-text-mid font-mono">{r.currentLevel ?? 0}</span>,
+    },
+    {
+      key: "requiredLevel",
+      label: "Требуемый",
+      align: "center" as const,
+      render: (r: any) => <span className="text-asvo-text-mid font-mono">{r.requiredLevel ?? 0}</span>,
+    },
+    {
+      key: "gap",
+      label: "GAP",
+      align: "center" as const,
+      render: (r: any) => {
+        const gap = (r.requiredLevel ?? 0) - (r.currentLevel ?? 0);
+        const color = gap <= 0 ? "#2DD4A8" : gap === 1 ? "#E8A830" : "#F06060";
+        const bg = gap <= 0 ? "rgba(45,212,168,0.12)" : gap === 1 ? "rgba(232,168,48,0.12)" : "rgba(240,96,96,0.12)";
+        return <Badge color={color} bg={bg}>{gap <= 0 ? "OK" : `-${gap}`}</Badge>;
+      },
+    },
+  ];
+
   /* ---- render ---- */
 
   return (
@@ -213,6 +296,22 @@ const TrainingPage: React.FC = () => {
             onClick={() => setView(view === "matrix" ? "table" : "matrix")}
           >
             Матрица компетенций
+          </ActionBtn>
+          <ActionBtn
+            variant="secondary"
+            color="#4A90E8"
+            icon={<CalendarRange size={15} />}
+            onClick={() => setView(view === "plan" ? "table" : "plan")}
+          >
+            План на год
+          </ActionBtn>
+          <ActionBtn
+            variant="secondary"
+            color="#E8A830"
+            icon={<BarChart3 size={15} />}
+            onClick={() => setView(view === "gaps" ? "table" : "gaps")}
+          >
+            GAP-анализ
           </ActionBtn>
           <ActionBtn variant="secondary" icon={exporting ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />} disabled={exporting} onClick={() => doExport("training", "Training_Export")}>Экспорт</ActionBtn>
         </div>
@@ -313,6 +412,149 @@ const TrainingPage: React.FC = () => {
             </span>
           </div>
         </Card>
+      )}
+
+      {/* ---- View: Annual Plan ---- */}
+      {!loading && !error && view === "plan" && (
+        <Card>
+          <SectionTitle>План обучения на год</SectionTitle>
+
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr>
+                  <th className="text-left text-[10px] font-semibold text-asvo-text-dim uppercase tracking-wider px-3 py-2.5 min-w-[200px]">
+                    Обучение
+                  </th>
+                  <th className="text-center text-[10px] font-semibold text-asvo-text-dim uppercase tracking-wider px-2 py-2.5 min-w-[80px]">
+                    Тип
+                  </th>
+                  <th className="text-center text-[10px] font-semibold text-asvo-text-dim uppercase tracking-wider px-2 py-2.5 min-w-[90px]">
+                    Статус
+                  </th>
+                  {MONTHS.map((m) => (
+                    <th key={m} className="text-center text-[10px] font-semibold text-asvo-text-dim uppercase tracking-wider px-1 py-2.5 min-w-[44px]">
+                      {m}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {(Array.isArray(planItems) ? planItems : []).map((item: any, idx: number) => {
+                  const status: PlanItemStatus = item.status ?? "PLANNED";
+                  const sc = PLAN_STATUS_CFG[status] ?? PLAN_STATUS_CFG.PLANNED;
+                  const typeCfg = PLAN_TYPE_CFG[item.type] ?? { label: item.type ?? "\u2014", color: "#64748B", bg: "rgba(100,116,139,0.12)" };
+                  const scheduledMonth: number = item.scheduledMonth ?? item.month ?? -1; // 1-12
+
+                  return (
+                    <tr key={item.id ?? idx} className="border-t border-asvo-border/40">
+                      <td className="px-3 py-2.5 text-[13px] font-medium text-asvo-text whitespace-nowrap">
+                        {item.title ?? item.name ?? "\u2014"}
+                      </td>
+                      <td className="px-2 py-2.5 text-center">
+                        <Badge color={typeCfg.color} bg={typeCfg.bg}>{typeCfg.label}</Badge>
+                      </td>
+                      <td className="px-2 py-2.5 text-center">
+                        <Badge color={sc.color} bg={sc.bg}>{sc.label}</Badge>
+                      </td>
+                      {MONTHS.map((_, mi) => {
+                        const monthNum = mi + 1;
+                        const isScheduled = monthNum === scheduledMonth;
+                        return (
+                          <td key={mi} className="px-1 py-2.5 text-center">
+                            {isScheduled ? (
+                              <div
+                                className="w-6 h-6 mx-auto rounded-md"
+                                style={{ backgroundColor: PLAN_MONTH_COLORS[status] ?? "#64748B" }}
+                              />
+                            ) : (
+                              <div className="w-6 h-6 mx-auto rounded-md bg-asvo-border/20" />
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {(Array.isArray(planItems) ? planItems : []).length === 0 && (
+            <p className="text-sm text-asvo-text-dim text-center py-8">
+              Нет элементов плана обучения
+            </p>
+          )}
+
+          {/* Legend */}
+          <div className="flex items-center gap-5 mt-4 text-[11px] text-asvo-text-dim flex-wrap">
+            {(Object.entries(PLAN_STATUS_CFG) as [PlanItemStatus, { label: string; color: string }][]).map(([key, cfg]) => (
+              <span key={key} className="flex items-center gap-1.5">
+                <span
+                  className="inline-block w-3 h-3 rounded-sm"
+                  style={{ backgroundColor: PLAN_MONTH_COLORS[key] }}
+                />
+                {cfg.label}
+              </span>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {/* ---- View: GAP Analysis ---- */}
+      {!loading && !error && view === "gaps" && (
+        <>
+          {/* Summary cards */}
+          <div className="grid grid-cols-3 gap-4">
+            <Card>
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl" style={{ background: "rgba(240,96,96,0.12)" }}>
+                  <ShieldAlert size={20} style={{ color: "#F06060" }} />
+                </div>
+                <div>
+                  <p className="text-[11px] text-asvo-text-dim uppercase tracking-wider">Всего GAP</p>
+                  <p className="text-2xl font-bold text-asvo-text">{gapData?.totalGaps ?? 0}</p>
+                </div>
+              </div>
+            </Card>
+            <Card>
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl" style={{ background: "rgba(45,212,168,0.12)" }}>
+                  <Target size={20} style={{ color: "#2DD4A8" }} />
+                </div>
+                <div>
+                  <p className="text-[11px] text-asvo-text-dim uppercase tracking-wider">Соответствие</p>
+                  <p className="text-2xl font-bold text-asvo-text">{gapData?.compliancePercent ?? 0}%</p>
+                </div>
+              </div>
+            </Card>
+            <Card>
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl" style={{ background: "rgba(240,96,96,0.12)" }}>
+                  <AlertCircle size={20} style={{ color: "#F06060" }} />
+                </div>
+                <div>
+                  <p className="text-[11px] text-asvo-text-dim uppercase tracking-wider">Критические GAP</p>
+                  <p className="text-2xl font-bold text-asvo-text">{gapData?.criticalGaps ?? 0}</p>
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          {/* Gap table */}
+          <DataTable
+            columns={gapColumns}
+            data={gapData?.gaps ?? gapData?.rows ?? []}
+          />
+
+          {(gapData?.gaps ?? gapData?.rows ?? []).length === 0 && (
+            <Card>
+              <p className="text-sm text-asvo-text-dim text-center py-8">
+                Нет данных GAP-анализа
+              </p>
+            </Card>
+          )}
+        </>
       )}
 
       {/* ---- Modals ---- */}

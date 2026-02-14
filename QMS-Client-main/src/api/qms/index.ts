@@ -21,3 +21,4 @@ export { changeRequestsApi, validationsApi, productsApi, notificationsApi } from
 export { dashboardApi } from "./dashboard";
 export { designApi } from "./design";
 export { esignApi } from "./esign";
+export { dhrApi } from "./dhr";
