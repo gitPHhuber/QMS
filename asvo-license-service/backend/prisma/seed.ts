@@ -1,4 +1,5 @@
 import { PrismaClient, Tier, OrgStatus, InstanceStatus, SubscriptionStatus, BillingCycle } from '@prisma/client';
+import crypto from 'crypto';
 
 const prisma = new PrismaClient();
 
@@ -55,7 +56,7 @@ async function main() {
         version: '1.3.2',
         status: InstanceStatus.online,
         lastHeartbeatAt: now,
-        apiKey: 'demo_inst_key_12345678',
+        apiKey: crypto.createHash('sha256').update('demo_inst_key_12345678').digest('hex'),
       },
     });
     console.log(`Instance created: ${instance.name} (${instance.id})`);

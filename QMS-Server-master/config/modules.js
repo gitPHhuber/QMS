@@ -198,7 +198,37 @@ class ModuleManager {
     };
   }
 
+  /**
+   * Apply license constraints — disable modules not present in the license.
+   * License modules act as a ceiling: only modules in the license array are allowed.
+   * Core (alwaysOn) modules are never disabled.
+   * @param {object} licensePayload - Decoded license payload with .modules and .limits
+   */
+  applyLicense(licensePayload) {
+    if (!licensePayload || !licensePayload.modules) return;
+
+    // Wildcard — all modules allowed (corp tier)
+    if (licensePayload.modules.includes('*')) {
+      this._licenseMaxUsers = licensePayload.limits?.max_users;
+      return;
+    }
+
+    const licensedModules = new Set(licensePayload.modules);
+
+    for (const code of [...this.enabled]) {
+      const mod = MODULE_CATALOG[code];
+      if (mod && mod.alwaysOn) continue; // never disable core modules
+      if (!licensedModules.has(code)) {
+        this.enabled.delete(code);
+      }
+    }
+
+    this._licenseMaxUsers = licensePayload.limits?.max_users;
+    this._resolveDependencies();
+  }
+
   _getMaxUsers() {
+    if (this._licenseMaxUsers) return this._licenseMaxUsers;
     const limits = { start: 5, standard: 15, pro: 50, industry: 200, 'dev-all': 999, custom: 999 };
     return limits[this.tier] || 999;
   }

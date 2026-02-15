@@ -6,6 +6,7 @@ import { useAppAuth as useAuth } from "src/hooks/useAppAuth";
 import { Menu, Transition } from "@headlessui/react";
 import { setSessionOnline } from "src/api/userApi";
 import { DateTimeDisplay } from "./DateTimeDisplay";
+import { SubscriptionBadge } from "./SubscriptionBadge";
 import clsx from "clsx";
 
 import {
@@ -261,6 +262,7 @@ export const Header: React.FC = observer(() => {
               DEV — все модули
             </span>
           )}
+          <SubscriptionBadge />
           <div className="hidden xl:block text-right">
             <DateTimeDisplay />
           </div>

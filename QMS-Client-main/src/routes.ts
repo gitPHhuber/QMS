@@ -20,6 +20,7 @@ import TasksPage from "./pages/Tasks/TasksPage";
 
 import { AdminRightsPage } from "./pages/Admin/RBAC/AdminRightsPage";
 import { ModulesPage } from "./pages/Admin/Modules/ModulesPage";
+import { LicenseActivationPage } from "./pages/Admin/License/LicenseActivationPage";
 
 // QMS страницы
 import { QmsDashboardPage } from "./pages/QMS/QmsDashboardPage";
@@ -67,6 +68,7 @@ import {
   TASKS_ROUTE,
   ADMIN_RBAC_ROUTE,
   ADMIN_MODULES_ROUTE,
+  ADMIN_LICENSE_ROUTE,
   LOGIN_ROUTE,
   REGISTRATION_ROUTE,
   QMS_DASHBOARD_ROUTE,
@@ -145,6 +147,7 @@ export const adminRoutes = [
   { path: ADMIN_WAREHOUSE_ROUTE, Component: AdminWarehousePage },
   { path: ADMIN_RBAC_ROUTE, Component: AdminRightsPage },
   { path: ADMIN_MODULES_ROUTE, Component: ModulesPage },
+  { path: ADMIN_LICENSE_ROUTE, Component: LicenseActivationPage },
 ];
 
 export const publicRoutes = [

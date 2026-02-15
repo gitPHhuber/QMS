@@ -17,6 +17,7 @@ import { subscriptionsRoutes } from './routes/subscriptions';
 import { paymentsRoutes } from './routes/payments';
 import { telemetryRoutes } from './routes/telemetry';
 import { dashboardRoutes } from './routes/dashboard';
+import { settingsRoutes } from './routes/settings';
 
 // Worker imports
 import { startBillingCron } from './workers/billingCron';
@@ -36,8 +37,13 @@ async function main() {
   });
 
   // Register CORS
+  const corsOrigins = config.CORS_ORIGINS
+    ? config.CORS_ORIGINS.split(',').map((s: string) => s.trim())
+    : undefined;
   await app.register(cors, {
-    origin: '*', // Allow all origins for dev; restrict in production
+    origin: corsOrigins || (config.NODE_ENV === 'production'
+      ? ['https://manage.asvo.tech', 'https://my.asvo.tech']
+      : true),
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   });
@@ -92,6 +98,7 @@ async function main() {
   await app.register(paymentsRoutes);
   await app.register(telemetryRoutes);
   await app.register(dashboardRoutes);
+  await app.register(settingsRoutes);
 
   // Health check
   app.get('/health', async () => {

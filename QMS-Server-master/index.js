@@ -2,6 +2,8 @@ require("dotenv").config();
 const express = require("express");
 const sequelize = require("./db");
 const { moduleManager } = require('./config/modules');
+const { licenseService } = require('./services/LicenseService');
+const checkLicenseWrite = require('./middleware/licenseMiddleware');
 const models = require("./models/index");
 const cors = require("cors");
 const fileUpload = require("express-fileupload");
@@ -38,6 +40,9 @@ app.use("/api", healthRouter);
 
 // Rate limiting
 app.use("/api", apiLimiter);
+
+// License write-protection middleware
+app.use("/api", checkLicenseWrite);
 
 // Auth token refresh endpoints
 app.post("/api/auth/refresh", refreshToken);
@@ -365,6 +370,10 @@ const initInitialData = async () => {
 
 const start = async () => {
   try {
+    await licenseService.init();
+    if (licenseService.getState().payload) {
+      moduleManager.applyLicense(licenseService.getState().payload);
+    }
     moduleManager.printStatus();
     await sequelize.authenticate();
 // AUTO-DISABLED: sequelize.sync disabled (use migrations)

@@ -1,4 +1,5 @@
 import { useState, FormEvent } from 'react';
+import api from '../api/client';
 
 interface FaqItem {
   q: string;
@@ -38,6 +39,7 @@ export default function SupportPage() {
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
+  const [error, setError] = useState('');
 
   function toggleFaq(idx: number) {
     setOpenFaq(openFaq === idx ? null : idx);
@@ -46,13 +48,18 @@ export default function SupportPage() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setSending(true);
-    // Stub: simulate sending
-    await new Promise((r) => setTimeout(r, 1000));
-    setSending(false);
-    setSent(true);
-    setSubject('');
-    setMessage('');
-    setTimeout(() => setSent(false), 5000);
+    setError('');
+    try {
+      await api.post('/portal/support', { subject, message });
+      setSent(true);
+      setSubject('');
+      setMessage('');
+      setTimeout(() => setSent(false), 5000);
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Ошибка при отправке. Попробуйте позже.');
+    } finally {
+      setSending(false);
+    }
   }
 
   return (
@@ -103,6 +110,12 @@ export default function SupportPage() {
         {sent && (
           <div className="mb-4 p-3 rounded-lg bg-status-green/10 border border-status-green/30 text-status-green text-sm">
             Обращение успешно создано! Мы ответим в течение 24 часов.
+          </div>
+        )}
+
+        {error && (
+          <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+            {error}
           </div>
         )}
 

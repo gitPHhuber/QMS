@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { PrismaClient } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
-import { bearerAuth } from '../middleware/auth';
+import { bearerAuth, hashApiKey } from '../middleware/auth';
 import { createAuditLog } from '../middleware/audit';
 import { z } from 'zod';
 
@@ -32,14 +32,15 @@ export async function instancesRoutes(app: FastifyInstance) {
     const org = await prisma.organization.findUnique({ where: { id } });
     if (!org) return reply.status(404).send({ error: 'Organization not found' });
 
-    const apiKey = `inst_${uuidv4().replace(/-/g, '')}`;
+    const apiKeyPlain = `inst_${uuidv4().replace(/-/g, '')}`;
+    const apiKeyHashed = hashApiKey(apiKeyPlain);
 
     const instance = await prisma.instance.create({
       data: {
         organizationId: id,
         name: body.name,
         fingerprint: body.fingerprint,
-        apiKey,
+        apiKey: apiKeyHashed,
       },
     });
 
@@ -52,7 +53,7 @@ export async function instancesRoutes(app: FastifyInstance) {
       ipAddress: request.ip,
     });
 
-    return reply.status(201).send({ ...instance, apiKey });
+    return reply.status(201).send({ ...instance, apiKey: apiKeyPlain });
   });
 
   // DELETE /api/v1/instances/:id

@@ -3,9 +3,17 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // ---------------------------------------------------------------------------
 // Mock PrismaClient before importing the service
 // ---------------------------------------------------------------------------
-const mockInstanceFindUnique = vi.fn();
-const mockInstanceUpdate = vi.fn();
-const mockTelemetryEventCreate = vi.fn();
+const {
+  mockInstanceFindUnique,
+  mockInstanceUpdate,
+  mockTelemetryEventCreate,
+  mockLicenseCount,
+} = vi.hoisted(() => ({
+  mockInstanceFindUnique: vi.fn(),
+  mockInstanceUpdate: vi.fn(),
+  mockTelemetryEventCreate: vi.fn(),
+  mockLicenseCount: vi.fn().mockResolvedValue(1),
+}));
 
 vi.mock('@prisma/client', () => {
   const InstanceStatus = { online: 'online', offline: 'offline', degraded: 'degraded' } as const;
@@ -18,6 +26,9 @@ vi.mock('@prisma/client', () => {
       },
       telemetryEvent: {
         create: mockTelemetryEventCreate,
+      },
+      license: {
+        count: mockLicenseCount,
       },
     })),
   };
@@ -53,6 +64,7 @@ function makeInstanceRow(overrides: Record<string, unknown> = {}) {
   return {
     id: 'inst-001',
     organizationId: 'org-001',
+    fingerprint: 'fp-abc123',
     lastHeartbeatAt: new Date(now.getTime() - 300_000), // 5 min ago
     organization: {
       subscription: { status: 'active' },
@@ -61,6 +73,7 @@ function makeInstanceRow(overrides: Record<string, unknown> = {}) {
       {
         id: 'lic-001',
         licenseKey: 'tok.en.sig',
+        modules: ['qms.dms', 'qms.nc'],
         validUntil,
         createdAt: new Date(now.getTime() - 86400000), // created yesterday
       },
@@ -130,6 +143,7 @@ describe('HeartbeatService', () => {
         {
           id: 'lic-exp',
           licenseKey: 'tok.en.sig',
+          modules: ['qms.dms', 'qms.nc'],
           validUntil: almostExpired,
           createdAt: new Date(now.getTime() - 86400000),
         },
@@ -155,6 +169,7 @@ describe('HeartbeatService', () => {
         {
           id: 'lic-ok',
           licenseKey: 'tok.en.sig',
+          modules: ['qms.dms', 'qms.nc'],
           validUntil: farFuture,
           createdAt: new Date(now.getTime() - 86400000),
         },

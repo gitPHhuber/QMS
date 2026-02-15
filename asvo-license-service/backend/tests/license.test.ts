@@ -4,10 +4,17 @@ import { generateKeyPair, sign, verify } from '../src/utils/crypto';
 // ---------------------------------------------------------------------------
 // Mock PrismaClient
 // ---------------------------------------------------------------------------
-const mockOrgFindUnique = vi.fn();
-const mockLicenseCreate = vi.fn();
-const mockLicenseUpdate = vi.fn();
-const mockLicenseFindUnique = vi.fn();
+const {
+  mockOrgFindUnique,
+  mockLicenseCreate,
+  mockLicenseUpdate,
+  mockLicenseFindUnique,
+} = vi.hoisted(() => ({
+  mockOrgFindUnique: vi.fn(),
+  mockLicenseCreate: vi.fn(),
+  mockLicenseUpdate: vi.fn(),
+  mockLicenseFindUnique: vi.fn(),
+}));
 
 vi.mock('@prisma/client', () => ({
   Tier: { start: 'start', standard: 'standard', pro: 'pro', industry: 'industry', corp: 'corp' },

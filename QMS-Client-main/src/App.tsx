@@ -41,7 +41,7 @@ const App = observer(() => {
   }, []);
 
   if (!context) throw new Error("Context required");
-  const { user, modules } = context;
+  const { user, modules, license } = context;
 
 
   useEffect(() => {
@@ -52,6 +52,11 @@ const App = observer(() => {
       // Load modules config
       if (!modules.config) {
         modules.fetchModules();
+      }
+
+      // Load license info
+      if (!license.info) {
+        license.fetchLicense();
       }
 
       check()

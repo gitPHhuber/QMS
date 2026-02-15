@@ -18,6 +18,7 @@ const envSchema = z.object({
   SMTP_FROM: z.string().default('noreply@asvo.tech'),
   TELEGRAM_BOT_TOKEN: z.string().default(''),
   TELEGRAM_ADMIN_CHAT_ID: z.string().default(''),
+  CORS_ORIGINS: z.string().default(''),
 });
 
 export type Config = z.infer<typeof envSchema>;

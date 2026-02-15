@@ -60,4 +60,30 @@ router.get("/system/modules", (req, res) => {
   res.json(moduleManager.toClientConfig());
 });
 
+// 5. License API (always)
+const { licenseService } = require("../services/LicenseService");
+
+router.get("/system/license", (req, res) => {
+  res.json(licenseService.getState());
+});
+
+router.post("/system/license/activate", (req, res, next) => {
+  try {
+    if (!req.files || !req.files.license) {
+      return res.status(400).json({ error: "License file is required (field: 'license')" });
+    }
+    const licenseFile = req.files.license;
+    const state = licenseService.saveLicenseFile(licenseFile.data);
+    if (!state.valid && state.error) {
+      return res.status(400).json({ error: state.error, state });
+    }
+    if (state.payload) {
+      moduleManager.applyLicense(state.payload);
+    }
+    res.json({ message: "License activated successfully", state });
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;

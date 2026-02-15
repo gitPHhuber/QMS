@@ -13,7 +13,7 @@ export async function paymentsRoutes(app: FastifyInstance) {
     const body = request.body as any;
     const rawBody = JSON.stringify(body);
 
-    if (!YukassaService.verifyWebhookSignature(rawBody, '')) {
+    if (!YukassaService.verifyWebhookIp(request.ip)) {
       return reply.status(403).send({ error: 'Invalid signature' });
     }
 

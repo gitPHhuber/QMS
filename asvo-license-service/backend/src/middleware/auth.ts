@@ -30,6 +30,10 @@ export async function bearerAuth(request: FastifyRequest, reply: FastifyReply) {
   }
 }
 
+export function hashApiKey(key: string): string {
+  return crypto.createHash('sha256').update(key).digest('hex');
+}
+
 export async function apiKeyAuth(request: FastifyRequest, reply: FastifyReply) {
   const authHeader = request.headers.authorization;
   if (!authHeader || !authHeader.startsWith('ApiKey ')) {
@@ -37,8 +41,9 @@ export async function apiKeyAuth(request: FastifyRequest, reply: FastifyReply) {
   }
 
   const apiKey = authHeader.slice(7);
+  const apiKeyHash = hashApiKey(apiKey);
   const instance = await prisma.instance.findUnique({
-    where: { apiKey },
+    where: { apiKey: apiKeyHash },
     include: { organization: true },
   });
 

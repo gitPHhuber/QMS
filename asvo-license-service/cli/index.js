@@ -26,12 +26,12 @@ program
   .requiredOption('-k, --key <path>', 'Path to private.key')
   .requiredOption('--org <name>', 'Organization name')
   .requiredOption('--tier <tier>', 'Tier: start|standard|pro|industry|corp')
-  .requiredOption('--modules <list>', 'Comma-separated module list', (v) => v.split(','))
-  .requiredOption('--max-users <n>', 'Max users', parseInt)
-  .requiredOption('--max-storage <n>', 'Max storage GB', parseInt)
-  .option('--duration <days>', 'License duration in days', parseInt, 365)
+  .option('--modules <list>', 'Comma-separated module list (defaults from tier preset)', (v) => v.split(','))
+  .option('--max-users <n>', 'Max users (defaults from tier preset)', (v) => parseInt(v, 10))
+  .option('--max-storage <n>', 'Max storage GB (defaults from tier preset)', (v) => parseInt(v, 10))
+  .option('--duration <days>', 'License duration in days', (v) => parseInt(v, 10), 365)
   .option('--fingerprint <fp>', 'Hardware fingerprint')
-  .option('--grace-days <n>', 'Grace period days', parseInt, 14)
+  .option('--grace-days <n>', 'Grace period days', (v) => parseInt(v, 10), 14)
   .option('-o, --output <path>', 'Output .lic file path')
   .action((opts) => {
     const token = createLicense({

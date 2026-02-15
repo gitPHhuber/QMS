@@ -3,9 +3,26 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // ---------------------------------------------------------------------------
 // Mock PrismaClient
 // ---------------------------------------------------------------------------
-const mockOrgFindUnique = vi.fn();
-const mockOrgCreate = vi.fn();
-const mockSubCreate = vi.fn();
+const {
+  mockOrgFindUnique,
+  mockOrgCreate,
+  mockSubCreate,
+  mockSendWelcome,
+  mockSendSubscriptionCreated,
+  mockNotifyAdminNewRegistration,
+  mockLicenseCreate,
+} = vi.hoisted(() => ({
+  mockOrgFindUnique: vi.fn(),
+  mockOrgCreate: vi.fn(),
+  mockSubCreate: vi.fn(),
+  mockSendWelcome: vi.fn().mockResolvedValue(undefined),
+  mockSendSubscriptionCreated: vi.fn().mockResolvedValue(undefined),
+  mockNotifyAdminNewRegistration: vi.fn().mockResolvedValue(undefined),
+  mockLicenseCreate: vi.fn().mockResolvedValue({
+    license: { id: 'lic-trial', tier: 'standard' },
+    licenseKey: 'mock.license.key',
+  }),
+}));
 
 vi.mock('@prisma/client', () => ({
   Tier: { start: 'start', standard: 'standard', pro: 'pro', industry: 'industry', corp: 'corp' },
@@ -30,10 +47,6 @@ vi.mock('@prisma/client', () => ({
 // ---------------------------------------------------------------------------
 // Mock NotificationService
 // ---------------------------------------------------------------------------
-const mockSendWelcome = vi.fn().mockResolvedValue(undefined);
-const mockSendSubscriptionCreated = vi.fn().mockResolvedValue(undefined);
-const mockNotifyAdminNewRegistration = vi.fn().mockResolvedValue(undefined);
-
 vi.mock('../src/services/NotificationService', () => ({
   NotificationService: {
     sendWelcome: (...args: any[]) => mockSendWelcome(...args),
@@ -45,11 +58,6 @@ vi.mock('../src/services/NotificationService', () => ({
 // ---------------------------------------------------------------------------
 // Mock LicenseGenerator
 // ---------------------------------------------------------------------------
-const mockLicenseCreate = vi.fn().mockResolvedValue({
-  license: { id: 'lic-trial', tier: 'standard' },
-  licenseKey: 'mock.license.key',
-});
-
 vi.mock('../src/services/LicenseGenerator', () => ({
   LicenseGenerator: {
     create: (...args: any[]) => mockLicenseCreate(...args),

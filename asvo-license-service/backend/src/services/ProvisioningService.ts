@@ -4,6 +4,7 @@ import { LicenseGenerator } from './LicenseGenerator';
 import { NotificationService } from './NotificationService';
 import { TIER_PRESETS, getTierPrice, TierName } from '../config';
 import { logger } from '../utils/logger';
+import { hashApiKey } from '../middleware/auth';
 
 const prisma = new PrismaClient();
 
@@ -66,10 +67,10 @@ export class ProvisioningService {
     });
 
     // 4. Generate API key for future instance registration
-    const apiKey = `inst_${uuidv4().replace(/-/g, '')}`;
+    const apiKeyPlain = `inst_${uuidv4().replace(/-/g, '')}`;
 
     // 5. Send welcome email
-    await NotificationService.sendWelcome(email, orgName, apiKey);
+    await NotificationService.sendWelcome(email, orgName, apiKeyPlain);
     await NotificationService.sendSubscriptionCreated(
       email,
       orgName,
@@ -87,7 +88,7 @@ export class ProvisioningService {
       subscription,
       license,
       licenseKey,
-      apiKey,
+      apiKey: apiKeyPlain,
     };
   }
 }

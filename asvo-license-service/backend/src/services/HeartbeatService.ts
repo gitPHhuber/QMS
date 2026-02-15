@@ -37,6 +37,36 @@ export class HeartbeatService {
       throw new Error('Instance not found');
     }
 
+    // Check if organization license is revoked (all licenses revoked)
+    const activeLicenseCount = await prisma.license.count({
+      where: { organizationId: instance.organizationId, isRevoked: false },
+    });
+    const allRevoked = activeLicenseCount === 0 && await prisma.license.count({
+      where: { organizationId: instance.organizationId },
+    }) > 0;
+    if (allRevoked) {
+      throw Object.assign(new Error('License revoked'), { statusCode: 403 });
+    }
+
+    // Fingerprint mismatch check — alert but do NOT block
+    if (data.fingerprint !== instance.fingerprint) {
+      logger.warn(
+        { instanceId, expected: instance.fingerprint, received: data.fingerprint },
+        'Fingerprint mismatch detected',
+      );
+      await prisma.telemetryEvent.create({
+        data: {
+          instanceId,
+          eventType: 'error',
+          payload: {
+            type: 'fingerprint_mismatch',
+            expected: instance.fingerprint,
+            received: data.fingerprint,
+          },
+        },
+      });
+    }
+
     // Update instance status
     await prisma.instance.update({
       where: { id: instanceId },
@@ -92,6 +122,15 @@ export class HeartbeatService {
       });
     }
 
+    // Fingerprint mismatch warning command
+    if (data.fingerprint !== instance.fingerprint) {
+      commands.push({
+        type: 'message',
+        severity: 'warning',
+        text: 'Обнаружено несовпадение аппаратного отпечатка. Свяжитесь с администратором.',
+      });
+    }
+
     // Check for pending license update
     const currentLicense = instance.licenses[0];
     if (currentLicense) {
@@ -104,6 +143,26 @@ export class HeartbeatService {
           text: `Лицензия истекает через ${daysUntilExpiry} дн. Обновление будет выполнено автоматически.`,
         });
       }
+
+      // Module enable/disable commands
+      const licensedModules = currentLicense.modules || [];
+      const activeModules = data.modules_active || [];
+
+      // Modules that should be enabled but are not active
+      for (const mod of licensedModules) {
+        if (mod !== '*' && !activeModules.includes(mod)) {
+          commands.push({ type: 'enable_module', module: mod });
+        }
+      }
+
+      // Modules that are active but not in the license (unless license has wildcard)
+      if (!licensedModules.includes('*')) {
+        for (const mod of activeModules) {
+          if (!licensedModules.includes(mod)) {
+            commands.push({ type: 'disable_module', module: mod });
+          }
+        }
+      }
     }
 
     // Determine license to send (if updated since last heartbeat)
@@ -111,7 +170,7 @@ export class HeartbeatService {
     if (currentLicense && instance.lastHeartbeatAt) {
       if (currentLicense.createdAt > instance.lastHeartbeatAt) {
         licenseToSend = currentLicense.licenseKey;
-        commands.push({ type: 'update_license' });
+        commands.push({ type: 'update_license', license: currentLicense.licenseKey });
       }
     }
 

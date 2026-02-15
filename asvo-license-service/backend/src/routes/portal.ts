@@ -6,6 +6,7 @@ import { createAuditLog } from '../middleware/audit';
 import { LicenseGenerator } from '../services/LicenseGenerator';
 import { getTierPrice, TierName } from '../config';
 import { logger } from '../utils/logger';
+import { sendEmail, sendTelegramAlert } from '../utils/email';
 
 const prisma = new PrismaClient();
 
@@ -19,6 +20,11 @@ const reissueLicenseSchema = z.object({
   licenseId: z.string().uuid(),
   newFingerprint: z.string().min(1),
   reason: z.string().min(1).optional(),
+});
+
+const supportRequestSchema = z.object({
+  subject: z.string().min(1).max(200),
+  message: z.string().min(1).max(5000),
 });
 
 export async function portalRoutes(app: FastifyInstance) {
@@ -253,5 +259,53 @@ export async function portalRoutes(app: FastifyInstance) {
       licenseKey,
       revokedLicenseId: existingLicense.id,
     });
+  });
+
+  // POST /api/v1/portal/support — create a support request
+  app.post('/api/v1/portal/support', async (request, reply) => {
+    const orgId = (request as any).orgId;
+    const actor = (request as any).actor;
+    const body = supportRequestSchema.parse(request.body);
+
+    const org = await prisma.organization.findUnique({
+      where: { id: orgId },
+      select: { name: true, contactEmail: true },
+    });
+
+    const orgName = org?.name || 'Unknown';
+    const contactEmail = org?.contactEmail || 'unknown';
+
+    // Notify admin team via email
+    await sendEmail(
+      'admin@asvo.tech',
+      `Обращение в поддержку: ${body.subject}`,
+      'support-request',
+      {
+        orgName,
+        contactEmail,
+        subject: body.subject,
+        message: body.message,
+      },
+    );
+
+    // Telegram alert
+    await sendTelegramAlert(
+      `📩 Обращение в поддержку\nОрганизация: ${orgName}\nТема: ${body.subject}`,
+    );
+
+    // Audit log
+    await createAuditLog({
+      actor,
+      action: 'create',
+      entityType: 'support_request',
+      entityId: 'support',
+      organizationId: orgId,
+      changes: { subject: body.subject },
+      ipAddress: request.ip,
+    });
+
+    logger.info({ orgId, subject: body.subject }, 'Support request submitted via portal');
+
+    return { success: true, message: 'Обращение создано. Мы ответим в течение 24 часов.' };
   });
 }
