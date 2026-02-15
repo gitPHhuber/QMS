@@ -1,0 +1,22 @@
+{
+  "name": "asvo-license-service",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ASVO License Service — license management, billing, and telemetry for ASVO-QMS",
+  "workspaces": [
+    "cli",
+    "backend",
+    "admin-frontend",
+    "portal-frontend"
+  ],
+  "scripts": {
+    "dev:api": "npm run dev --workspace=backend",
+    "dev:admin": "npm run dev --workspace=admin-frontend",
+    "dev:portal": "npm run dev --workspace=portal-frontend",
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspace=backend",
+    "keygen": "npm run keygen --workspace=cli",
+    "docker:up": "docker-compose up --build",
+    "docker:down": "docker-compose down"
+  }
+}

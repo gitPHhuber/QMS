@@ -1,0 +1,63 @@
+services:
+  als-api:
+    build: ./backend
+    ports: ['4000:4000']
+    environment:
+      DATABASE_URL: postgresql://als:als_secret@postgres:5432/als
+      REDIS_URL: redis://redis:6379
+      ED25519_PRIVATE_KEY_PATH: /keys/private.key
+      ED25519_PUBLIC_KEY_PATH: /keys/public.key
+      JWT_SECRET: change_me_in_production
+      ADMIN_TOKEN: admin_secret_change_me
+      YUKASSA_SHOP_ID: ""
+      YUKASSA_SECRET_KEY: ""
+      SMTP_HOST: ""
+      SMTP_PORT: "587"
+      SMTP_USER: ""
+      SMTP_PASS: ""
+      SMTP_FROM: "noreply@asvo.tech"
+      TELEGRAM_BOT_TOKEN: ""
+      TELEGRAM_ADMIN_CHAT_ID: ""
+      NODE_ENV: development
+      PORT: "4000"
+    volumes:
+      - ./keys:/keys:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  als-admin:
+    build: ./admin-frontend
+    ports: ['4001:80']
+    depends_on:
+      - als-api
+
+  als-portal:
+    build: ./portal-frontend
+    ports: ['4002:80']
+    depends_on:
+      - als-api
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: als
+      POSTGRES_PASSWORD: als_secret
+      POSTGRES_DB: als
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    ports: ['5433:5432']
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U als']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports: ['6380:6379']
+
+volumes:
+  pg_data:
