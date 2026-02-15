@@ -1,6 +1,6 @@
 
 
-import { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, forwardRef } from 'react'
+import { ButtonHTMLAttributes, InputHTMLAttributes, SelectHTMLAttributes, TextareaHTMLAttributes, ReactNode, forwardRef, useRef, DragEvent, useState, useCallback } from 'react'
 
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -392,6 +392,272 @@ export const Progress = ({
           <span>{Math.round(percent)}%</span>
         </div>
       )}
+    </div>
+  )
+}
+
+
+interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
+  label?: string
+  error?: string
+  options: { value: string; label: string }[]
+  placeholder?: string
+}
+
+export const Select = forwardRef<HTMLSelectElement, SelectProps>(
+  ({ label, error, options, placeholder, className = '', ...props }, ref) => {
+    return (
+      <div className="space-y-1.5">
+        {label && (
+          <label className="block text-sm font-medium text-slate-300">
+            {label}
+          </label>
+        )}
+        <select
+          ref={ref}
+          className={`
+            w-full bg-surface-light border border-slate-600 rounded-xl
+            px-4 py-2.5 text-white
+            focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none
+            transition-all duration-150 appearance-none
+            ${error ? 'border-danger focus:border-danger focus:ring-danger/20' : ''}
+            ${className}
+          `}
+          {...props}
+        >
+          {placeholder && <option value="">{placeholder}</option>}
+          {options.map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+        {error && <p className="text-sm text-danger">{error}</p>}
+      </div>
+    )
+  }
+)
+
+Select.displayName = 'Select'
+
+
+interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
+  label?: string
+  error?: string
+}
+
+export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
+  ({ label, error, className = '', ...props }, ref) => {
+    return (
+      <div className="space-y-1.5">
+        {label && (
+          <label className="block text-sm font-medium text-slate-300">
+            {label}
+          </label>
+        )}
+        <textarea
+          ref={ref}
+          className={`
+            w-full bg-surface-light border border-slate-600 rounded-xl
+            px-4 py-2.5 text-white placeholder-slate-500
+            focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none
+            transition-all duration-150 min-h-[100px] resize-y
+            ${error ? 'border-danger focus:border-danger focus:ring-danger/20' : ''}
+            ${className}
+          `}
+          {...props}
+        />
+        {error && <p className="text-sm text-danger">{error}</p>}
+      </div>
+    )
+  }
+)
+
+Textarea.displayName = 'Textarea'
+
+
+interface ConfirmDialogProps {
+  isOpen: boolean
+  onClose: () => void
+  onConfirm: () => void
+  title: string
+  message: string
+  confirmText?: string
+  cancelText?: string
+  variant?: 'danger' | 'primary' | 'success'
+  loading?: boolean
+}
+
+export const ConfirmDialog = ({
+  isOpen,
+  onClose,
+  onConfirm,
+  title,
+  message,
+  confirmText = 'Подтвердить',
+  cancelText = 'Отмена',
+  variant = 'primary',
+  loading = false,
+}: ConfirmDialogProps) => (
+  <Modal isOpen={isOpen} onClose={onClose} title={title} size="sm">
+    <div className="space-y-4">
+      <p className="text-slate-300">{message}</p>
+      <div className="flex gap-3 pt-2">
+        <Button variant="ghost" className="flex-1" onClick={onClose}>{cancelText}</Button>
+        <Button variant={variant} className="flex-1" onClick={onConfirm} loading={loading}>{confirmText}</Button>
+      </div>
+    </div>
+  </Modal>
+)
+
+
+interface StatusTimelineItem {
+  status: string
+  label: string
+  date?: string
+  active?: boolean
+  completed?: boolean
+}
+
+interface StatusTimelineProps {
+  items: StatusTimelineItem[]
+}
+
+export const StatusTimeline = ({ items }: StatusTimelineProps) => (
+  <div className="space-y-0">
+    {items.map((item, i) => (
+      <div key={item.status} className="flex gap-3">
+        <div className="flex flex-col items-center">
+          <div className={`w-3 h-3 rounded-full shrink-0 ${
+            item.completed ? 'bg-success' : item.active ? 'bg-primary ring-4 ring-primary/20' : 'bg-slate-600'
+          }`} />
+          {i < items.length - 1 && (
+            <div className={`w-0.5 flex-1 min-h-[24px] ${item.completed ? 'bg-success/50' : 'bg-slate-700'}`} />
+          )}
+        </div>
+        <div className="pb-4 -mt-0.5">
+          <p className={`text-sm font-medium ${
+            item.completed ? 'text-success' : item.active ? 'text-primary' : 'text-slate-500'
+          }`}>{item.label}</p>
+          {item.date && <p className="text-xs text-slate-500">{item.date}</p>}
+        </div>
+      </div>
+    ))}
+  </div>
+)
+
+
+interface FileUploadProps {
+  onFileSelect: (files: File[]) => void
+  accept?: string
+  multiple?: boolean
+  label?: string
+  maxSizeMb?: number
+}
+
+export const FileUpload = ({ onFileSelect, accept, multiple = false, label, maxSizeMb = 50 }: FileUploadProps) => {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [dragOver, setDragOver] = useState(false)
+
+  const handleFiles = useCallback((files: FileList | null) => {
+    if (!files) return
+    const valid = Array.from(files).filter(f => f.size <= maxSizeMb * 1024 * 1024)
+    if (valid.length > 0) onFileSelect(valid)
+  }, [onFileSelect, maxSizeMb])
+
+  const handleDrop = useCallback((e: DragEvent) => {
+    e.preventDefault()
+    setDragOver(false)
+    handleFiles(e.dataTransfer.files)
+  }, [handleFiles])
+
+  return (
+    <div className="space-y-1.5">
+      {label && <label className="block text-sm font-medium text-slate-300">{label}</label>}
+      <div
+        className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all
+          ${dragOver ? 'border-primary bg-primary/5' : 'border-slate-600 hover:border-slate-500'}`}
+        onClick={() => inputRef.current?.click()}
+        onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={handleDrop}
+      >
+        <p className="text-slate-400 text-sm">Перетащите файл или нажмите для выбора</p>
+        <p className="text-slate-600 text-xs mt-1">Макс. {maxSizeMb} МБ</p>
+        <input
+          ref={inputRef}
+          type="file"
+          accept={accept}
+          multiple={multiple}
+          className="hidden"
+          onChange={(e) => handleFiles(e.target.files)}
+        />
+      </div>
+    </div>
+  )
+}
+
+
+interface DateInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> {
+  label?: string
+  error?: string
+}
+
+export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
+  ({ label, error, className = '', ...props }, ref) => {
+    return (
+      <div className="space-y-1.5">
+        {label && <label className="block text-sm font-medium text-slate-300">{label}</label>}
+        <input
+          ref={ref}
+          type="date"
+          className={`
+            w-full bg-surface-light border border-slate-600 rounded-xl
+            px-4 py-2.5 text-white
+            focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none
+            transition-all duration-150
+            ${error ? 'border-danger focus:border-danger focus:ring-danger/20' : ''}
+            ${className}
+          `}
+          {...props}
+        />
+        {error && <p className="text-sm text-danger">{error}</p>}
+      </div>
+    )
+  }
+)
+
+DateInput.displayName = 'DateInput'
+
+
+interface PaginationProps {
+  page: number
+  totalPages: number
+  onPageChange: (page: number) => void
+}
+
+export const Pagination = ({ page, totalPages, onPageChange }: PaginationProps) => {
+  if (totalPages <= 1) return null
+
+  return (
+    <div className="flex items-center justify-center gap-2 py-4">
+      <Button
+        variant="ghost"
+        size="sm"
+        disabled={page <= 1}
+        onClick={() => onPageChange(page - 1)}
+      >
+        ←
+      </Button>
+      <span className="text-sm text-slate-400 px-3">
+        {page} / {totalPages}
+      </span>
+      <Button
+        variant="ghost"
+        size="sm"
+        disabled={page >= totalPages}
+        onClick={() => onPageChange(page + 1)}
+      >
+        →
+      </Button>
     </div>
   )
 }
