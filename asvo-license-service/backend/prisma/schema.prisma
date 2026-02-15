@@ -1,0 +1,193 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Tier {
+  start
+  standard
+  pro
+  industry
+  corp
+}
+
+enum OrgStatus {
+  active
+  suspended
+  trial
+  churned
+}
+
+enum InstanceStatus {
+  online
+  offline
+  degraded
+}
+
+enum SubscriptionStatus {
+  active
+  past_due
+  canceled
+  trialing
+}
+
+enum BillingCycle {
+  monthly
+  quarterly
+  annual
+}
+
+enum PaymentStatus {
+  pending
+  succeeded
+  failed
+  refunded
+}
+
+enum TelemetryEventType {
+  heartbeat
+  error
+  module_usage
+  version_update
+}
+
+model Organization {
+  id            String       @id @default(uuid())
+  name          String
+  inn           String       @unique
+  contactEmail  String       @map("contact_email")
+  contactPhone  String?      @map("contact_phone")
+  contactName   String       @map("contact_name")
+  address       String?
+  tier          Tier         @default(start)
+  status        OrgStatus    @default(trial)
+  trialEndsAt   DateTime?    @map("trial_ends_at")
+  notes         String?
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+
+  instances     Instance[]
+  licenses      License[]
+  subscription  Subscription?
+  auditLogs     AuditLog[]
+
+  @@map("organizations")
+}
+
+model Instance {
+  id              String         @id @default(uuid())
+  organizationId  String         @map("organization_id")
+  fingerprint     String
+  name            String
+  version         String         @default("0.0.0")
+  lastHeartbeatAt DateTime?      @map("last_heartbeat_at")
+  lastIp          String?        @map("last_ip")
+  status          InstanceStatus @default(offline)
+  modulesActive   String[]       @map("modules_active")
+  osInfo          Json?          @map("os_info")
+  apiKey          String         @unique @map("api_key")
+  createdAt       DateTime       @default(now()) @map("created_at")
+
+  organization    Organization     @relation(fields: [organizationId], references: [id])
+  telemetry       TelemetryEvent[]
+  licenses        License[]
+
+  @@index([fingerprint])
+  @@index([lastHeartbeatAt])
+  @@map("instances")
+}
+
+model License {
+  id              String    @id @default(uuid())
+  organizationId  String    @map("organization_id")
+  instanceId      String?   @map("instance_id")
+  licenseKey      String    @map("license_key") @db.Text
+  tier            Tier
+  modules         String[]
+  maxUsers        Int       @map("max_users")
+  maxStorageGb    Int       @map("max_storage_gb")
+  validFrom       DateTime  @map("valid_from")
+  validUntil      DateTime  @map("valid_until")
+  isRevoked       Boolean   @default(false) @map("is_revoked")
+  revokedAt       DateTime? @map("revoked_at")
+  revokeReason    String?   @map("revoke_reason")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  instance        Instance?    @relation(fields: [instanceId], references: [id])
+
+  @@index([organizationId, isRevoked])
+  @@map("licenses")
+}
+
+model Subscription {
+  id                  String             @id @default(uuid())
+  organizationId      String             @unique @map("organization_id")
+  tier                Tier
+  billingCycle        BillingCycle       @default(monthly) @map("billing_cycle")
+  priceRub            Int                @map("price_rub")
+  status              SubscriptionStatus @default(trialing)
+  currentPeriodStart  DateTime           @map("current_period_start")
+  currentPeriodEnd    DateTime           @map("current_period_end")
+  cancelAtPeriodEnd   Boolean            @default(false) @map("cancel_at_period_end")
+  paymentMethodId     String?            @map("payment_method_id")
+  yukassaCustomerId   String?            @map("yukassa_customer_id")
+  createdAt           DateTime           @default(now()) @map("created_at")
+
+  organization        Organization @relation(fields: [organizationId], references: [id])
+  payments            Payment[]
+
+  @@map("subscriptions")
+}
+
+model Payment {
+  id                String        @id @default(uuid())
+  subscriptionId    String        @map("subscription_id")
+  organizationId    String        @map("organization_id")
+  amountRub         Int           @map("amount_rub")
+  status            PaymentStatus @default(pending)
+  yukassaPaymentId  String?       @map("yukassa_payment_id")
+  invoiceUrl        String?       @map("invoice_url")
+  paidAt            DateTime?     @map("paid_at")
+  createdAt         DateTime      @default(now()) @map("created_at")
+
+  subscription      Subscription @relation(fields: [subscriptionId], references: [id])
+
+  @@index([subscriptionId, status])
+  @@map("payments")
+}
+
+model TelemetryEvent {
+  id          String             @id @default(uuid())
+  instanceId  String             @map("instance_id")
+  eventType   TelemetryEventType @map("event_type")
+  payload     Json
+  createdAt   DateTime           @default(now()) @map("created_at")
+
+  instance    Instance @relation(fields: [instanceId], references: [id])
+
+  @@index([instanceId, createdAt])
+  @@map("telemetry_events")
+}
+
+model AuditLog {
+  id              String    @id @default(uuid())
+  actor           String
+  action          String
+  entityType      String    @map("entity_type")
+  entityId        String    @map("entity_id")
+  organizationId  String?   @map("organization_id")
+  changes         Json?
+  ipAddress       String?   @map("ip_address")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  organization    Organization? @relation(fields: [organizationId], references: [id])
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
