@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from "react";
-import { BarChart3, Plus, CheckCircle2, Clock, AlertTriangle } from "lucide-react";
+import { BarChart3, Plus, CheckCircle2, Clock, AlertTriangle, FileText, Loader2 } from "lucide-react";
 
 import { Modal } from "../../components/Modal/Modal";
 import { reviewsApi } from "../../api/qmsApi";
@@ -62,6 +62,7 @@ const ReviewDetailModal: React.FC<ReviewDetailModalProps> = ({
   const [effectiveness, setEffectiveness] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   const fetchDetail = useCallback(async () => {
     if (!reviewId) return;
@@ -151,6 +152,24 @@ const ReviewDetailModal: React.FC<ReviewDetailModalProps> = ({
   const inputCls = "w-full px-3 py-2 bg-asvo-surface-2 border border-asvo-border rounded-lg text-[13px] text-asvo-text placeholder:text-asvo-text-dim focus:border-asvo-accent/50 focus:outline-none transition-colors";
   const labelCls = "block text-[13px] text-asvo-text-mid font-medium mb-1.5";
 
+  const handleDownloadMinutes = async () => {
+    if (!reviewId) return;
+    setDownloadingPdf(true);
+    try {
+      const blob = await reviewsApi.getMinutesPdf(reviewId);
+      const url = window.URL.createObjectURL(new Blob([blob]));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Protocol_${review?.reviewNumber || reviewId}_${new Date().toISOString().slice(0, 10)}.pdf`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (e: any) {
+      setError(e.response?.data?.message || "Ошибка генерации протокола");
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+
   const tabs = [
     { key: "main", label: "Основное" },
     { key: "input", label: "§5.6.2 Входные данные" },
@@ -172,6 +191,16 @@ const ReviewDetailModal: React.FC<ReviewDetailModalProps> = ({
             <span className="text-[12px] text-asvo-text-dim">
               {formatDate(review.reviewDate)} | Период: {formatDate(review.periodFrom)} — {formatDate(review.periodTo)}
             </span>
+            <div className="ml-auto">
+              <ActionBtn
+                variant="secondary"
+                icon={downloadingPdf ? <Loader2 size={13} className="animate-spin" /> : <FileText size={13} />}
+                disabled={downloadingPdf}
+                onClick={handleDownloadMinutes}
+              >
+                Скачать протокол
+              </ActionBtn>
+            </div>
           </div>
 
           {/* Tabs */}

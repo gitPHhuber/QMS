@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Truck, Plus, Search, Award, ShieldCheck, FileText,
   Clock, Headphones, BadgeCheck, Package, Loader2, AlertCircle,
+  Download,
 } from 'lucide-react';
 import KpiRow from '../../components/qms/KpiRow';
 import ActionBtn from '../../components/qms/ActionBtn';
@@ -10,6 +11,7 @@ import DataTable from '../../components/qms/DataTable';
 import SectionTitle from '../../components/qms/SectionTitle';
 import ProgressBar from '../../components/qms/ProgressBar';
 import { suppliersApi } from '../../api/qmsApi';
+import { useExport } from '../../hooks/useExport';
 import CreateSupplierModal from './CreateSupplierModal';
 import SupplierDetailModal from './SupplierDetailModal';
 
@@ -132,6 +134,7 @@ const SuppliersPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [detailSupplierId, setDetailSupplierId] = useState<number | null>(null);
+  const { exporting, doExport } = useExport();
 
   const fetchData = async () => {
     try {
@@ -218,6 +221,7 @@ const SuppliersPage: React.FC = () => {
 
         <div className="flex items-center gap-2">
           <ActionBtn icon={<Plus size={15} />} onClick={() => setShowCreateModal(true)}>Новый поставщик</ActionBtn>
+          <ActionBtn variant="secondary" icon={exporting ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />} disabled={exporting} onClick={() => doExport("suppliers", "Suppliers_Export")}>Экспорт</ActionBtn>
         </div>
       </div>
 

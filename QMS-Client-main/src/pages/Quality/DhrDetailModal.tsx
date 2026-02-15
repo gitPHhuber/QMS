@@ -16,6 +16,7 @@ import { dhrApi } from "../../api/qmsApi";
 import ActionBtn from "../../components/qms/ActionBtn";
 import Badge from "../../components/qms/Badge";
 import ProgressBar from "../../components/qms/ProgressBar";
+import AddMaterialModal from "./AddMaterialModal";
 
 /* ── Style constants ── */
 
@@ -94,6 +95,7 @@ const DhrDetailModal: React.FC<DhrDetailModalProps> = ({
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showAddMaterial, setShowAddMaterial] = useState(false);
 
   /* ── Fetch ── */
   const fetchData = useCallback(async () => {
@@ -155,6 +157,13 @@ const DhrDetailModal: React.FC<DhrDetailModalProps> = ({
       )}
 
       {/* Content */}
+      <AddMaterialModal
+        dhrId={dhrId}
+        isOpen={showAddMaterial}
+        onClose={() => setShowAddMaterial(false)}
+        onAdded={() => fetchData()}
+      />
+
       {!loading && !error && data && (
         <div className="space-y-4">
           {/* Icon header */}
@@ -224,7 +233,7 @@ const DhrDetailModal: React.FC<DhrDetailModalProps> = ({
                 <span className="text-[13px] text-asvo-text-mid font-medium">
                   Материалы и комплектующие ({materials.length})
                 </span>
-                <ActionBtn variant="secondary" icon={<Plus size={14} />} onClick={() => { /* TODO: Add material modal */ }}>
+                <ActionBtn variant="secondary" icon={<Plus size={14} />} onClick={() => setShowAddMaterial(true)}>
                   Добавить материал
                 </ActionBtn>
               </div>

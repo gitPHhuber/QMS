@@ -22,6 +22,7 @@ import ProgressBar from "../../components/qms/ProgressBar";
 import { validationsApi } from "../../api/qmsApi";
 import { useExport } from "../../hooks/useExport";
 import CreateValidationModal from "./CreateValidationModal";
+import CreateTemplateModal from "./CreateTemplateModal";
 import ValidationDetailModal from "./ValidationDetailModal";
 
 /* ------------------------------------------------------------------ */
@@ -145,6 +146,7 @@ const ValidationPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showCreateTemplateModal, setShowCreateTemplateModal] = useState(false);
   const [detailValidationId, setDetailValidationId] = useState<number | null>(null);
 
   const [tab, setTab] = useState("registry");
@@ -439,7 +441,7 @@ const ValidationPage: React.FC = () => {
               <FileText size={18} style={{ color: "#A06AE8" }} />
               <span className="text-[13px] font-medium text-asvo-text">Шаблоны протоколов валидации</span>
             </div>
-            <ActionBtn variant="primary" icon={<Plus size={15} />} onClick={() => { /* TODO: Create template modal */ }}>
+            <ActionBtn variant="primary" icon={<Plus size={15} />} onClick={() => setShowCreateTemplateModal(true)}>
               + Создать шаблон
             </ActionBtn>
           </div>
@@ -465,6 +467,12 @@ const ValidationPage: React.FC = () => {
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         onCreated={fetchData}
+      />
+
+      <CreateTemplateModal
+        isOpen={showCreateTemplateModal}
+        onClose={() => setShowCreateTemplateModal(false)}
+        onCreated={() => fetchTemplates()}
       />
 
       {detailValidationId !== null && (

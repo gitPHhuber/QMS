@@ -52,7 +52,7 @@ export function mapTraceRow(t: TraceabilityMatrixRow): TraceRow[] {
         ? `${rRisk.class} (${rRisk.probability ?? '?'}x${rRisk.severity ?? '?'}=${rRisk.level ?? '?'})`
         : '-',
       braResult: t.benefitRiskAnalysis
-        ? (t.benefitRiskAnalysis.benefitOutweighsRisk ? "Pol'za > Risk" : "Risk > Pol'za")
+        ? (t.benefitRiskAnalysis.benefitOutweighsRisk ? "Польза > Риск" : "Риск > Польза")
         : '-',
     }];
   }
@@ -72,7 +72,7 @@ export function mapTraceRow(t: TraceabilityMatrixRow): TraceRow[] {
         ? `${rRisk.class} (${rRisk.probability ?? '?'}x${rRisk.severity ?? '?'}=${rRisk.level ?? '?'})`
         : '-',
       braResult: t.benefitRiskAnalysis
-        ? (t.benefitRiskAnalysis.benefitOutweighsRisk ? "Pol'za > Risk" : "Risk > Pol'za")
+        ? (t.benefitRiskAnalysis.benefitOutweighsRisk ? "Польза > Риск" : "Риск > Польза")
         : '-',
     };
   });

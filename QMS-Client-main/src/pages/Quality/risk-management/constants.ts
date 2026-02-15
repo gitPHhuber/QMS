@@ -12,8 +12,8 @@ export const rmpStatusColors: Record<RmpStatus, { color: string; bg: string }> =
 };
 
 export const rmpStatusLabels: Record<RmpStatus, string> = {
-  DRAFT: 'Chernovik', REVIEW: 'Na rassmotreniye', APPROVED: 'Utverzhdon',
-  EFFECTIVE: 'Deystvuyushchiy', REVISION: 'Reviziya', ARCHIVED: 'Arkhiv',
+  DRAFT: 'Черновик', REVIEW: 'На рассмотрении', APPROVED: 'Утверждён',
+  EFFECTIVE: 'Действующий', REVISION: 'Ревизия', ARCHIVED: 'Архив',
 };
 
 export const riskClassColors: Record<RiskClass, { color: string; bg: string }> = {
@@ -24,8 +24,8 @@ export const riskClassColors: Record<RiskClass, { color: string; bg: string }> =
 };
 
 export const hazardStatusLabels: Record<HazardStatus, string> = {
-  IDENTIFIED: 'Vyyavleno', ANALYZED: 'Proanalizirovano', CONTROLLED: 'Pod kontrolem',
-  VERIFIED: 'Verifitsirovano', ACCEPTED: 'Prinyato', MONITORING: 'Monitoring',
+  IDENTIFIED: 'Выявлено', ANALYZED: 'Проанализировано', CONTROLLED: 'Под контролем',
+  VERIFIED: 'Верифицировано', ACCEPTED: 'Принято', MONITORING: 'Мониторинг',
 };
 
 export const hazardStatusColors: Record<HazardStatus, { color: string; bg: string }> = {
@@ -38,9 +38,9 @@ export const hazardStatusColors: Record<HazardStatus, { color: string; bg: strin
 };
 
 export const controlTypeLabels: Record<ControlType, string> = {
-  INHERENT_SAFETY: 'Bezop. design',
-  PROTECTIVE:      'Zashch. mery',
-  INFORMATION:     'Informirovaniye',
+  INHERENT_SAFETY: 'Безоп. дизайн',
+  PROTECTIVE:      'Защитн. меры',
+  INFORMATION:     'Информирование',
 };
 
 export const controlTypeColors: Record<ControlType, { color: string; bg: string }> = {
