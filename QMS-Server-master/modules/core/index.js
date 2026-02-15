@@ -11,6 +11,8 @@ module.exports = {
     router.use('/tasks',     require('./routes/taskRouter'));
     router.use('/projects',  require('./routes/projectRouter'));
     router.use('/notifications', require('./routes/notificationRouter'));
+    router.use('/epics', require('./routes/epicRouter'));
+    router.use('/sprints', require('./routes/sprintRouter'));
   },
 
   getModels() {
@@ -18,7 +20,10 @@ module.exports = {
     const structure = require('./models/Structure');
     const project = require('./models/Project');
     const notification = require('./models/Notification');
-    return { ...general, ...structure, ...project, ...notification };
+    const taskExtensions = require('./models/TaskExtensions');
+    const epic = require('./models/Epic');
+    const sprint = require('./models/Sprint');
+    return { ...general, ...structure, ...project, ...notification, ...taskExtensions, ...epic, ...sprint };
   },
 
   setupAssociations(m) {
@@ -54,6 +59,66 @@ module.exports = {
     if (m.Notification) {
       m.Notification.belongsTo(m.User, { foreignKey: 'userId', as: 'user' });
       m.User.hasMany(m.Notification, { foreignKey: 'userId', as: 'notifications' });
+    }
+
+    // TaskSubtask <-> ProductionTask, User
+    if (m.TaskSubtask && m.ProductionTask) {
+      m.ProductionTask.hasMany(m.TaskSubtask, { foreignKey: 'taskId', as: 'subtasks' });
+      m.TaskSubtask.belongsTo(m.ProductionTask, { foreignKey: 'taskId', as: 'task' });
+      m.TaskSubtask.belongsTo(m.User, { foreignKey: 'createdById', as: 'createdBy' });
+    }
+
+    // TaskChecklist <-> ProductionTask, User
+    if (m.TaskChecklist && m.ProductionTask) {
+      m.ProductionTask.hasMany(m.TaskChecklist, { foreignKey: 'taskId', as: 'checklists' });
+      m.TaskChecklist.belongsTo(m.ProductionTask, { foreignKey: 'taskId', as: 'task' });
+      m.TaskChecklist.belongsTo(m.User, { foreignKey: 'createdById', as: 'createdBy' });
+    }
+
+    // TaskChecklistItem <-> TaskChecklist
+    if (m.TaskChecklistItem && m.TaskChecklist) {
+      m.TaskChecklist.hasMany(m.TaskChecklistItem, { foreignKey: 'checklistId', as: 'items' });
+      m.TaskChecklistItem.belongsTo(m.TaskChecklist, { foreignKey: 'checklistId', as: 'checklist' });
+    }
+
+    // TaskComment <-> ProductionTask, User (self-referencing for threads)
+    if (m.TaskComment && m.ProductionTask) {
+      m.ProductionTask.hasMany(m.TaskComment, { foreignKey: 'taskId', as: 'comments' });
+      m.TaskComment.belongsTo(m.ProductionTask, { foreignKey: 'taskId', as: 'task' });
+      m.TaskComment.belongsTo(m.User, { foreignKey: 'authorId', as: 'author' });
+      m.TaskComment.belongsTo(m.TaskComment, { foreignKey: 'parentId', as: 'parent' });
+      m.TaskComment.hasMany(m.TaskComment, { foreignKey: 'parentId', as: 'replies' });
+    }
+
+    // Epic <-> ProductionTask, User
+    if (m.Epic && m.ProductionTask) {
+      m.Epic.belongsTo(m.User, { foreignKey: 'createdById', as: 'author' });
+      m.Epic.hasMany(m.ProductionTask, { foreignKey: 'epicId', as: 'tasks' });
+      m.ProductionTask.belongsTo(m.Epic, { foreignKey: 'epicId', as: 'epic' });
+    }
+
+    // TaskActivity <-> ProductionTask, User
+    if (m.TaskActivity && m.ProductionTask) {
+      m.ProductionTask.hasMany(m.TaskActivity, { foreignKey: 'taskId', as: 'activity' });
+      m.TaskActivity.belongsTo(m.ProductionTask, { foreignKey: 'taskId', as: 'task' });
+      m.TaskActivity.belongsTo(m.User, { foreignKey: 'userId', as: 'user' });
+    }
+
+    // Sprint <-> Project, User, SprintBurndown, ProductionTask
+    if (m.Sprint) {
+      m.Sprint.belongsTo(m.Project, { foreignKey: 'projectId', as: 'project' });
+      m.Project.hasMany(m.Sprint, { foreignKey: 'projectId', as: 'sprints' });
+      m.Sprint.belongsTo(m.User, { foreignKey: 'createdById', as: 'createdBy' });
+
+      if (m.SprintBurndown) {
+        m.Sprint.hasMany(m.SprintBurndown, { foreignKey: 'sprintId', as: 'burndown' });
+        m.SprintBurndown.belongsTo(m.Sprint, { foreignKey: 'sprintId', as: 'sprint' });
+      }
+
+      if (m.ProductionTask) {
+        m.Sprint.hasMany(m.ProductionTask, { foreignKey: 'sprintId', as: 'tasks' });
+        m.ProductionTask.belongsTo(m.Sprint, { foreignKey: 'sprintId', as: 'sprint' });
+      }
     }
   },
 };

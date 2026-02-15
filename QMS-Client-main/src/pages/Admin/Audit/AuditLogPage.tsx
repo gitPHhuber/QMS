@@ -59,7 +59,7 @@ const ACTION_COLORS: Record<string, string> = {
   SESSION_START: "bg-emerald-100 text-emerald-800",
   SESSION_END: "bg-amber-100 text-amber-800",
   SESSION_DELETE: "bg-red-100 text-red-800",
-  SESSION_AUTO_OFF: "bg-gray-100 text-gray-800",
+  SESSION_AUTO_OFF: "bg-asvo-surface-2 text-asvo-text",
   SESSION_FORCE_OFF: "bg-orange-100 text-orange-800",
   WAREHOUSE_MOVE: "bg-purple-100 text-purple-800",
   WAREHOUSE_MOVE_BATCH: "bg-purple-100 text-purple-800",
@@ -229,7 +229,7 @@ export const AuditLogPage: React.FC = () => {
     if (action.includes("CREATE") || action.includes("ADD")) return ACTION_COLORS.CREATE;
     if (action.includes("UPDATE") || action.includes("EDIT")) return ACTION_COLORS.UPDATE;
     if (action.includes("DELETE") || action.includes("REMOVE")) return ACTION_COLORS.DELETE;
-    return "bg-gray-100 text-gray-700";
+    return "bg-asvo-surface-2 text-asvo-text";
   };
 
 
@@ -265,21 +265,21 @@ export const AuditLogPage: React.FC = () => {
             <History className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">Журнал действий</h1>
-            <p className="text-sm text-gray-500">Аудит изменений в системе QMS</p>
+            <h1 className="text-2xl font-bold text-asvo-text">Журнал действий</h1>
+            <p className="text-sm text-asvo-text-mid">Аудит изменений в системе QMS</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => window.location.reload()}
-            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 text-asvo-text-mid hover:text-asvo-text hover:bg-asvo-surface-2 rounded-lg transition-colors"
             title="Обновить"
           >
             <RefreshCw className="w-5 h-5" />
           </button>
           <button
             onClick={handleExport}
-            className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-2 px-3 py-2 bg-asvo-card border border-asvo-border rounded-lg text-sm font-medium text-asvo-text hover:bg-asvo-surface/50 transition-colors"
           >
             <Download className="w-4 h-4" />
             Экспорт
@@ -307,7 +307,7 @@ export const AuditLogPage: React.FC = () => {
                 "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium border transition-all",
                 isActive
                   ? "bg-blue-600 text-white border-blue-600 shadow-sm"
-                  : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:border-gray-300",
+                  : "bg-asvo-card text-asvo-text-mid border-asvo-border hover:bg-asvo-surface/50 hover:border-asvo-border",
               ].join(" ")}
             >
               <Icon className="w-4 h-4" />
@@ -316,7 +316,7 @@ export const AuditLogPage: React.FC = () => {
                 <span
                   className={[
                     "px-1.5 py-0.5 rounded-full text-xs",
-                    isActive ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-600",
+                    isActive ? "bg-blue-500 text-white" : "bg-asvo-surface-2 text-asvo-text-mid",
                   ].join(" ")}
                 >
                   {count}
@@ -328,26 +328,26 @@ export const AuditLogPage: React.FC = () => {
       </div>
 
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-4">
+      <div className="bg-asvo-card rounded-xl shadow-sm border border-asvo-border/50 p-4 mb-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
 
           <div className="lg:col-span-2">
-            <label className="text-xs font-semibold text-gray-600 mb-1 block">Поиск</label>
+            <label className="text-xs font-semibold text-asvo-text-mid mb-1 block">Поиск</label>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-asvo-text-dim" />
               <input
                 type="text"
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
                 placeholder="Поиск по описанию, действию, пользователю..."
-                className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-9 pr-3 py-2 border border-asvo-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
           </div>
 
 
           <div>
-            <label className="text-xs font-semibold text-gray-600 mb-1 block">Дата с</label>
+            <label className="text-xs font-semibold text-asvo-text-mid mb-1 block">Дата с</label>
             <input
               type="date"
               value={dateFrom}
@@ -355,13 +355,13 @@ export const AuditLogPage: React.FC = () => {
                 setDateFrom(e.target.value);
                 setPage(1);
               }}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-asvo-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
 
           <div>
-            <label className="text-xs font-semibold text-gray-600 mb-1 block">Дата по</label>
+            <label className="text-xs font-semibold text-asvo-text-mid mb-1 block">Дата по</label>
             <input
               type="date"
               value={dateTo}
@@ -369,20 +369,20 @@ export const AuditLogPage: React.FC = () => {
                 setDateTo(e.target.value);
                 setPage(1);
               }}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-asvo-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
 
           <div>
-            <label className="text-xs font-semibold text-gray-600 mb-1 block">Пользователь</label>
+            <label className="text-xs font-semibold text-asvo-text-mid mb-1 block">Пользователь</label>
             <select
               value={selectedUserId}
               onChange={(e) => {
                 setSelectedUserId(e.target.value);
                 setPage(1);
               }}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-asvo-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Все</option>
               {users.map((u) => (
@@ -395,14 +395,14 @@ export const AuditLogPage: React.FC = () => {
 
 
           <div>
-            <label className="text-xs font-semibold text-gray-600 mb-1 block">Действие</label>
+            <label className="text-xs font-semibold text-asvo-text-mid mb-1 block">Действие</label>
             <select
               value={actionFilter}
               onChange={(e) => {
                 setActionFilter(e.target.value);
                 setPage(1);
               }}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-asvo-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Все</option>
               {actions.map((a) => (
@@ -427,24 +427,24 @@ export const AuditLogPage: React.FC = () => {
 
 
       {!loading && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="bg-asvo-card rounded-xl shadow-sm border border-asvo-border/50 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full text-left text-sm">
-              <thead className="bg-gray-50 border-b">
+              <thead className="bg-asvo-surface border-b">
                 <tr>
-                  <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase w-40">
+                  <th className="px-4 py-3 text-xs font-semibold text-asvo-text-mid uppercase w-40">
                     Время
                   </th>
-                  <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase w-48">
+                  <th className="px-4 py-3 text-xs font-semibold text-asvo-text-mid uppercase w-48">
                     Пользователь
                   </th>
-                  <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase w-40">
+                  <th className="px-4 py-3 text-xs font-semibold text-asvo-text-mid uppercase w-40">
                     Действие
                   </th>
-                  <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase w-36">
+                  <th className="px-4 py-3 text-xs font-semibold text-asvo-text-mid uppercase w-36">
                     Сущность
                   </th>
-                  <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">
+                  <th className="px-4 py-3 text-xs font-semibold text-asvo-text-mid uppercase">
                     Описание
                   </th>
                 </tr>
@@ -452,7 +452,7 @@ export const AuditLogPage: React.FC = () => {
               <tbody>
                 {filteredLogs.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-4 py-12 text-center text-gray-400">
+                    <td colSpan={5} className="px-4 py-12 text-center text-asvo-text-dim">
                       <History className="w-12 h-12 mx-auto mb-3 opacity-30" />
                       <p>Нет записей по выбранным фильтрам</p>
                     </td>
@@ -462,9 +462,9 @@ export const AuditLogPage: React.FC = () => {
                 {filteredLogs.map((log) => (
                   <tr
                     key={log.id}
-                    className="border-b last:border-b-0 hover:bg-gray-50 transition-colors"
+                    className="border-b last:border-b-0 hover:bg-asvo-surface/50 transition-colors"
                   >
-                    <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
+                    <td className="px-4 py-3 text-sm text-asvo-text-mid whitespace-nowrap">
                       {new Date(log.createdAt).toLocaleString("ru-RU", {
                         day: "2-digit",
                         month: "2-digit",
@@ -477,13 +477,13 @@ export const AuditLogPage: React.FC = () => {
                     <td className="px-4 py-3 text-sm">
                       {log.User ? (
                         <div>
-                          <div className="font-medium text-gray-800">
+                          <div className="font-medium text-asvo-text">
                             {log.User.name} {log.User.surname}
                           </div>
-                          <div className="text-xs text-gray-400">{log.User.login}</div>
+                          <div className="text-xs text-asvo-text-dim">{log.User.login}</div>
                         </div>
                       ) : (
-                        <span className="text-gray-400 italic">Система</span>
+                        <span className="text-asvo-text-dim italic">Система</span>
                       )}
                     </td>
 
@@ -497,17 +497,17 @@ export const AuditLogPage: React.FC = () => {
                       </span>
                     </td>
 
-                    <td className="px-4 py-3 text-sm text-gray-600">
+                    <td className="px-4 py-3 text-sm text-asvo-text-mid">
                       {log.entity && (
-                        <span className="inline-block px-2 py-0.5 bg-gray-100 rounded text-xs">
+                        <span className="inline-block px-2 py-0.5 bg-asvo-surface-2 rounded text-xs">
                           {log.entity}
-                          {log.entityId && <span className="text-gray-400 ml-1">#{log.entityId}</span>}
+                          {log.entityId && <span className="text-asvo-text-dim ml-1">#{log.entityId}</span>}
                         </span>
                       )}
                     </td>
 
-                    <td className="px-4 py-3 text-sm text-gray-600">
-                      {log.description || <span className="text-gray-300 italic">—</span>}
+                    <td className="px-4 py-3 text-sm text-asvo-text-mid">
+                      {log.description || <span className="text-asvo-text-dim italic">—</span>}
 
 
                       {log.metadata && (
@@ -518,7 +518,7 @@ export const AuditLogPage: React.FC = () => {
                             </span>
                           )}
                           {log.metadata.ip && (
-                            <span className="text-xs bg-gray-50 text-gray-500 px-1.5 py-0.5 rounded">
+                            <span className="text-xs bg-asvo-surface text-asvo-text-mid px-1.5 py-0.5 rounded">
                               IP: {log.metadata.ip}
                             </span>
                           )}
@@ -543,25 +543,25 @@ export const AuditLogPage: React.FC = () => {
 
 
           {totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-3 border-t bg-gray-50">
-              <div className="text-sm text-gray-500">
+            <div className="flex items-center justify-between px-4 py-3 border-t bg-asvo-surface">
+              <div className="text-sm text-asvo-text-mid">
                 Показано {filteredLogs.length} из {totalCount} записей
               </div>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page === 1}
-                  className="px-3 py-1 border border-gray-200 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 transition-colors"
+                  className="px-3 py-1 border border-asvo-border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-asvo-surface-2 transition-colors"
                 >
                   Назад
                 </button>
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-asvo-text-mid">
                   {page} / {totalPages}
                 </span>
                 <button
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                   disabled={page === totalPages}
-                  className="px-3 py-1 border border-gray-200 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 transition-colors"
+                  className="px-3 py-1 border border-asvo-border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-asvo-surface-2 transition-colors"
                 >
                   Вперёд
                 </button>

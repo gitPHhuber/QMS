@@ -12,7 +12,9 @@ import {
   CheckCircle2,
   Loader2,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { notificationsApi } from "../api/qmsApi";
+import { parseRetryAfter } from "../api/rateLimitUtils";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -68,27 +70,96 @@ const SEVERITY_DOT: Record<NotificationSeverity, string> = {
 /* ================================================================== */
 
 const NotificationBell: React.FC = () => {
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // Fetch unread count periodically
-  const fetchCount = useCallback(async () => {
-    try {
-      const data = await notificationsApi.getCount();
-      setUnreadCount(data.count ?? 0);
-    } catch {
-      // silently ignore
-    }
-  }, []);
-
+  // Adaptive notification polling
+  //  - 30 s when tab is visible (base)
+  //  - 120 s when tab is hidden
+  //  - 180 s after 5 consecutive polls with no change
+  //  - Retry-After value (capped at 300 s) after a 429 response
   useEffect(() => {
-    fetchCount();
-    const interval = setInterval(fetchCount, 30_000);
-    return () => clearInterval(interval);
-  }, [fetchCount]);
+    const BASE_MS      = 30_000;
+    const HIDDEN_MS    = 120_000;
+    const IDLE_MS      = 180_000;
+    const RATE_LIMIT_MS = 300_000;
+    const IDLE_THRESHOLD = 5;
+
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    let currentInterval = BASE_MS;
+    let consecutiveNoChange = 0;
+    let prevCount = 0;
+    let cancelled = false;
+
+    const getInterval = () => {
+      let base: number;
+      if (document.hidden) base = HIDDEN_MS;
+      else if (consecutiveNoChange >= IDLE_THRESHOLD) base = IDLE_MS;
+      else base = BASE_MS;
+      // Never poll sooner than a server-requested rate-limit delay
+      return Math.max(base, currentInterval);
+    };
+
+    const poll = async () => {
+      if (cancelled) return;
+
+      try {
+        const data = await notificationsApi.getCount();
+        if (cancelled) return;
+
+        const newCount = data.count ?? 0;
+        if (newCount === prevCount) {
+          consecutiveNoChange += 1;
+        } else {
+          consecutiveNoChange = 0;
+        }
+        prevCount = newCount;
+        setUnreadCount(newCount);
+        currentInterval = BASE_MS;
+      } catch (error: any) {
+        if (cancelled) return;
+
+        if (error?.response?.status === 429) {
+          const seconds = parseRetryAfter(
+            error.response.headers?.['retry-after'] as string | undefined,
+            error.response.data,
+            RATE_LIMIT_MS / 1000,
+          );
+          currentInterval = Math.min(seconds * 1000, RATE_LIMIT_MS);
+        }
+      }
+
+      if (!cancelled) {
+        timeoutId = setTimeout(poll, getInterval());
+      }
+    };
+
+    // Immediate first fetch
+    poll();
+
+    // When tab becomes visible again, reset and poll immediately
+    const handleVisibility = () => {
+      if (!document.hidden && !cancelled) {
+        consecutiveNoChange = 0;
+        // Only reset and poll immediately when not rate-limited
+        if (currentInterval <= BASE_MS) {
+          if (timeoutId) clearTimeout(timeoutId);
+          poll();
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      cancelled = true;
+      if (timeoutId) clearTimeout(timeoutId);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, []);
 
   // Fetch full list when dropdown opens
   const fetchNotifications = useCallback(async () => {
@@ -156,6 +227,14 @@ const NotificationBell: React.FC = () => {
     }
   };
 
+  const handleNotificationClick = async (n: NotificationItem) => {
+    await markRead(n.id);
+    if (n.link) {
+      navigate(n.link);
+      setIsOpen(false);
+    }
+  };
+
   return (
     <div ref={panelRef} className="relative">
       {/* Bell button */}
@@ -205,7 +284,7 @@ const NotificationBell: React.FC = () => {
                 return (
                   <button
                     key={n.id}
-                    onClick={() => markRead(n.id)}
+                    onClick={() => handleNotificationClick(n)}
                     className={`w-full flex items-start gap-3 px-4 py-3 text-left transition-colors border-b border-slate-700/30 ${
                       !n.isRead
                         ? "bg-slate-800/60 hover:bg-slate-700/50"

@@ -71,9 +71,9 @@ export const CreatePC = () => {
 
       {confirm && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
-          <div className="bg-white p-6 rounded-2xl shadow-2xl w-96 text-center animate-fadeIn">
-            <h2 className="text-xl font-bold text-gray-800">Вы уверены?</h2>
-            <p className="text-gray-600 mt-2">
+          <div className="bg-asvo-card p-6 rounded-2xl shadow-2xl w-96 text-center animate-fadeIn">
+            <h2 className="text-xl font-bold text-asvo-text">Вы уверены?</h2>
+            <p className="text-asvo-text-mid mt-2">
               Добавить этот компьютер в базу?
             </p>
 
@@ -90,7 +90,7 @@ export const CreatePC = () => {
               </button>
               <button
                 type="button"
-                className="flex-1 bg-gray-300 text-gray-800 py-3 rounded-lg hover:bg-gray-400 transition font-semibold shadow-lg ml-2"
+                className="flex-1 bg-asvo-surface-3 text-asvo-text py-3 rounded-lg hover:bg-asvo-grey transition font-semibold shadow-lg ml-2"
                 onClick={() => setConfirm(false)}
               >
                 ❌ Отмена

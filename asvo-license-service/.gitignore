@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.env
+keys/*.key
+keys/*.pem
+keys/private.*
+keys/public.*
+!keys/.gitkeep
+*.log
+.DS_Store
+coverage/
+.turbo/

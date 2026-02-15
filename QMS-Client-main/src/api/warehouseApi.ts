@@ -5,7 +5,10 @@ import {
   WarehouseMovement,
   WarehouseDocument,
   StockBalanceItem,
-  DashboardStats
+  DashboardStats,
+  StorageZoneModel, ZoneTransitionRuleModel, IncomingInspectionModel,
+  InspectionTemplateModel, DeviceHistoryRecordModel, EnvironmentReadingModel,
+  EnvironmentAlertModel, StorageLocationModel, ShipmentModel, ReturnModel
 } from "src/types/WarehouseModels";
 
 export type { WarehouseMovement };
@@ -319,4 +322,204 @@ export const fetchRankings = async (period: 'day' | 'week' | 'month') => {
         params: { period }
     });
     return data as RankingResponse;
+};
+
+// ═══ ISO 13485: Storage Zones ═══
+
+export const fetchZones = async (): Promise<StorageZoneModel[]> => {
+  const { data } = await $authHost.get("api/warehouse/zones");
+  return data;
+};
+
+export const createZone = async (payload: Partial<StorageZoneModel>): Promise<StorageZoneModel> => {
+  const { data } = await $authHost.post("api/warehouse/zones", payload);
+  return data;
+};
+
+export const updateZone = async (id: number, payload: Partial<StorageZoneModel>): Promise<StorageZoneModel> => {
+  const { data } = await $authHost.put(`api/warehouse/zones/${id}`, payload);
+  return data;
+};
+
+export const fetchTransitionRules = async (): Promise<ZoneTransitionRuleModel[]> => {
+  const { data } = await $authHost.get("api/warehouse/zones/transitions");
+  return data;
+};
+
+// ═══ ISO 13485: Quarantine ═══
+
+export const fetchQuarantinedBoxes = async (params?: { page?: number; limit?: number }) => {
+  const { data } = await $authHost.get("api/warehouse/quarantine", { params });
+  return data as { rows: any[]; count: number; page: number; limit: number; summary: any[] };
+};
+
+export const makeQuarantineDecision = async (payload: {
+  boxId: number; reason: string; decisionType: string; ncId?: number; notes?: string;
+}) => {
+  const { data } = await $authHost.post("api/warehouse/quarantine/decide", payload);
+  return data;
+};
+
+// ═══ ISO 13485: Incoming Inspection ═══
+
+export const createInspection = async (payload: { supplyId: number; templateId?: number; notes?: string }): Promise<IncomingInspectionModel> => {
+  const { data } = await $authHost.post("api/warehouse/inspections", payload);
+  return data;
+};
+
+export const fetchInspections = async (params?: { page?: number; limit?: number; supplyId?: number; status?: string }) => {
+  const { data } = await $authHost.get("api/warehouse/inspections", { params });
+  return data as { rows: IncomingInspectionModel[]; count: number; page: number; limit: number };
+};
+
+export const updateInspection = async (id: number, payload: any): Promise<IncomingInspectionModel> => {
+  const { data } = await $authHost.put(`api/warehouse/inspections/${id}`, payload);
+  return data;
+};
+
+export const completeInspection = async (id: number, payload: { status: string; overallResult?: string }) => {
+  const { data } = await $authHost.post(`api/warehouse/inspections/${id}/complete`, payload);
+  return data;
+};
+
+export const fetchInspectionTemplates = async (): Promise<InspectionTemplateModel[]> => {
+  const { data } = await $authHost.get("api/warehouse/inspection-templates");
+  return data;
+};
+
+export const createInspectionTemplate = async (payload: Partial<InspectionTemplateModel>): Promise<InspectionTemplateModel> => {
+  const { data } = await $authHost.post("api/warehouse/inspection-templates", payload);
+  return data;
+};
+
+// ═══ ISO 13485: DHR / Traceability ═══
+
+export const fetchDHR = async (serialNumber: string) => {
+  const { data } = await $authHost.get(`api/warehouse/dhr/${encodeURIComponent(serialNumber)}`);
+  return data as { dhr: DeviceHistoryRecordModel; movements: any[] };
+};
+
+export const fetchDHRTraceBack = async (batchNumber: string) => {
+  const { data } = await $authHost.get(`api/warehouse/dhr/trace-back/${encodeURIComponent(batchNumber)}`);
+  return data as { batchNumber: string; affectedBoxes: any[]; affectedDevices: DeviceHistoryRecordModel[]; totalDevices: number };
+};
+
+export const createDHR = async (payload: { productId?: number; serialNumber: string; batchNumber?: string; manufacturingDate?: string }): Promise<DeviceHistoryRecordModel> => {
+  const { data } = await $authHost.post("api/warehouse/dhr", payload);
+  return data;
+};
+
+export const addDHRComponents = async (id: number, components: Array<{ boxId?: number; componentName: string; quantity?: number; supplierLot?: string; certificateRef?: string }>) => {
+  const { data } = await $authHost.post(`api/warehouse/dhr/${id}/components`, { components });
+  return data;
+};
+
+export const addDHRRecord = async (id: number, record: { recordType: string; referenceId?: number; description?: string }) => {
+  const { data } = await $authHost.post(`api/warehouse/dhr/${id}/records`, record);
+  return data;
+};
+
+// ═══ ISO 13485: Environment Monitoring ═══
+
+export const createEnvironmentReading = async (payload: { zoneId: number; temperature?: number; humidity?: number; equipmentId?: number; notes?: string }) => {
+  const { data } = await $authHost.post("api/warehouse/environment", payload);
+  return data as { reading: EnvironmentReadingModel; alerts: EnvironmentAlertModel[] };
+};
+
+export const fetchEnvironmentReadings = async (params?: { page?: number; limit?: number; zoneId?: number; fromDate?: string; toDate?: string }) => {
+  const { data } = await $authHost.get("api/warehouse/environment", { params });
+  return data as { rows: EnvironmentReadingModel[]; count: number; page: number; limit: number };
+};
+
+export const fetchEnvironmentAlerts = async (params?: { zoneId?: number }): Promise<EnvironmentAlertModel[]> => {
+  const { data } = await $authHost.get("api/warehouse/environment/alerts", { params });
+  return data;
+};
+
+export const acknowledgeEnvironmentAlert = async (id: number, actionTaken?: string) => {
+  const { data } = await $authHost.put(`api/warehouse/environment/alerts/${id}/acknowledge`, { actionTaken });
+  return data;
+};
+
+// ═══ ISO 13485: Expiry & FEFO ═══
+
+export const fetchExpiryAlerts = async (days?: number) => {
+  const { data } = await $authHost.get("api/warehouse/expiry-alerts", { params: { days } });
+  return data as any[];
+};
+
+// ═══ ISO 13485: Address Storage ═══
+
+export const fetchLocations = async (params?: { zoneId?: number }): Promise<StorageLocationModel[]> => {
+  const { data } = await $authHost.get("api/warehouse/locations", { params });
+  return data;
+};
+
+export const createLocation = async (payload: { zoneId: number; rack: string; shelf: string; cell?: string; barcode?: string; capacity?: number }): Promise<StorageLocationModel> => {
+  const { data } = await $authHost.post("api/warehouse/locations", payload);
+  return data;
+};
+
+export const fetchLocationByBarcode = async (barcode: string) => {
+  const { data } = await $authHost.get(`api/warehouse/locations/by-barcode/${encodeURIComponent(barcode)}`);
+  return data as { location: StorageLocationModel; boxes: any[] };
+};
+
+export const fetchLocationOccupancy = async (zoneId?: number) => {
+  const { data } = await $authHost.get("api/warehouse/locations/occupancy", { params: { zoneId } });
+  return data as StorageLocationModel[];
+};
+
+// ═══ ISO 13485: Shipments ═══
+
+export const createShipment = async (payload: { number: string; date?: string; customerId?: number; contractNumber?: string; notes?: string }): Promise<ShipmentModel> => {
+  const { data } = await $authHost.post("api/warehouse/shipments", payload);
+  return data;
+};
+
+export const fetchShipments = async (params?: { page?: number; limit?: number; status?: string }) => {
+  const { data } = await $authHost.get("api/warehouse/shipments", { params });
+  return data as { rows: ShipmentModel[]; count: number; page: number; limit: number };
+};
+
+export const fetchShipmentById = async (id: number): Promise<ShipmentModel> => {
+  const { data } = await $authHost.get(`api/warehouse/shipments/${id}`);
+  return data;
+};
+
+export const shipmentPick = async (id: number, items: Array<{ boxId: number; quantity?: number }>) => {
+  const { data } = await $authHost.post(`api/warehouse/shipments/${id}/pick`, { items });
+  return data;
+};
+
+export const shipmentVerify = async (id: number, items: Array<{ itemId: number; packageCondition: string }>) => {
+  const { data } = await $authHost.post(`api/warehouse/shipments/${id}/verify`, { items });
+  return data;
+};
+
+export const shipmentShip = async (id: number) => {
+  const { data } = await $authHost.post(`api/warehouse/shipments/${id}/ship`);
+  return data;
+};
+
+// ═══ ISO 13485: Returns ═══
+
+export const createReturn = async (payload: { number: string; customerId?: number; shipmentId?: number; reason?: string; notes?: string; items?: any[] }): Promise<ReturnModel> => {
+  const { data } = await $authHost.post("api/warehouse/returns", payload);
+  return data;
+};
+
+export const fetchReturns = async (params?: { page?: number; limit?: number; status?: string }) => {
+  const { data } = await $authHost.get("api/warehouse/returns", { params });
+  return data as { rows: ReturnModel[]; count: number; page: number; limit: number };
+};
+
+export const inspectReturn = async (id: number, items: Array<{ itemId: number; condition?: string; disposition?: string }>) => {
+  const { data } = await $authHost.post(`api/warehouse/returns/${id}/inspect`, { items });
+  return data;
+};
+
+export const decideReturn = async (id: number) => {
+  const { data } = await $authHost.post(`api/warehouse/returns/${id}/decide`);
+  return data;
 };

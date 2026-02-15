@@ -1,0 +1,346 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  FileText, Plus, Shield, AlertTriangle, CheckCircle,
+  Search, Eye, ChevronRight, Scale, Link2, Loader2, Download,
+} from 'lucide-react';
+import KpiRow from '../../../components/qms/KpiRow';
+import ActionBtn from '../../../components/qms/ActionBtn';
+import Badge from '../../../components/qms/Badge';
+import DataTable from '../../../components/qms/DataTable';
+import SectionTitle from '../../../components/qms/SectionTitle';
+import {
+  riskManagementApi,
+  type TraceabilityMatrixRow,
+  type RiskClass,
+} from '../../../api/qmsApi';
+import type { TabKey, PlanRow, HazardRow, TraceRow, BenefitRiskRow, StatsData } from './types';
+import { riskClassColors, hazardCategoryColors } from './constants';
+import { planColumns, hazardColumns, traceColumns } from './columns';
+import { mapPlan, mapHazard, mapTraceRow, mapBenefitRisk } from './mappers';
+import CreatePlanModal from './CreatePlanModal';
+
+const tabs: { key: TabKey; label: string; icon: React.ReactNode }[] = [
+  { key: 'plans',        label: 'Планы РМР',             icon: <FileText size={15} /> },
+  { key: 'hazards',      label: 'Анализ опасностей',     icon: <AlertTriangle size={15} /> },
+  { key: 'traceability', label: 'Матрица прослеж.',      icon: <Link2 size={15} /> },
+  { key: 'benefit-risk', label: 'Польза / Риск',         icon: <Scale size={15} /> },
+];
+
+const RiskManagementPage: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<TabKey>('plans');
+  const [search, setSearch] = useState('');
+
+  const [plans, setPlans] = useState<PlanRow[]>([]);
+  const [hazards, setHazards] = useState<HazardRow[]>([]);
+  const [traceability, setTraceability] = useState<TraceRow[]>([]);
+  const [benefitRisk, setBenefitRisk] = useState<BenefitRiskRow[]>([]);
+  const [stats, setStats] = useState<StatsData | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showCreatePlanModal, setShowCreatePlanModal] = useState(false);
+  const [exportingReport, setExportingReport] = useState(false);
+
+  useEffect(() => {
+    riskManagementApi.getStats()
+      .then((data) => setStats(data))
+      .catch(() => {/* stats are non-critical */});
+  }, []);
+
+  const fetchTabData = useCallback(async (tab: TabKey) => {
+    setLoading(true);
+    setError(null);
+    try {
+      switch (tab) {
+        case 'plans': {
+          const res = await riskManagementApi.getPlans({ search: search || undefined });
+          setPlans((res.rows ?? []).map(mapPlan));
+          break;
+        }
+        case 'hazards': {
+          const res = await riskManagementApi.getHazards({ search: search || undefined });
+          setHazards((res.rows ?? []).map(mapHazard));
+          break;
+        }
+        case 'traceability': {
+          const res = await riskManagementApi.getTraceability({ search: search || undefined });
+          const rows: TraceRow[] = (res.rows ?? []).flatMap((t: TraceabilityMatrixRow) => mapTraceRow(t));
+          setTraceability(rows);
+          break;
+        }
+        case 'benefit-risk': {
+          const res = await riskManagementApi.getBenefitRisk({ search: search || undefined });
+          setBenefitRisk((res.rows ?? []).map(mapBenefitRisk));
+          break;
+        }
+      }
+    } catch (err: any) {
+      setError(err?.response?.data?.message ?? err?.message ?? 'Ошибка загрузки данных');
+    } finally {
+      setLoading(false);
+    }
+  }, [search]);
+
+  useEffect(() => {
+    fetchTabData(activeTab);
+  }, [activeTab, fetchTabData]);
+
+  const kpis = [
+    { label: 'Планы РМР',              value: stats?.totalPlans ?? 0,        color: '#A06AE8', icon: <FileText size={18} /> },
+    { label: 'Опасностей',              value: stats?.totalHazards ?? 0,      color: '#F06060', icon: <AlertTriangle size={18} /> },
+    { label: 'Мер управления',          value: stats?.totalControls ?? 0,     color: '#4A90E8', icon: <Shield size={18} /> },
+    { label: 'Верифицировано',           value: stats?.verifiedControls ?? 0,  color: '#2DD4A8', icon: <CheckCircle size={18} /> },
+    { label: 'Benefit-Risk анализов',    value: stats?.totalBenefitRisk ?? 0,  color: '#E8A830', icon: <Scale size={18} /> },
+  ];
+
+  const hazardCategorySummary: Array<{ cat: string; count: number; color: string }> =
+    stats?.hazardsByCategory
+      ? stats.hazardsByCategory.map((item) => ({
+          cat: item.category,
+          count: Number(item.count),
+          color: hazardCategoryColors[item.category] ?? '#8899AB',
+        }))
+      : Object.entries(
+          hazards.reduce<Record<string, number>>((acc, h) => {
+            acc[h.category] = (acc[h.category] ?? 0) + 1;
+            return acc;
+          }, {})
+        ).map(([cat, count]) => ({
+          cat,
+          count,
+          color: hazardCategoryColors[cat] ?? '#8899AB',
+        }));
+
+  return (
+    <div className="min-h-screen bg-asvo-bg p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg" style={{ background: 'rgba(160,106,232,0.12)' }}>
+            <FileText className="text-[#A06AE8]" size={24} />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-asvo-text">Файл менеджмента риска</h1>
+            <p className="text-asvo-text-dim text-sm">ISO 14971:2019 &mdash; Применение менеджмента риска к медицинским изделиям</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <ActionBtn icon={<Plus size={15} />} onClick={() => setShowCreatePlanModal(true)}>
+            {activeTab === 'plans' ? 'Новый план' :
+             activeTab === 'hazards' ? 'Новая опасность' :
+             activeTab === 'traceability' ? 'Новая мера' :
+             'Новый анализ'}
+          </ActionBtn>
+          <ActionBtn
+            variant="secondary"
+            color="#A06AE8"
+            icon={exportingReport ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />}
+            disabled={exportingReport}
+            onClick={async () => {
+              setExportingReport(true);
+              try {
+                const { $authHost } = await import('../../../api/index');
+                const res = await $authHost.get('/api/risk-management/export/report', { responseType: 'blob' });
+                const url = window.URL.createObjectURL(new Blob([res.data]));
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `ISO14971_Risk_Report_${new Date().toISOString().slice(0, 10)}.xlsx`;
+                a.click();
+                window.URL.revokeObjectURL(url);
+              } catch (e: any) {
+                setError(e?.response?.data?.message || 'Ошибка генерации отчёта');
+              } finally {
+                setExportingReport(false);
+              }
+            }}
+          >
+            Отчёт ISO 14971
+          </ActionBtn>
+        </div>
+      </div>
+
+      <KpiRow items={kpis} />
+
+      {/* Tabs */}
+      <div className="flex gap-1 bg-asvo-surface border border-asvo-border rounded-xl p-1">
+        {tabs.map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-medium transition-all ${
+              activeTab === tab.key
+                ? 'bg-asvo-accent/15 text-asvo-accent'
+                : 'text-asvo-text-dim hover:text-asvo-text hover:bg-asvo-surface-2'
+            }`}
+          >
+            {tab.icon}
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Search */}
+      <div className="flex gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-asvo-text-dim" size={16} />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Поиск по ID, названию или описанию..."
+            className="w-full pl-10 pr-4 py-2 bg-asvo-surface-2 border border-asvo-border rounded-lg text-asvo-text placeholder:text-asvo-text-dim focus:border-asvo-accent/50 focus:outline-none text-sm"
+          />
+        </div>
+      </div>
+
+      {/* Error */}
+      {error && (
+        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 flex items-center gap-3">
+          <AlertTriangle className="text-red-400 shrink-0" size={20} />
+          <div>
+            <p className="text-red-400 text-sm font-medium">Ошибка загрузки</p>
+            <p className="text-red-400/70 text-xs">{error}</p>
+          </div>
+          <button
+            onClick={() => fetchTabData(activeTab)}
+            className="ml-auto text-xs text-red-400 border border-red-400/30 rounded px-3 py-1 hover:bg-red-400/10 transition-colors"
+          >
+            Повторить
+          </button>
+        </div>
+      )}
+
+      {/* Loading */}
+      {loading && (
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="animate-spin text-asvo-accent" size={32} />
+          <span className="ml-3 text-asvo-text-dim text-sm">Загрузка...</span>
+        </div>
+      )}
+
+      {/* Plans tab */}
+      {!loading && activeTab === 'plans' && (
+        <>
+          <SectionTitle>Планы менеджмента рисков (ISO 14971 &sect;4.4)</SectionTitle>
+          <DataTable columns={planColumns} data={plans} />
+        </>
+      )}
+
+      {/* Hazards tab */}
+      {!loading && activeTab === 'hazards' && (
+        <>
+          <SectionTitle>Анализ опасностей (ISO 14971 &sect;5)</SectionTitle>
+          <DataTable columns={hazardColumns} data={hazards} />
+
+          {hazardCategorySummary.length > 0 && (
+            <>
+              <SectionTitle>Опасности по категориям</SectionTitle>
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
+                {hazardCategorySummary.map(item => (
+                  <div
+                    key={item.cat}
+                    className="bg-asvo-surface border border-asvo-border rounded-lg p-3 flex items-center gap-2"
+                  >
+                    <div className="w-2 h-2 rounded-full" style={{ background: item.color }} />
+                    <span className="text-asvo-text-mid text-xs flex-1">{item.cat}</span>
+                    <span className="text-asvo-text font-bold text-sm">{item.count}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </>
+      )}
+
+      {/* Traceability tab */}
+      {!loading && activeTab === 'traceability' && (
+        <>
+          <SectionTitle>Матрица прослеживаемости мер управления (ISO 14971 &sect;7-8)</SectionTitle>
+          <p className="text-asvo-text-dim text-xs mb-3">
+            Полная цепочка: Опасность &rarr; Исходный риск &rarr; Мера управления &rarr; Верификация &rarr; Резидуальный риск &rarr; Benefit/Risk
+          </p>
+          <DataTable columns={traceColumns} data={traceability} />
+
+          <div className="bg-asvo-surface border border-asvo-border rounded-xl p-4 mt-4">
+            <h4 className="text-xs font-semibold text-asvo-text mb-2">Приоритет мер по ISO 14971</h4>
+            <div className="flex gap-6">
+              <div className="flex items-center gap-2">
+                <Badge color="#2DD4A8" bg="rgba(45,212,168,0.14)">1</Badge>
+                <span className="text-asvo-text-mid text-xs">Безопасный по сути дизайн (&sect;7.2)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge color="#4A90E8" bg="rgba(74,144,232,0.14)">2</Badge>
+                <span className="text-asvo-text-mid text-xs">Защитные меры (&sect;7.3)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge color="#E8A830" bg="rgba(232,168,48,0.14)">3</Badge>
+                <span className="text-asvo-text-mid text-xs">Информация для безопасности (&sect;7.4)</span>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Benefit-risk tab */}
+      {!loading && activeTab === 'benefit-risk' && (
+        <>
+          <SectionTitle>Анализ пользы/риска (ISO 14971 &sect;6.5)</SectionTitle>
+          <p className="text-asvo-text-dim text-xs mb-3">
+            Оценка обоснованности остаточного риска с точки зрения клинической пользы
+          </p>
+
+          <div className="space-y-3">
+            {benefitRisk.length === 0 && (
+              <div className="bg-asvo-surface border border-asvo-border rounded-xl p-8 text-center">
+                <p className="text-asvo-text-dim text-sm">Нет данных</p>
+              </div>
+            )}
+            {benefitRisk.map(bra => (
+              <div
+                key={bra.id}
+                className="bg-asvo-surface border border-asvo-border rounded-xl p-4"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-asvo-accent text-sm">BRA-{String(bra.id).padStart(3, '0')}</span>
+                    <ChevronRight size={14} className="text-asvo-text-dim" />
+                    <span className="text-asvo-text text-sm">{bra.hazard}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      color={riskClassColors[bra.residualRisk as RiskClass]?.color}
+                      bg={riskClassColors[bra.residualRisk as RiskClass]?.bg}
+                    >
+                      Резид: {bra.residualRisk}
+                    </Badge>
+                    <Badge
+                      color={bra.outweighs ? '#2DD4A8' : '#F06060'}
+                      bg={bra.outweighs ? 'rgba(45,212,168,0.14)' : 'rgba(240,96,96,0.14)'}
+                    >
+                      {bra.outweighs ? 'Польза > Риск' : 'Риск > Польза'}
+                    </Badge>
+                  </div>
+                </div>
+                <p className="text-asvo-text-mid text-xs mb-1">
+                  <strong>Польза:</strong> {bra.benefit}
+                </p>
+                <p className="text-asvo-text-dim text-xs">
+                  <strong>Заключение:</strong> {bra.conclusion}
+                </p>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Create Plan Modal */}
+      <CreatePlanModal
+        isOpen={showCreatePlanModal}
+        onClose={() => setShowCreatePlanModal(false)}
+        onCreated={() => fetchTabData('plans')}
+      />
+    </div>
+  );
+};
+
+export default RiskManagementPage;

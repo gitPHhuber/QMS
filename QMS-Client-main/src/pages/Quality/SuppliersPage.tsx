@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Truck, Plus, Search, Award, ShieldCheck, FileText,
   Clock, Headphones, BadgeCheck, Package, Loader2, AlertCircle,
+  Download,
 } from 'lucide-react';
 import KpiRow from '../../components/qms/KpiRow';
 import ActionBtn from '../../components/qms/ActionBtn';
@@ -10,6 +11,9 @@ import DataTable from '../../components/qms/DataTable';
 import SectionTitle from '../../components/qms/SectionTitle';
 import ProgressBar from '../../components/qms/ProgressBar';
 import { suppliersApi } from '../../api/qmsApi';
+import { useExport } from '../../hooks/useExport';
+import CreateSupplierModal from './CreateSupplierModal';
+import SupplierDetailModal from './SupplierDetailModal';
 
 /* ───── types ───── */
 interface SupplierRow {
@@ -128,29 +132,30 @@ const SuppliersPage: React.FC = () => {
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [detailSupplierId, setDetailSupplierId] = useState<number | null>(null);
+  const { exporting, doExport } = useExport();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-        const [suppliersRes, statsRes] = await Promise.all([
-          suppliersApi.getAll(),
-          suppliersApi.getStats(),
-        ]);
+      const [suppliersRes, statsRes] = await Promise.all([
+        suppliersApi.getAll(),
+        suppliersApi.getStats(),
+      ]);
 
-        setSuppliers(suppliersRes.rows ?? []);
-        setStats(statsRes);
-      } catch (err: any) {
-        setError(err?.response?.data?.message || err?.message || 'Ошибка загрузки данных');
-      } finally {
-        setLoading(false);
-      }
-    };
+      setSuppliers(suppliersRes.rows ?? []);
+      setStats(statsRes);
+    } catch (err: any) {
+      setError(err?.response?.data?.message || err?.message || 'Ошибка загрузки данных');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchData();
-  }, []);
+  useEffect(() => { fetchData(); }, []);
 
   const filtered = suppliers.filter(
     (r) =>
@@ -215,7 +220,8 @@ const SuppliersPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <ActionBtn icon={<Plus size={15} />}>Новый поставщик</ActionBtn>
+          <ActionBtn icon={<Plus size={15} />} onClick={() => setShowCreateModal(true)}>Новый поставщик</ActionBtn>
+          <ActionBtn variant="secondary" icon={exporting ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />} disabled={exporting} onClick={() => doExport("suppliers", "Suppliers_Export")}>Экспорт</ActionBtn>
         </div>
       </div>
 
@@ -237,7 +243,7 @@ const SuppliersPage: React.FC = () => {
       </div>
 
       {/* ── Table ── */}
-      <DataTable columns={columns} data={filtered} />
+      <DataTable columns={columns} data={filtered} onRowClick={(row) => setDetailSupplierId(Number(row.id))} />
 
       {/* ── Evaluation Criteria ── */}
       <SectionTitle>Критерии оценки поставщиков</SectionTitle>
@@ -261,6 +267,22 @@ const SuppliersPage: React.FC = () => {
           </div>
         ))}
       </div>
+
+      {/* ── Modals ── */}
+      <CreateSupplierModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onCreated={() => fetchData()}
+      />
+
+      {detailSupplierId !== null && (
+        <SupplierDetailModal
+          supplierId={detailSupplierId}
+          isOpen={detailSupplierId !== null}
+          onClose={() => setDetailSupplierId(null)}
+          onAction={() => fetchData()}
+        />
+      )}
     </div>
   );
 };

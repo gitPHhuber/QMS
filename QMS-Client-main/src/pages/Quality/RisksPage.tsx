@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Shield, Plus, Grid3X3, Download, AlertTriangle,
   Search, TrendingUp, Loader2,
@@ -9,6 +9,9 @@ import Badge from '../../components/qms/Badge';
 import DataTable from '../../components/qms/DataTable';
 import SectionTitle from '../../components/qms/SectionTitle';
 import { risksApi } from '../../api/qmsApi';
+import CreateRiskModal from './CreateRiskModal';
+import RiskDetailModal from './RiskDetailModal';
+import { useExport } from '../../hooks/useExport';
 
 /* ───── types ───── */
 interface RiskRow {
@@ -23,15 +26,6 @@ interface RiskRow {
   status: string;
   [key: string]: unknown;
 }
-
-/* ───── matrix data (5×5) — still mock until matrix API is wired ───── */
-const matrixCounts: Record<number, Record<number, number>> = {
-  5: { 1: 0, 2: 0, 3: 1, 4: 2, 5: 0 },
-  4: { 1: 0, 2: 0, 3: 1, 4: 0, 5: 0 },
-  3: { 1: 0, 2: 0, 3: 1, 4: 0, 5: 0 },
-  2: { 1: 0, 2: 0, 3: 0, 4: 1, 5: 1 },
-  1: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 1 },
-};
 
 const severityLabels = ['1-Незначит.', '2-Малая', '3-Средняя', '4-Значит.', '5-Катастроф.'];
 
@@ -115,34 +109,43 @@ const columns = [
 const RisksPage: React.FC = () => {
   const [showMatrix, setShowMatrix] = useState(true);
   const [search, setSearch] = useState('');
+  const { exporting, doExport } = useExport();
 
   /* ───── API state ───── */
   const [risks, setRisks] = useState<RiskRow[]>([]);
   const [stats, setStats] = useState<any>(null);
+  const [matrixCounts, setMatrixCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  /* ───── Modal state ───── */
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [detailRiskId, setDetailRiskId] = useState<number | null>(null);
+
   /* ───── Fetch data on mount ───── */
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const [risksRes, statsRes] = await Promise.all([
-          risksApi.getAll(),
-          risksApi.getStats(),
-        ]);
-        setRisks(risksRes.rows ?? []);
-        setStats(statsRes);
-      } catch (e: any) {
-        console.error('RisksPage fetch error:', e);
-        setError(e?.response?.data?.message || 'Ошибка загрузки реестра рисков');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [risksRes, statsRes, matrixRes] = await Promise.all([
+        risksApi.getAll(),
+        risksApi.getStats(),
+        risksApi.getMatrix(),
+      ]);
+      setRisks(risksRes.rows ?? []);
+      setStats(statsRes);
+      setMatrixCounts(matrixRes.cellCounts ?? {});
+    } catch (e: any) {
+      console.error('RisksPage fetch error:', e);
+      setError(e?.response?.data?.message || 'Ошибка загрузки реестра рисков');
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const filtered = risks.filter(
     (r) =>
@@ -173,11 +176,11 @@ const RisksPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <ActionBtn icon={<Plus size={15} />}>Новый риск</ActionBtn>
+          <ActionBtn icon={<Plus size={15} />} onClick={() => setShowCreateModal(true)}>Новый риск</ActionBtn>
           <ActionBtn variant="secondary" color="#A06AE8" icon={<Grid3X3 size={15} />} onClick={() => setShowMatrix((v) => !v)}>
             Матрица рисков
           </ActionBtn>
-          <ActionBtn variant="secondary" icon={<Download size={15} />}>Экспорт</ActionBtn>
+          <ActionBtn variant="secondary" icon={exporting ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />} disabled={exporting} onClick={() => doExport("risks", "Risks_Export")}>Экспорт</ActionBtn>
         </div>
       </div>
 
@@ -216,7 +219,7 @@ const RisksPage: React.FC = () => {
 
       {/* ── Table ── */}
       {!loading && !error && (
-        <DataTable columns={columns} data={filtered} />
+        <DataTable columns={columns} data={filtered} onRowClick={(row) => setDetailRiskId(Number(row.id))} />
       )}
 
       {/* ── 5×5 Risk Matrix ── */}
@@ -248,7 +251,7 @@ const RisksPage: React.FC = () => {
                   </div>
                   {[1, 2, 3, 4, 5].map((s) => {
                     const val = p * s;
-                    const cnt = matrixCounts[p]?.[s] ?? 0;
+                    const cnt = matrixCounts[`${p}-${s}`] ?? 0;
                     return (
                       <div
                         key={`${p}-${s}`}
@@ -263,6 +266,21 @@ const RisksPage: React.FC = () => {
             </div>
           </div>
         </>
+      )}
+      {/* Modals */}
+      <CreateRiskModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onCreated={fetchData}
+      />
+
+      {detailRiskId !== null && (
+        <RiskDetailModal
+          riskId={detailRiskId}
+          isOpen={true}
+          onClose={() => setDetailRiskId(null)}
+          onAction={fetchData}
+        />
       )}
     </div>
   );

@@ -1,0 +1,30 @@
+services:
+  als-api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: development
+    volumes:
+      - ./backend/src:/app/src:ro
+      - ./keys:/keys:ro
+    command: npx tsx watch src/index.ts
+
+  als-admin:
+    build:
+      context: ./admin-frontend
+      dockerfile: Dockerfile
+      target: development
+    volumes:
+      - ./admin-frontend/src:/app/src:ro
+    ports: ['4001:5173']
+    command: npx vite --host 0.0.0.0
+
+  als-portal:
+    build:
+      context: ./portal-frontend
+      dockerfile: Dockerfile
+      target: development
+    volumes:
+      - ./portal-frontend/src:/app/src:ro
+    ports: ['4002:5173']
+    command: npx vite --host 0.0.0.0

@@ -14,6 +14,7 @@ import { WarehousePage as AdminWarehousePage } from "./pages/Admin/Warehouse/War
 import { WarehousePage as UserWarehousePage } from "./pages/Warehouse/WarehousePage";
 import { AnalyticsPage } from "./pages/Warehouse/AnalyticsPage";
 import { InventoryPage } from "./pages/Warehouse/InventoryPage";
+import { DHRPage } from "./pages/Warehouse/DHRPage";
 
 import TasksPage from "./pages/Tasks/TasksPage";
 
@@ -36,6 +37,17 @@ import ComplaintsPage from "./pages/Quality/ComplaintsPage";
 import ChangeControlPage from "./pages/Quality/ChangeControlPage";
 import ValidationPage from "./pages/Quality/ValidationPage";
 import ProductRegistryPage from "./pages/Quality/ProductRegistryPage";
+import { DesignControlPage } from "./pages/DesignControl/DesignControlPage";
+import { ESignPage } from "./pages/ESign/ESignPage";
+import DhrPage from "./pages/Quality/DhrPage";
+
+// MES страницы
+import DmrListPage from "./pages/MES/DMR/DmrListPage";
+import WorkOrderListPage from "./pages/MES/WorkOrders/WorkOrderListPage";
+import RouteSheetPage from "./pages/MES/RouteSheet/RouteSheetPage";
+import QualityControlPage from "./pages/MES/Quality/QualityControlPage";
+import AcceptanceTestPage from "./pages/MES/AcceptanceTesting/AcceptanceTestPage";
+import KpiDashboardPage from "./pages/MES/KPI/KpiDashboardPage";
 
 import {
   ADMIN_PCs_ROUTE,
@@ -51,6 +63,7 @@ import {
   WAREHOUSE_ROUTE,
   WAREHOUSE_ANALYTICS_ROUTE,
   WAREHOUSE_INVENTORY_ROUTE,
+  WAREHOUSE_DHR_ROUTE,
   TASKS_ROUTE,
   ADMIN_RBAC_ROUTE,
   ADMIN_MODULES_ROUTE,
@@ -58,6 +71,7 @@ import {
   REGISTRATION_ROUTE,
   QMS_DASHBOARD_ROUTE,
   DOCUMENTS_ROUTE,
+  DOCUMENT_DETAIL_ROUTE,
   NC_ROUTE,
   CAPA_ROUTE,
   RISKS_ROUTE,
@@ -71,12 +85,22 @@ import {
   CHANGE_CONTROL_ROUTE,
   VALIDATION_ROUTE,
   PRODUCT_REGISTRY_ROUTE,
+  DESIGN_CONTROL_ROUTE,
+  ESIGN_ROUTE,
+  DHR_ROUTE,
+  MES_DMR_ROUTE,
+  MES_WORK_ORDERS_ROUTE,
+  MES_ROUTE_SHEETS_ROUTE,
+  MES_QUALITY_CONTROL_ROUTE,
+  MES_ACCEPTANCE_TESTING_ROUTE,
+  MES_KPI_ROUTE,
 } from "./utils/consts";
 
 // QMS routes (rendered inside QmsLayout)
 export const qmsRoutes = [
   { path: QMS_DASHBOARD_ROUTE, Component: QmsDashboardPage },
   { path: DOCUMENTS_ROUTE, Component: DocumentsPage },
+  { path: DOCUMENT_DETAIL_ROUTE, Component: DocumentsPage },
   { path: NC_ROUTE, Component: NonconformityPage },
   { path: CAPA_ROUTE, Component: CapaPage },
   { path: RISKS_ROUTE, Component: RisksPage },
@@ -90,6 +114,16 @@ export const qmsRoutes = [
   { path: CHANGE_CONTROL_ROUTE, Component: ChangeControlPage },
   { path: VALIDATION_ROUTE, Component: ValidationPage },
   { path: PRODUCT_REGISTRY_ROUTE, Component: ProductRegistryPage },
+  { path: DESIGN_CONTROL_ROUTE, Component: DesignControlPage },
+  { path: ESIGN_ROUTE, Component: ESignPage },
+  { path: DHR_ROUTE, Component: DhrPage },
+  // ── MES / Производство ──
+  { path: MES_DMR_ROUTE, Component: DmrListPage },
+  { path: MES_WORK_ORDERS_ROUTE, Component: WorkOrderListPage },
+  { path: MES_ROUTE_SHEETS_ROUTE, Component: RouteSheetPage },
+  { path: MES_QUALITY_CONTROL_ROUTE, Component: QualityControlPage },
+  { path: MES_ACCEPTANCE_TESTING_ROUTE, Component: AcceptanceTestPage },
+  { path: MES_KPI_ROUTE, Component: KpiDashboardPage },
 ];
 
 export const authRoutes = [
@@ -98,6 +132,7 @@ export const authRoutes = [
   { path: WAREHOUSE_ROUTE, Component: UserWarehousePage },
   { path: WAREHOUSE_ANALYTICS_ROUTE, Component: AnalyticsPage },
   { path: WAREHOUSE_INVENTORY_ROUTE, Component: InventoryPage },
+  { path: WAREHOUSE_DHR_ROUTE, Component: DHRPage },
   { path: TASKS_ROUTE, Component: TasksPage },
 ];
 

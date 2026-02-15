@@ -14,6 +14,8 @@ import {
   ChevronDown, FileText, AlertTriangle, ClipboardCheck, BarChart3,
   Truck, GraduationCap, Wrench,
   MessageSquareWarning, GitBranch, FlaskConical, Package,
+  Compass, PenTool,
+  Factory, BookOpen, Route, Award,
 } from "lucide-react";
 
 import NotificationBell from "../NotificationBell";
@@ -26,6 +28,9 @@ import {
   RISKS_ROUTE, SUPPLIERS_ROUTE, INTERNAL_AUDITS_ROUTE,
   TRAINING_ROUTE, EQUIPMENT_ROUTE, REVIEW_ROUTE,
   COMPLAINTS_ROUTE, CHANGE_CONTROL_ROUTE, VALIDATION_ROUTE, PRODUCT_REGISTRY_ROUTE,
+  DESIGN_CONTROL_ROUTE, ESIGN_ROUTE,
+  MES_DMR_ROUTE, MES_WORK_ORDERS_ROUTE, MES_ROUTE_SHEETS_ROUTE,
+  MES_QUALITY_CONTROL_ROUTE, MES_ACCEPTANCE_TESTING_ROUTE, MES_KPI_ROUTE,
 } from "src/utils/consts";
 
 type NavItem = {
@@ -115,6 +120,21 @@ export const Header: React.FC = observer(() => {
         modules.isEnabled('qms.changes')     ? { label: "Управление изм.", to: CHANGE_CONTROL_ROUTE, icon: GitBranch } : null,
         modules.isEnabled('qms.validation')  ? { label: "Валидация", to: VALIDATION_ROUTE, icon: FlaskConical } : null,
         modules.isEnabled('qms.product')     ? { label: "Реестр изделий", to: PRODUCT_REGISTRY_ROUTE, icon: Package } : null,
+        modules.isEnabled('qms.design')      ? { label: "Design Control", to: DESIGN_CONTROL_ROUTE, icon: Compass } : null,
+        modules.isEnabled('core.esign')      ? { label: "Эл. подписи", to: ESIGN_ROUTE, icon: PenTool } : null,
+      ].filter(Boolean) as { label: string; to: string; icon?: React.ElementType }[],
+    } as NavItem] : []),
+    // MES — dropdown if any mes module is enabled
+    ...(modules.hasGroup('mes') ? [{
+      label: "Производство",
+      icon: Factory,
+      children: [
+        modules.isEnabled('mes.dmr')     ? { label: "DMR",              to: MES_DMR_ROUTE,               icon: BookOpen } : null,
+        modules.isEnabled('mes.orders')  ? { label: "Произв. задания",  to: MES_WORK_ORDERS_ROUTE,       icon: ClipboardCheck } : null,
+        modules.isEnabled('mes.routes')  ? { label: "Маршрутные карты", to: MES_ROUTE_SHEETS_ROUTE,      icon: Route } : null,
+        modules.isEnabled('mes.quality') ? { label: "Контроль MES",     to: MES_QUALITY_CONTROL_ROUTE,   icon: Shield } : null,
+        modules.isEnabled('mes.quality') ? { label: "ПСИ",              to: MES_ACCEPTANCE_TESTING_ROUTE, icon: Award } : null,
+        modules.isEnabled('mes.kpi')     ? { label: "KPI производства", to: MES_KPI_ROUTE,               icon: BarChart3 } : null,
       ].filter(Boolean) as { label: string; to: string; icon?: React.ElementType }[],
     } as NavItem] : []),
     // WMS

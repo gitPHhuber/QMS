@@ -11,6 +11,9 @@ const path = require("path");
 const { startAuditRetentionScheduler } = require("./modules/core/utils/auditRetentionService");
 const RiskMonitoringService = require("./modules/qms-risk/services/RiskMonitoringService");
 
+const { apiLimiter } = require("./middleware/rateLimitMiddleware");
+const { refreshToken, logoutToken } = require("./middleware/refreshTokenMiddleware");
+
 const PORT = process.env.PORT || 5000;
 const app = express();
 
@@ -29,15 +32,28 @@ app.use(express.static(path.resolve(__dirname, "static")));
 app.use(fileUpload({}));
 
 
+// Healthcheck endpoints (no auth required)
+const healthRouter = require("./modules/core/routes/healthRouter");
+app.use("/api", healthRouter);
+
+// Rate limiting
+app.use("/api", apiLimiter);
+
+// Auth token refresh endpoints
+app.post("/api/auth/refresh", refreshToken);
+app.post("/api/auth/logout", logoutToken);
+
 app.use("/api", router);
 
 
 app.use(errorHandler);
 
 const initInitialData = async () => {
+  const transaction = await sequelize.transaction();
   try {
     console.log(">>> [RBAC] Начинаем инициализацию ролей и прав...");
 
+    const txOpt = { transaction };
 
     const permissions = [
       // Система
@@ -112,16 +128,69 @@ const initInitialData = async () => {
       { code: "product.read", description: "Просмотр реестра изделий" },
       { code: "product.manage", description: "Управление реестром изделий" },
 
+      // Управление проектированием (§7.3)
+      { code: "design.view", description: "Просмотр проектов Design Control" },
+      { code: "design.create", description: "Создание проектов и элементов Design Control" },
+      { code: "design.manage", description: "Управление проектированием" },
+      { code: "design.approve", description: "Одобрение результатов проектирования" },
+
+      // Электронные подписи (21 CFR Part 11)
+      { code: "esign.view", description: "Просмотр электронных подписей" },
+      { code: "esign.sign", description: "Подписание документов" },
+      { code: "esign.request", description: "Создание запросов на подпись" },
+      { code: "esign.manage", description: "Управление политиками подписей" },
+
+      // Оборудование — управление средой
+      { code: "equipment.manage", description: "Управление оборудованием и мониторингом среды" },
+
+      // DHR — История устройства (§7.5.9)
+      { code: "dhr.read", description: "Просмотр записей истории устройства" },
+      { code: "dhr.create", description: "Создание DHR" },
+      { code: "dhr.manage", description: "Управление DHR и выпуск продукции" },
+
       // Аналитика
       { code: "analytics.view", description: "Просмотр дашбордов и KPI" },
       { code: "audit.log.view", description: "Просмотр журнала аудита" },
+
+      // Администрирование
+      { code: "admin.access", description: "Доступ к панели администрирования" },
+
+      // MES: DMR
+      { code: "dmr.read", description: "Просмотр DMR" },
+      { code: "dmr.create", description: "Создание DMR" },
+      { code: "dmr.approve", description: "Утверждение DMR" },
+      { code: "dmr.manage", description: "Управление DMR" },
+
+      // MES: Произв. задания
+      { code: "workorder.read", description: "Просмотр произв. заданий" },
+      { code: "workorder.create", description: "Создание произв. заданий" },
+      { code: "workorder.manage", description: "Управление произв. заданиями" },
+      { code: "workorder.launch", description: "Запуск произв. заданий" },
+
+      // MES: Маршрутные карты
+      { code: "routesheet.read", description: "Просмотр маршрутных карт" },
+      { code: "routesheet.execute", description: "Выполнение операций" },
+      { code: "routesheet.manage", description: "Управление маршрутными картами" },
+
+      // MES: Контроль качества
+      { code: "mesqc.read", description: "Просмотр контроля качества MES" },
+      { code: "mesqc.inspect", description: "Проведение контроля" },
+      { code: "mesqc.manage", description: "Управление контролем качества" },
+
+      // MES: ПСИ
+      { code: "psi.read", description: "Просмотр ПСИ" },
+      { code: "psi.create", description: "Создание ПСИ" },
+      { code: "psi.decide", description: "Решение по ПСИ" },
+      { code: "psi.manage", description: "Управление ПСИ" },
+
+      // MES: KPI
+      { code: "meskpi.read", description: "Просмотр KPI производства" },
+      { code: "meskpi.manage", description: "Управление KPI" },
     ];
 
-
     for (const p of permissions) {
-      await models.Ability.findOrCreate({ where: { code: p.code }, defaults: p });
+      await models.Ability.findOrCreate({ where: { code: p.code }, defaults: p, ...txOpt });
     }
-
 
     const rolesData = [
       { code: "SUPER_ADMIN", name: "SUPER_ADMIN", description: "Полный доступ" },
@@ -132,33 +201,33 @@ const initInitialData = async () => {
       { code: "QC_ENGINEER", name: "QC_ENGINEER", description: "Инженер ОТК" },
       { code: "WAREHOUSE_MASTER", name: "WAREHOUSE_MASTER", description: "Кладовщик" },
       { code: "VIEWER", name: "VIEWER", description: "Наблюдатель — только просмотр" },
+      { code: "PRODUCTION_OPERATOR", name: "PRODUCTION_OPERATOR", description: "Оператор производства" },
+      { code: "PRODUCTION_SUPERVISOR", name: "PRODUCTION_SUPERVISOR", description: "Мастер производственного участка" },
     ];
 
     for (const roleData of rolesData) {
       await models.Role.findOrCreate({
         where: { code: roleData.code },
         defaults: roleData,
+        ...txOpt,
       });
     }
 
-
     const assign = async (roleName, slugs) => {
-      const role = await models.Role.findOne({ where: { name: roleName } });
+      const role = await models.Role.findOne({ where: { name: roleName }, ...txOpt });
       if (!role) return;
 
       let abilities;
       if (slugs === '*') {
-
-        abilities = await models.Ability.findAll();
+        abilities = await models.Ability.findAll(txOpt);
       } else {
-        abilities = await models.Ability.findAll({ where: { code: slugs } });
+        abilities = await models.Ability.findAll({ where: { code: slugs }, ...txOpt });
       }
 
       if (abilities.length) {
-        await role.setAbilities(abilities);
+        await role.setAbilities(abilities, txOpt);
       }
     };
-
 
     await assign("SUPER_ADMIN", '*');
 
@@ -175,9 +244,21 @@ const initInitialData = async () => {
       "change.read", "change.create", "change.approve",
       "validation.read", "validation.manage",
       "product.read", "product.manage",
+      "design.view", "design.create", "design.manage", "design.approve",
+      "esign.view", "esign.sign", "esign.request", "esign.manage",
+      "equipment.manage",
+      "dhr.read", "dhr.create", "dhr.manage",
       "qms.audit.view", "qms.audit.verify", "qms.audit.report",
       "analytics.view", "audit.log.view",
       "warehouse.view", "rbac.manage", "users.manage",
+      "admin.access",
+      // MES
+      "dmr.read", "dmr.create", "dmr.approve", "dmr.manage",
+      "workorder.read", "workorder.create", "workorder.manage", "workorder.launch",
+      "routesheet.read", "routesheet.execute", "routesheet.manage",
+      "mesqc.read", "mesqc.inspect", "mesqc.manage",
+      "psi.read", "psi.create", "psi.decide", "psi.manage",
+      "meskpi.read", "meskpi.manage",
     ]);
 
     await assign("QMS_ENGINEER", [
@@ -187,12 +268,15 @@ const initInitialData = async () => {
       "risk.read", "risk.create", "risk.update", "risk.assess",
       "supplier.read",
       "training.read", "training.manage",
-      "equipment.read", "equipment.calibrate",
+      "equipment.read", "equipment.calibrate", "equipment.manage",
       "complaint.read", "complaint.create",
       "change.read", "change.create",
       "validation.read", "validation.manage",
       "product.read",
       "review.read",
+      "design.view", "design.create", "design.manage",
+      "esign.view", "esign.sign", "esign.request",
+      "dhr.read", "dhr.create",
       "qms.audit.view",
       "analytics.view", "audit.log.view",
     ]);
@@ -222,7 +306,15 @@ const initInitialData = async () => {
       "capa.view", "capa.create", "capa.manage", "capa.verify",
       "qms.audit.view",
       "risk.read",
-      "equipment.read",
+      "equipment.read", "equipment.manage",
+      "dhr.read", "dhr.create", "dhr.manage",
+      // MES
+      "dmr.read",
+      "workorder.read",
+      "routesheet.read", "routesheet.execute",
+      "mesqc.read", "mesqc.inspect", "mesqc.manage",
+      "psi.read", "psi.create", "psi.decide", "psi.manage",
+      "meskpi.read",
     ]);
 
     await assign("WAREHOUSE_MASTER", [
@@ -237,10 +329,36 @@ const initInitialData = async () => {
       "supplier.read", "training.read", "equipment.read",
       "review.read", "complaint.read", "change.read",
       "validation.read", "product.read", "analytics.view",
+      "design.view", "esign.view", "dhr.read",
     ]);
 
+    await assign("PRODUCTION_OPERATOR", [
+      "routesheet.read", "routesheet.execute",
+      "mesqc.read",
+      "workorder.read",
+      "psi.read",
+      "meskpi.read",
+      "dhr.read",
+    ]);
+
+    await assign("PRODUCTION_SUPERVISOR", [
+      "dmr.read", "dmr.create", "dmr.approve", "dmr.manage",
+      "workorder.read", "workorder.create", "workorder.manage", "workorder.launch",
+      "routesheet.read", "routesheet.execute", "routesheet.manage",
+      "mesqc.read", "mesqc.inspect", "mesqc.manage",
+      "psi.read", "psi.create", "psi.decide", "psi.manage",
+      "meskpi.read", "meskpi.manage",
+      "dhr.read", "dhr.create", "dhr.manage",
+      "nc.view", "nc.create",
+      "equipment.read",
+      "training.read",
+      "warehouse.view",
+    ]);
+
+    await transaction.commit();
     console.log(">>> [RBAC] Инициализация завершена успешно.");
   } catch (e) {
+    await transaction.rollback();
     console.error(">>> [RBAC] Ошибка инициализации:", e);
   }
 };

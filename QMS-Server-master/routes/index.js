@@ -14,6 +14,7 @@ const MODULE_DIRS = {
   'qms.dms':        'qms-dms',
   'qms.nc':         'qms-nc',
   'qms.risk':       'qms-risk',
+  'qms.design':     'qms-design',
   'qms.supplier':   'qms-supplier',
   'qms.audit':      'qms-audit',
   'qms.training':   'qms-training',
@@ -24,6 +25,13 @@ const MODULE_DIRS = {
   'qms.validation': 'qms-validation',
   'qms.product':    'qms-product',
   'qms.dashboard':  'qms-dashboard',
+  'core.esign':     'core-esign',
+  'mes.dhr':        'mes-dhr',
+  'mes.dmr':        'mes-dmr',
+  'mes.routes':     'mes-routes',
+  'mes.orders':     'mes-orders',
+  'mes.quality':    'mes-quality',
+  'mes.kpi':        'mes-kpi',
   'wms.warehouse':  'wms',
 };
 
@@ -44,7 +52,10 @@ for (const [moduleCode, dirName] of Object.entries(MODULE_DIRS)) {
   }
 }
 
-// 3. System API (always)
+// 3. Export API
+router.use("/export", require("./exportRouter"));
+
+// 4. System API (always)
 router.get("/system/modules", (req, res) => {
   res.json(moduleManager.toClientConfig());
 });

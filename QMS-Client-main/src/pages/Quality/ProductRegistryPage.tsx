@@ -8,6 +8,7 @@ import {
   AlertTriangle,
   Shield,
   Loader2,
+  FileCheck,
 } from "lucide-react";
 import KpiRow from "../../components/qms/KpiRow";
 import ActionBtn from "../../components/qms/ActionBtn";
@@ -16,6 +17,9 @@ import DataTable from "../../components/qms/DataTable";
 import Card from "../../components/qms/Card";
 import SectionTitle from "../../components/qms/SectionTitle";
 import { productsApi } from "../../api/qmsApi";
+import { useExport } from "../../hooks/useExport";
+import CreateProductModal from "./CreateProductModal";
+import ProductDetailModal from "./ProductDetailModal";
 
 /* ───── types ───── */
 
@@ -56,6 +60,24 @@ const statusLabels: Record<ProductionStatus, string> = {
   PILOT:        "Опытная",
   SERIAL:       "Серийный",
   DISCONTINUED: "Снят",
+};
+
+/* ───── DMF status ───── */
+
+type DmfStatus = "NOT_STARTED" | "IN_PROGRESS" | "COMPLETE" | "NEEDS_UPDATE";
+
+const dmfStatusColors: Record<DmfStatus, { color: string; bg: string }> = {
+  NOT_STARTED:  { color: "#64748B", bg: "rgba(100,116,139,0.14)" },
+  IN_PROGRESS:  { color: "#4A90E8", bg: "rgba(74,144,232,0.14)" },
+  COMPLETE:     { color: "#2DD4A8", bg: "rgba(45,212,168,0.14)" },
+  NEEDS_UPDATE: { color: "#E8A830", bg: "rgba(232,168,48,0.14)" },
+};
+
+const dmfStatusLabels: Record<DmfStatus, string> = {
+  NOT_STARTED:  "\u2014",
+  IN_PROGRESS:  "В работе",
+  COMPLETE:     "Готово",
+  NEEDS_UPDATE: "Обновить",
 };
 
 /* ───── table columns ───── */
@@ -101,6 +123,19 @@ const columns = [
     },
   },
   {
+    key: "dmfStatus",
+    label: "DMF",
+    align: "center" as const,
+    render: (r: ProductRow) => {
+      const dmf = (r as any).dmfStatus as DmfStatus | undefined;
+      if (!dmf || dmf === "NOT_STARTED") {
+        return <span className="text-asvo-text-dim">{dmfStatusLabels.NOT_STARTED}</span>;
+      }
+      const c = dmfStatusColors[dmf] ?? dmfStatusColors.NOT_STARTED;
+      return <Badge color={c.color} bg={c.bg}>{dmfStatusLabels[dmf] ?? dmf}</Badge>;
+    },
+  },
+  {
     key: "validUntil",
     label: "Действует до",
     render: (r: ProductRow) => <span className="text-asvo-text-mid">{r.validUntil}</span>,
@@ -125,10 +160,13 @@ const riskDistributionColors: Record<string, { label: string; color: string }> =
 /* ════════════════════════════════════════════════════ */
 
 const ProductRegistryPage: React.FC = () => {
+  const { exporting, doExport } = useExport();
   const [products, setProducts] = useState<ProductRow[]>([]);
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [detailProductId, setDetailProductId] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -161,6 +199,7 @@ const ProductRegistryPage: React.FC = () => {
     { label: "В разработке",      value: stats?.inDevelopment   ?? 0, icon: <Lightbulb size={18} />,      color: "#E8A830" },
     { label: "Истекает РУ",       value: stats?.expiringRu      ?? 0, icon: <AlertTriangle size={18} />,  color: "#F06060" },
     { label: "Класс риска 2б+",   value: stats?.highRiskClass   ?? 0, icon: <Shield size={18} />,         color: "#A06AE8" },
+    { label: "DMF готово",        value: stats?.dmfComplete    ?? 0, icon: <FileCheck size={18} />,      color: "#2DD4A8" },
   ];
 
   /* ───── risk class distribution (derived from stats) ───── */
@@ -224,10 +263,10 @@ const ProductRegistryPage: React.FC = () => {
 
       {/* ── Action buttons ── */}
       <div className="flex items-center gap-3">
-        <ActionBtn variant="primary" icon={<Plus size={15} />}>
+        <ActionBtn variant="primary" icon={<Plus size={15} />} onClick={() => setShowCreateModal(true)}>
           + Новое изделие
         </ActionBtn>
-        <ActionBtn variant="secondary" icon={<Download size={15} />}>
+        <ActionBtn variant="secondary" icon={exporting ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />} disabled={exporting} onClick={() => doExport("products", "Products_Export")}>
           Экспорт
         </ActionBtn>
       </div>
@@ -236,7 +275,14 @@ const ProductRegistryPage: React.FC = () => {
       <KpiRow items={kpis} />
 
       {/* ── Data table ── */}
-      <DataTable<ProductRow> columns={columns} data={products} />
+      <DataTable<ProductRow>
+        columns={columns}
+        data={products}
+        onRowClick={(row) => {
+          const rawId = (row as any).id ?? (row as any)._raw?.id;
+          if (rawId) setDetailProductId(Number(rawId));
+        }}
+      />
 
       {/* ── Risk class distribution ── */}
       <Card>
@@ -264,6 +310,22 @@ const ProductRegistryPage: React.FC = () => {
           ))}
         </div>
       </Card>
+
+      {/* ── Modals ── */}
+      <CreateProductModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onCreated={() => window.location.reload()}
+      />
+
+      {detailProductId !== null && (
+        <ProductDetailModal
+          productId={detailProductId}
+          isOpen={detailProductId !== null}
+          onClose={() => setDetailProductId(null)}
+          onAction={() => window.location.reload()}
+        />
+      )}
     </div>
   );
 };

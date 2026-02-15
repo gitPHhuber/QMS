@@ -50,6 +50,13 @@ const WarehouseBox = sequelize.define("warehouse_box", {
 
   acceptedAt: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW },
   acceptedById: { type: DataTypes.INTEGER, allowNull: false },
+
+  // ISO 13485 columns (added by migration)
+  currentZoneId: { type: DataTypes.INTEGER, allowNull: true },
+  expiryDate: { type: DataTypes.DATEONLY, allowNull: true },
+  manufacturingDate: { type: DataTypes.DATEONLY, allowNull: true },
+  shelfLifeMonths: { type: DataTypes.INTEGER, allowNull: true },
+  storageLocationId: { type: DataTypes.INTEGER, allowNull: true },
 });
 
 
@@ -73,6 +80,10 @@ const WarehouseMovement = sequelize.define("warehouse_movement", {
   performedById: { type: DataTypes.INTEGER, allowNull: false },
   performedAt: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW },
   comment: { type: DataTypes.TEXT, allowNull: true },
+
+  // ISO 13485 zone tracking (added by migration)
+  fromZoneId: { type: DataTypes.INTEGER, allowNull: true },
+  toZoneId: { type: DataTypes.INTEGER, allowNull: true },
 });
 
 
@@ -122,6 +133,28 @@ const ProductionTask = sequelize.define("production_task", {
   responsibleId: { type: DataTypes.INTEGER, allowNull: true },
   sectionId: { type: DataTypes.INTEGER, allowNull: true },
   projectId: { type: DataTypes.INTEGER, allowNull: true },
+
+
+  // ── MES расширение (ISO 13485 §7.5.1) ──
+  dmrId: { type: DataTypes.INTEGER, allowNull: true, comment: "FK → device_master_records" },
+  dmrVersion: { type: DataTypes.STRING(20), allowNull: true },
+  processRouteId: { type: DataTypes.INTEGER, allowNull: true, comment: "FK → process_routes" },
+  batchNumber: { type: DataTypes.STRING(50), allowNull: true },
+  serialNumberPrefix: { type: DataTypes.STRING(30), allowNull: true },
+  orderType: { type: DataTypes.STRING(30), allowNull: true, defaultValue: "STANDARD", comment: "STANDARD|REWORK|PROTOTYPE|VALIDATION_BATCH" },
+  plannedStartDate: { type: DataTypes.DATEONLY, allowNull: true },
+  plannedEndDate: { type: DataTypes.DATEONLY, allowNull: true },
+  actualStartDate: { type: DataTypes.DATEONLY, allowNull: true },
+  actualEndDate: { type: DataTypes.DATEONLY, allowNull: true },
+  yieldTarget: { type: DataTypes.FLOAT, allowNull: true, defaultValue: 100, comment: "Percent" },
+  completedQty: { type: DataTypes.INTEGER, allowNull: true, defaultValue: 0 },
+  scrapQty: { type: DataTypes.INTEGER, allowNull: true, defaultValue: 0 },
+  launchedById: { type: DataTypes.INTEGER, allowNull: true, comment: "FK → users" },
+  launchedAt: { type: DataTypes.DATE, allowNull: true },
+
+  epicId: { type: DataTypes.INTEGER, allowNull: true },
+  sprintId: { type: DataTypes.INTEGER, allowNull: true },
+
 });
 
 
@@ -142,6 +175,15 @@ const PrintHistory = sequelize.define("print_history", {
   createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
 });
 
+const LabelTemplate = sequelize.define("label_template", {
+  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  name: { type: DataTypes.STRING, allowNull: false },
+  type: { type: DataTypes.STRING, allowNull: true },
+  width: { type: DataTypes.FLOAT, allowNull: false, defaultValue: 105 },
+  height: { type: DataTypes.FLOAT, allowNull: false, defaultValue: 60 },
+  elements: { type: DataTypes.JSONB, allowNull: false, defaultValue: [] },
+});
+
 module.exports = {
   Supply,
   WarehouseBox,
@@ -149,5 +191,6 @@ module.exports = {
   WarehouseDocument,
   InventoryLimit,
   ProductionTask,
-  PrintHistory
+  PrintHistory,
+  LabelTemplate,
 };

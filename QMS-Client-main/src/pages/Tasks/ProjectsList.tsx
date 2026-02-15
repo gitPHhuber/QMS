@@ -220,7 +220,7 @@ const ProjectsList: React.FC<ProjectsListProps> = ({ onSelectProject }) => {
               </label>
               <input
                 className="w-full px-3 py-2.5 bg-asvo-bg border border-asvo-border rounded-xl text-asvo-text text-sm placeholder:text-asvo-text-dim focus:border-asvo-accent/50 focus:outline-none focus:ring-1 focus:ring-asvo-accent/20 transition"
-                placeholder="Напр. Дрон-разведчик"
+                placeholder="Напр. Новый проект"
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
               />

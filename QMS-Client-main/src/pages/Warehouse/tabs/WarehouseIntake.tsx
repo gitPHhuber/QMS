@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import QRCode from "react-qr-code";
 import {
-  ClipboardList, AlertCircle, Printer, Copy, Layers, FileSpreadsheet
+  ClipboardList, AlertCircle, Printer, Copy, Layers, FileSpreadsheet, ShieldCheck
 } from "lucide-react";
-import { createBoxesBatch, downloadBoxesExcel, printBoxesPdf } from "src/api/warehouseApi";
+import toast from "react-hot-toast";
+import { createBoxesBatch, downloadBoxesExcel, printBoxesPdf, createInspection } from "src/api/warehouseApi";
 import { InventoryBoxModel } from "src/types/WarehouseModels";
 import { SectionModel } from "src/store/StructureStore";
 import { productModel } from "src/types/ProductModel";
@@ -285,6 +286,25 @@ export const WarehouseIntake: React.FC<Props> = ({ sections, productsList, compo
                         )}
                     </div>
                 </div>
+
+                {createdBoxes.length > 0 && (
+                    <button
+                        onClick={async () => {
+                            try {
+                                const firstBox = createdBoxes[0];
+                                if (firstBox?.supplyId) {
+                                    await createInspection({ supplyId: firstBox.supplyId });
+                                    toast.success("Входной контроль создан");
+                                } else {
+                                    toast.error("Нет привязки к поставке для создания ВК");
+                                }
+                            } catch { toast.error("Ошибка создания входного контроля"); }
+                        }}
+                        className="flex items-center gap-2 text-sm font-bold text-asvo-green bg-asvo-green-dim px-4 py-2.5 rounded-lg hover:bg-asvo-green/20 transition border border-asvo-green/20"
+                    >
+                        <ShieldCheck size={18}/> Начать входной контроль (ВК)
+                    </button>
+                )}
 
                 {createdBoxes.length === 0 && <div className="text-center py-10 bg-asvo-surface rounded-2xl border-2 border-dashed border-asvo-border text-asvo-text-dim">Здесь появятся этикетки</div>}
 

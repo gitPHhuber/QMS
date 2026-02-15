@@ -5,7 +5,7 @@ services:
     environment:
       POSTGRES_DB: asvo_qms
       POSTGRES_USER: qms
-      POSTGRES_PASSWORD: qms_dev_2026
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
     command: ["postgres","-c","listen_addresses=0.0.0.0"]
     ports:
       - "127.0.0.1:5434:5432"

@@ -1,5 +1,6 @@
 const { Role, Ability, RoleAbility } = require("../../../models/index");
 const ApiError = require("../../../error/ApiError");
+const { logAudit, AUDIT_ACTIONS, AUDIT_ENTITIES } = require("../utils/auditLogger");
 
 class RbacController {
 
@@ -37,12 +38,50 @@ class RbacController {
             const { roleId } = req.params;
             const { abilityIds } = req.body;
 
-            const role = await Role.findByPk(roleId);
+            const role = await Role.findByPk(roleId, {
+                include: [{ model: Ability, as: "abilities", through: { attributes: [] } }]
+            });
             if (!role) {
                 return next(ApiError.badRequest("Роль не найдена"));
             }
 
+            const beforeCodes = role.abilities.map(a => a.code);
+            const beforeIds = role.abilities.map(a => a.id);
+
             await role.setAbilities(abilityIds);
+
+            // Reload to get new abilities
+            const updatedRole = await Role.findByPk(roleId, {
+                include: [{ model: Ability, as: "abilities", through: { attributes: [] } }]
+            });
+            const afterCodes = updatedRole.abilities.map(a => a.code);
+            const afterIds = updatedRole.abilities.map(a => a.id);
+
+            // Compute diff
+            const granted = afterCodes.filter(c => !beforeCodes.includes(c));
+            const revoked = beforeCodes.filter(c => !afterCodes.includes(c));
+
+            // ISO 13485 §4.2.4: log access control changes
+            if (granted.length > 0) {
+                await logAudit({
+                    req,
+                    action: AUDIT_ACTIONS.ROLE_ABILITY_GRANT,
+                    entity: AUDIT_ENTITIES.ROLE,
+                    entityId: roleId,
+                    description: `Role "${role.name}": granted ${granted.length} abilities`,
+                    metadata: { roleName: role.name, granted, before: beforeCodes, after: afterCodes },
+                });
+            }
+            if (revoked.length > 0) {
+                await logAudit({
+                    req,
+                    action: AUDIT_ACTIONS.ROLE_ABILITY_REVOKE,
+                    entity: AUDIT_ENTITIES.ROLE,
+                    entityId: roleId,
+                    description: `Role "${role.name}": revoked ${revoked.length} abilities`,
+                    metadata: { roleName: role.name, revoked, before: beforeCodes, after: afterCodes },
+                });
+            }
 
             return res.json({ message: "Права роли обновлены" });
         } catch (e) {

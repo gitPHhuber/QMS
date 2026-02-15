@@ -1,0 +1,95 @@
+name: QMS CI/CD
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  lint-and-test-server:
+    name: Server - Lint & Test
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: asvo_qms_test
+          POSTGRES_USER: qms
+          POSTGRES_PASSWORD: test_password
+        ports:
+          - 5434:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    defaults:
+      run:
+        working-directory: QMS-Server-master
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: QMS-Server-master/package-lock.json
+      - run: npm ci
+      - run: npm test -- --coverage
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5434
+          DB_NAME: asvo_qms_test
+          DB_USER: qms
+          DB_PASSWORD: test_password
+          AUTH_MODE: dev-bypass
+          NODE_ENV: test
+      - name: Upload server coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-coverage
+          path: QMS-Server-master/coverage/
+          retention-days: 14
+
+  lint-and-test-client:
+    name: Client - Lint & Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: QMS-Client-main
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: QMS-Client-main/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - run: npm test -- --run --coverage
+        env:
+          VITE_API_URL: http://localhost:5001
+          VITE_AUTH_MODE: dev-bypass
+      - name: Upload client coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: client-coverage
+          path: QMS-Client-main/coverage/
+          retention-days: 14
+
+  build-docker:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    needs: [lint-and-test-server, lint-and-test-client]
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build server image
+        run: docker build -t asvo-qms-server:${{ github.sha }} -f QMS-Server-master/Dockerfile QMS-Server-master
+      - name: Build client image
+        run: docker build -t asvo-qms-client:${{ github.sha }} -f QMS-Client-main/Dockerfile QMS-Client-main

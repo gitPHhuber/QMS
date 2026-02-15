@@ -26,4 +26,13 @@ router.get("/competency",      ...protect, checkAbility("training.read"),   ctrl
 router.post("/competency",     ...protect, checkAbility("training.manage"), ctrl.createCompetency);
 router.put("/competency/:id",  ...protect, checkAbility("training.manage"), ctrl.updateCompetency);
 
+// Plan Items (Annual Plan)
+router.get("/plan-items",      ...protect, checkAbility("training.read"),   ctrl.getPlanItems);
+router.post("/plan-items",     ...protect, checkAbility("training.manage"), ctrl.createPlanItem);
+router.put("/plan-items/:id",  ...protect, checkAbility("training.manage"), ctrl.updatePlanItem);
+router.delete("/plan-items/:id", ...protect, checkAbility("training.manage"), ctrl.deletePlanItem);
+
+// Gap Analysis
+router.get("/gap-analysis",    ...protect, checkAbility("training.read"),   ctrl.getGapAnalysis);
+
 module.exports = router;

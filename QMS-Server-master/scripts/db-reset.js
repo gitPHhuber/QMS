@@ -5,9 +5,8 @@
  *
  * 1. Drops all tables (DROP SCHEMA public CASCADE; CREATE SCHEMA public)
  * 2. Runs all migrations via sequelize-cli
- * 3. Syncs any remaining models not covered by migrations
- * 4. Seeds initial data (roles, abilities, role-ability assignments)
- * 5. Prints summary report
+ * 3. Seeds initial data (roles, abilities, role-ability assignments)
+ * 4. Prints summary report
  *
  * Usage: npm run db:reset
  */
@@ -63,19 +62,7 @@ async function main() {
     process.exit(1);
   }
 
-  // --- 4. Sync remaining models not covered by migrations ---
-  console.log("\n>>> Syncing remaining models (alter: true for safety)...");
-  try {
-    // Re-require models (they register with sequelize instance)
-    require("../models/index");
-    await sequelize.sync({ alter: true });
-    console.log("✅ Model sync complete");
-  } catch (e) {
-    console.error("⚠️  Model sync warning:", e.message);
-    // Non-fatal: migrations should have created everything
-  }
-
-  // --- 5. Initialize roles and abilities ---
+  // --- 4. Initialize roles and abilities ---
   console.log("\n>>> Initializing RBAC (roles, abilities)...");
   try {
     const models = require("../models/index");
@@ -114,8 +101,12 @@ async function main() {
       { code: "training.manage", description: "Управление обучением" },
       { code: "equipment.read", description: "Просмотр оборудования" },
       { code: "equipment.calibrate", description: "Калибровка/поверка" },
+      { code: "equipment.manage", description: "Управление оборудованием и мониторингом среды" },
       { code: "review.read", description: "Просмотр анализа руководства" },
       { code: "review.manage", description: "Проведение анализа руководства" },
+      { code: "dhr.read", description: "Просмотр записей истории устройства" },
+      { code: "dhr.create", description: "Создание DHR" },
+      { code: "dhr.manage", description: "Управление DHR и выпуск продукции" },
       { code: "analytics.view", description: "Просмотр дашбордов и KPI" },
       { code: "audit.log.view", description: "Просмотр журнала аудита" },
     ];
@@ -169,8 +160,9 @@ async function main() {
       "supplier.read", "supplier.manage",
       "internal-audit.read", "internal-audit.manage",
       "training.read", "training.manage",
-      "equipment.read", "equipment.calibrate",
+      "equipment.read", "equipment.calibrate", "equipment.manage",
       "review.read", "review.manage",
+      "dhr.read", "dhr.create", "dhr.manage",
       "qms.audit.view", "qms.audit.verify", "qms.audit.report",
       "analytics.view", "audit.log.view",
       "warehouse.view", "rbac.manage", "users.manage",
@@ -183,8 +175,9 @@ async function main() {
       "supplier.read",
       "internal-audit.read",
       "training.read", "training.manage",
-      "equipment.read", "equipment.calibrate",
+      "equipment.read", "equipment.calibrate", "equipment.manage",
       "review.read",
+      "dhr.read", "dhr.create",
       "qms.audit.view",
       "analytics.view", "audit.log.view",
     ]);
@@ -203,7 +196,9 @@ async function main() {
       "warehouse.view",
       "nc.view", "nc.create", "nc.manage",
       "capa.view", "capa.create", "capa.manage", "capa.verify",
-      "qms.audit.view", "risk.read", "equipment.read",
+      "qms.audit.view", "risk.read",
+      "equipment.read", "equipment.manage",
+      "dhr.read", "dhr.create", "dhr.manage",
     ]);
     await assign("WAREHOUSE_MASTER", [
       "warehouse.view", "warehouse.manage", "labels.print",
@@ -212,12 +207,12 @@ async function main() {
     await assign("VIEWER", [
       "dms.view", "nc.view", "capa.view", "risk.read",
       "supplier.read", "internal-audit.read", "training.read", "equipment.read",
-      "review.read", "analytics.view",
+      "review.read", "analytics.view", "dhr.read",
     ]);
 
     console.log("  ✅ Role-ability assignments complete");
 
-    // --- 6. Summary ---
+    // --- 5. Summary ---
     const tableCount = await sequelize.query(
       "SELECT COUNT(*) AS cnt FROM pg_tables WHERE schemaname = 'public'",
       { type: sequelize.constructor.QueryTypes.SELECT }

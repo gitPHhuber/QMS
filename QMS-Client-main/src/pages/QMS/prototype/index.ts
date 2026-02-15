@@ -1,0 +1,1 @@
+export { QmsPrototypePage } from "./QmsPrototypePage";

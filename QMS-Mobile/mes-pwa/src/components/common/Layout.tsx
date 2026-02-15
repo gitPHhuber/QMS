@@ -4,22 +4,109 @@ import { useState, useEffect } from 'react'
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import {
   Home, Package, Cpu, ListTodo, Trophy, User, LogOut,
-  Menu, X, Bell, QrCode, Wifi, WifiOff
+  Menu, X, Bell, QrCode, Wifi, WifiOff, ChevronDown,
+  AlertTriangle, FileText, Users, ClipboardCheck, Shield,
+  Settings, Truck, GraduationCap, Pencil, PenTool,
+  FlaskConical, BarChart3, MessageSquareWarning, Search as SearchIcon
 } from 'lucide-react'
 import { useAuth } from 'react-oidc-context'
 import { USER_ROLES } from '../../config'
 
-const navItems = [
+interface NavItem {
+  to: string
+  icon: any
+  label: string
+}
+
+interface NavGroup {
+  key: string
+  label: string
+  icon: any
+  items: NavItem[]
+}
+
+const directNavItems: NavItem[] = [
   { to: '/', icon: Home, label: 'Главная' },
-  { to: '/warehouse', icon: Package, label: 'Склад' },
-  { to: '/production', icon: Cpu, label: 'Производство' },
+]
+
+const navGroups: NavGroup[] = [
+  {
+    key: 'production',
+    label: 'Производство',
+    icon: Cpu,
+    items: [
+      { to: '/warehouse', icon: Package, label: 'Склад' },
+      { to: '/production', icon: Cpu, label: 'Производство' },
+      { to: '/equipment', icon: Settings, label: 'Оборудование' },
+    ],
+  },
+  {
+    key: 'quality',
+    label: 'Качество',
+    icon: ClipboardCheck,
+    items: [
+      { to: '/nc', icon: AlertTriangle, label: 'Несоответствия' },
+      { to: '/capa', icon: Shield, label: 'CAPA' },
+      { to: '/complaints', icon: MessageSquareWarning, label: 'Рекламации' },
+      { to: '/audit', icon: SearchIcon, label: 'Аудиты' },
+      { to: '/risks', icon: AlertTriangle, label: 'Риски' },
+      { to: '/validation', icon: FlaskConical, label: 'Валидация' },
+    ],
+  },
+  {
+    key: 'documents',
+    label: 'Документы',
+    icon: FileText,
+    items: [
+      { to: '/documents', icon: FileText, label: 'Документы' },
+      { to: '/changes', icon: PenTool, label: 'Изменения' },
+      { to: '/esign', icon: Pencil, label: 'Эл. подписи' },
+    ],
+  },
+  {
+    key: 'resources',
+    label: 'Ресурсы',
+    icon: Users,
+    items: [
+      { to: '/suppliers', icon: Truck, label: 'Поставщики' },
+      { to: '/training', icon: GraduationCap, label: 'Обучение' },
+      { to: '/design', icon: BarChart3, label: 'Проектирование' },
+    ],
+  },
+]
+
+const bottomNavItems: NavItem[] = [
   { to: '/tasks', icon: ListTodo, label: 'Задачи' },
   { to: '/rankings', icon: Trophy, label: 'Рейтинги' },
 ]
 
+const PAGE_TITLES: Record<string, string> = {
+  '/': 'Главная',
+  '/warehouse': 'Склад',
+  '/production': 'Производство',
+  '/equipment': 'Оборудование',
+  '/environment': 'Мониторинг среды',
+  '/nc': 'Несоответствия',
+  '/capa': 'CAPA',
+  '/complaints': 'Рекламации',
+  '/audit': 'Аудиты',
+  '/risks': 'Риски',
+  '/validation': 'Валидация',
+  '/documents': 'Документы',
+  '/changes': 'Изменения',
+  '/esign': 'Эл. подписи',
+  '/suppliers': 'Поставщики',
+  '/training': 'Обучение',
+  '/design': 'Проектирование',
+  '/tasks': 'Задачи',
+  '/rankings': 'Рейтинги',
+  '/profile': 'Профиль',
+}
+
 export const Layout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isOnline, setIsOnline] = useState(navigator.onLine)
+  const [openGroups, setOpenGroups] = useState<string[]>(['production', 'quality'])
   const auth = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
@@ -51,15 +138,23 @@ export const Layout = () => {
     }
   }
 
+  const toggleGroup = (key: string) => {
+    setOpenGroups(prev =>
+      prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
+    )
+  }
+
+  const isGroupActive = (group: NavGroup) =>
+    group.items.some(item => location.pathname.startsWith(item.to))
+
   const getPageTitle = () => {
     const path = location.pathname
     if (path === '/') return 'Главная'
-    if (path.startsWith('/warehouse')) return 'Склад'
-    if (path.startsWith('/production')) return 'Производство'
-    if (path.startsWith('/tasks')) return 'Задачи'
-    if (path.startsWith('/rankings')) return 'Рейтинги'
-    if (path.startsWith('/profile')) return 'Профиль'
-    return 'MES'
+    const match = Object.keys(PAGE_TITLES)
+      .filter(k => k !== '/')
+      .sort((a, b) => b.length - a.length)
+      .find(k => path.startsWith(k))
+    return match ? PAGE_TITLES[match] : 'QMS'
   }
 
   return (
@@ -115,11 +210,75 @@ export const Layout = () => {
 
 
         <nav className="flex-1 px-3 space-y-1 overflow-y-auto">
-          {navItems.map((item) => (
+          {/* Direct nav items (Home) */}
+          {directNavItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
-              end={item.to === '/'}
+              end
+              onClick={() => setSidebarOpen(false)}
+              className={({ isActive }) => `
+                flex items-center gap-3 px-4 py-3 rounded-xl
+                transition-all duration-150
+                ${isActive
+                  ? 'bg-primary text-white shadow-lg shadow-primary/25'
+                  : 'text-slate-400 hover:bg-surface-light hover:text-white'
+                }
+              `}
+            >
+              <item.icon size={20} />
+              <span className="font-medium">{item.label}</span>
+            </NavLink>
+          ))}
+
+          {/* Grouped nav items with accordion */}
+          {navGroups.map((group) => (
+            <div key={group.key}>
+              <button
+                onClick={() => toggleGroup(group.key)}
+                className={`
+                  w-full flex items-center gap-3 px-4 py-2.5 rounded-xl
+                  transition-all duration-150 text-left
+                  ${isGroupActive(group) ? 'text-white' : 'text-slate-400 hover:bg-surface-light hover:text-white'}
+                `}
+              >
+                <group.icon size={18} />
+                <span className="font-medium text-sm flex-1">{group.label}</span>
+                <ChevronDown
+                  size={16}
+                  className={`transition-transform duration-200 ${openGroups.includes(group.key) ? 'rotate-180' : ''}`}
+                />
+              </button>
+              {openGroups.includes(group.key) && (
+                <div className="ml-4 pl-3 border-l border-slate-700/50 space-y-0.5 mt-0.5">
+                  {group.items.map((item) => (
+                    <NavLink
+                      key={item.to}
+                      to={item.to}
+                      onClick={() => setSidebarOpen(false)}
+                      className={({ isActive }) => `
+                        flex items-center gap-3 px-3 py-2 rounded-lg
+                        transition-all duration-150 text-sm
+                        ${isActive
+                          ? 'bg-primary/20 text-primary font-medium'
+                          : 'text-slate-400 hover:bg-surface-light hover:text-white'
+                        }
+                      `}
+                    >
+                      <item.icon size={16} />
+                      <span>{item.label}</span>
+                    </NavLink>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+
+          {/* Bottom direct items (Tasks, Rankings) */}
+          {bottomNavItems.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
               onClick={() => setSidebarOpen(false)}
               className={({ isActive }) => `
                 flex items-center gap-3 px-4 py-3 rounded-xl

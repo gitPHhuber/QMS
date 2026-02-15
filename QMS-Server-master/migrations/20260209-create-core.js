@@ -80,9 +80,9 @@ module.exports = {
           "production_section",
           {
             id: { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true, allowNull: false },
-            name: { type: Sequelize.STRING(255), allowNull: false },
+            title: { type: Sequelize.STRING(255), allowNull: false },
             description: { type: Sequelize.TEXT, allowNull: true },
-            managerId: { type: Sequelize.INTEGER, allowNull: true }, // добавится ссылкой после users
+            managerId: { type: Sequelize.INTEGER, allowNull: true },
             createdAt: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.fn("NOW") },
             updatedAt: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.fn("NOW") },
           },
@@ -95,9 +95,15 @@ module.exports = {
           "production_team",
           {
             id: { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true, allowNull: false },
-            name: { type: Sequelize.STRING(255), allowNull: false },
-            sectionId: { type: Sequelize.INTEGER, allowNull: true }, // FK добавим ниже
-            teamLeadId: { type: Sequelize.INTEGER, allowNull: true }, // добавится ссылкой после users
+            title: { type: Sequelize.STRING(255), allowNull: false },
+            productionSectionId: {
+              type: Sequelize.INTEGER,
+              allowNull: true,
+              references: { model: "production_section", key: "id" },
+              onDelete: "SET NULL",
+              onUpdate: "CASCADE",
+            },
+            teamLeadId: { type: Sequelize.INTEGER, allowNull: true },
             createdAt: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.fn("NOW") },
             updatedAt: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.fn("NOW") },
           },
@@ -105,7 +111,7 @@ module.exports = {
         );
       }
 
-      // ─── Users (нужны DMS и audit_logs) ───────────────────────
+      // ─── Users ───────────────────────────────────────────────
       if (!(await has("users"))) {
         await queryInterface.createTable(
           "users",
@@ -114,6 +120,9 @@ module.exports = {
             email: { type: Sequelize.STRING(255), allowNull: true, unique: true },
             login: { type: Sequelize.STRING(255), allowNull: true, unique: true },
             password: { type: Sequelize.STRING(255), allowNull: true },
+            name: { type: Sequelize.STRING(255), allowNull: true },
+            surname: { type: Sequelize.STRING(255), allowNull: true },
+            img: { type: Sequelize.STRING(255), allowNull: true },
             roleId: {
               type: Sequelize.INTEGER,
               allowNull: true,
@@ -141,8 +150,9 @@ module.exports = {
           "pcs",
           {
             id: { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true, allowNull: false },
-            name: { type: Sequelize.STRING(255), allowNull: true },
+            pc_name: { type: Sequelize.STRING(255), allowNull: true },
             ip: { type: Sequelize.STRING(64), allowNull: true },
+            cabinet: { type: Sequelize.STRING(255), allowNull: true },
             createdAt: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.fn("NOW") },
             updatedAt: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.fn("NOW") },
           },
@@ -169,6 +179,7 @@ module.exports = {
               onDelete: "SET NULL",
               onUpdate: "CASCADE",
             },
+            online: { type: Sequelize.BOOLEAN, allowNull: true, defaultValue: false },
             createdAt: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.fn("NOW") },
             updatedAt: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.fn("NOW") },
           },
@@ -176,7 +187,7 @@ module.exports = {
         );
       }
 
-      // ─── audit_logs (нужны hashchain и ISO 13485) ─────────────
+      // ─── audit_logs ──────────────────────────────────────────
       if (!(await has("audit_logs"))) {
         await queryInterface.createTable(
           "audit_logs",
@@ -192,7 +203,8 @@ module.exports = {
             entity: { type: Sequelize.STRING(255), allowNull: true },
             entityId: { type: Sequelize.STRING(255), allowNull: true },
             action: { type: Sequelize.STRING(255), allowNull: true },
-            message: { type: Sequelize.TEXT, allowNull: true },
+            description: { type: Sequelize.TEXT, allowNull: true },
+            metadata: { type: Sequelize.JSON, allowNull: true },
             createdAt: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.fn("NOW") },
             updatedAt: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.fn("NOW") },
           },
@@ -200,12 +212,45 @@ module.exports = {
         );
       }
 
-      // ─── теперь FK, которые требуют users/sections ─────────────
-      // production_team.sectionId -> production_section.id
+      // ─── FK constraints for circular references ──────────────
       // production_section.managerId -> users.id
       // production_team.teamLeadId -> users.id
-      // Если эти FK уже будут добавлены другими миграциями — не страшно, мы не добавляем их тут через addConstraint,
-      // чтобы не ловить "already exists". Для надёжности это лучше вынести в отдельную "constraints" миграцию.
+      // These couldn't be added at table creation time because users
+      // didn't exist yet. Add them now, checking existence first.
+
+      const hasFk = async (constraintName) => {
+        const [rows] = await queryInterface.sequelize.query(
+          `SELECT 1 FROM information_schema.table_constraints
+           WHERE constraint_name = '${constraintName}' AND constraint_type = 'FOREIGN KEY'
+           LIMIT 1`,
+          { transaction: t }
+        );
+        return rows.length > 0;
+      };
+
+      if (!(await hasFk("fk_production_section_managerId"))) {
+        await queryInterface.addConstraint("production_section", {
+          fields: ["managerId"],
+          type: "foreign key",
+          name: "fk_production_section_managerId",
+          references: { table: "users", field: "id" },
+          onDelete: "SET NULL",
+          onUpdate: "CASCADE",
+          transaction: t,
+        });
+      }
+
+      if (!(await hasFk("fk_production_team_teamLeadId"))) {
+        await queryInterface.addConstraint("production_team", {
+          fields: ["teamLeadId"],
+          type: "foreign key",
+          name: "fk_production_team_teamLeadId",
+          references: { table: "users", field: "id" },
+          onDelete: "SET NULL",
+          onUpdate: "CASCADE",
+          transaction: t,
+        });
+      }
 
       await t.commit();
       console.log("✅ [CORE] базовые таблицы созданы");

@@ -8,8 +8,15 @@ const {
   Section,
   Team,
   User,
-  Project
+  Project,
+  TaskSubtask,
+  TaskChecklist,
+  TaskChecklistItem,
+  Epic,
+  Sprint,
 } = require("../../../models/index");
+const TaskActivityService = require("../services/TaskActivityService");
+const BurndownSnapshotService = require("../services/BurndownSnapshotService");
 
 class TaskController {
 
@@ -26,7 +33,9 @@ class TaskController {
         comment,
         responsibleId,
         sectionId,
-        projectId
+        projectId,
+        epicId,
+        sprintId,
       } = req.body;
 
       if (!req.user || !req.user.id) {
@@ -50,8 +59,12 @@ class TaskController {
         createdById: req.user.id,
         responsibleId: responsibleId || null,
         sectionId: sectionId || null,
-        projectId: projectId || null
+        projectId: projectId || null,
+        epicId: epicId || null,
+        sprintId: sprintId || null,
       });
+
+      TaskActivityService.logTaskCreated(task.id, req.user.id);
 
       return res.json(task);
     } catch (e) {
@@ -63,7 +76,7 @@ class TaskController {
 
   async getTasks(req, res, next) {
     try {
-      let { page = 1, limit = 50, status, search, originType, projectId } = req.query;
+      let { page = 1, limit = 50, status, search, originType, projectId, epicId, sprintId, backlog } = req.query;
       page = Number(page) || 1;
       limit = Number(limit) || 50;
       const offset = (page - 1) * limit;
@@ -72,6 +85,11 @@ class TaskController {
       if (status) where.status = status;
       if (originType) where.originType = originType;
       if (projectId) where.projectId = Number(projectId);
+      if (epicId) where.epicId = Number(epicId);
+      if (sprintId) where.sprintId = Number(sprintId);
+      if (backlog === "true" && projectId) {
+        where.sprintId = { [Op.is]: null };
+      }
       if (search) {
         const s = String(search).trim();
         where[Op.or] = [
@@ -104,7 +122,17 @@ class TaskController {
                 model: User,
                 as: "createdBy",
                 attributes: ["id", "name", "surname"]
-            }
+            },
+            ...(Epic ? [{
+                model: Epic,
+                as: "epic",
+                attributes: ["id", "title", "color"]
+            }] : []),
+            ...(Sprint ? [{
+                model: Sprint,
+                as: "sprint",
+                attributes: ["id", "title", "status"]
+            }] : [])
         ]
       });
 
@@ -154,6 +182,51 @@ class TaskController {
         task.setDataValue("totalFound", stats.total);
       }
 
+      // Subtask & checklist progress (bulk queries)
+      const taskIds = rows.map(t => t.id);
+      if (taskIds.length > 0) {
+        const subtaskCounts = await sequelize.query(`
+          SELECT "taskId",
+                 COUNT(*)::int AS "total",
+                 SUM(CASE WHEN "isCompleted" THEN 1 ELSE 0 END)::int AS "completed"
+          FROM task_subtasks
+          WHERE "taskId" = ANY($1)
+          GROUP BY "taskId"
+        `, { bind: [taskIds], type: sequelize.QueryTypes.SELECT });
+
+        const subtaskMap = {};
+        for (const s of subtaskCounts) subtaskMap[s.taskId] = { total: s.total, completed: s.completed };
+
+        const checklistCounts = await sequelize.query(`
+          SELECT c."taskId",
+                 COUNT(ci.id)::int AS "total",
+                 SUM(CASE WHEN ci."isCompleted" THEN 1 ELSE 0 END)::int AS "completed"
+          FROM task_checklists c
+          JOIN task_checklist_items ci ON ci."checklistId" = c.id
+          WHERE c."taskId" = ANY($1)
+          GROUP BY c."taskId"
+        `, { bind: [taskIds], type: sequelize.QueryTypes.SELECT });
+
+        const checklistMap = {};
+        for (const c of checklistCounts) checklistMap[c.taskId] = { total: c.total, completed: c.completed };
+
+        const commentCounts = await sequelize.query(`
+          SELECT "taskId", COUNT(*)::int AS "count"
+          FROM task_comments
+          WHERE "taskId" = ANY($1)
+          GROUP BY "taskId"
+        `, { bind: [taskIds], type: sequelize.QueryTypes.SELECT });
+
+        const commentMap = {};
+        for (const c of commentCounts) commentMap[c.taskId] = c.count;
+
+        for (const task of rows) {
+          task.setDataValue("subtaskProgress", subtaskMap[task.id] || { total: 0, completed: 0 });
+          task.setDataValue("checklistProgress", checklistMap[task.id] || { total: 0, completed: 0 });
+          task.setDataValue("commentCount", commentMap[task.id] || 0);
+        }
+      }
+
       return res.json({ rows, count, page, limit });
     } catch (e) {
       console.error(e);
@@ -168,7 +241,9 @@ class TaskController {
       const task = await ProductionTask.findByPk(id, {
         include: [
             { model: User, as: "responsible", attributes: ["id", "name", "surname"] },
-            { model: Project, as: "project", attributes: ["id", "title"] }
+            { model: Project, as: "project", attributes: ["id", "title"] },
+            ...(Epic ? [{ model: Epic, as: "epic", attributes: ["id", "title", "color"] }] : []),
+            ...(Sprint ? [{ model: Sprint, as: "sprint", attributes: ["id", "title", "status"] }] : [])
         ]
       });
 
@@ -225,11 +300,34 @@ class TaskController {
         breakdown = Object.values(map);
       }
 
+      // Subtasks & checklists
+      const subtasks = await TaskSubtask.findAll({
+        where: { taskId: id },
+        order: [["sortOrder", "ASC"], ["id", "ASC"]],
+        include: [
+          { model: User, as: "createdBy", attributes: ["id", "name", "surname"] },
+        ],
+      });
+
+      const checklists = await TaskChecklist.findAll({
+        where: { taskId: id },
+        order: [
+          ["sortOrder", "ASC"],
+          ["id", "ASC"],
+          [{ model: TaskChecklistItem, as: "items" }, "sortOrder", "ASC"],
+        ],
+        include: [
+          { model: TaskChecklistItem, as: "items" },
+        ],
+      });
+
       return res.json({
         task,
         totalQty,
         breakdown,
         boxes,
+        subtasks,
+        checklists,
       });
     } catch (e) {
       console.error(e);
@@ -243,11 +341,21 @@ class TaskController {
       const { id } = req.params;
       const {
         title, targetQty, unit, dueDate, priority, comment,
-        responsibleId, sectionId, projectId, status
+        responsibleId, sectionId, projectId, epicId, sprintId, status
       } = req.body;
 
       const task = await ProductionTask.findByPk(id);
       if (!task) return next(ApiError.notFound("Задача не найдена"));
+
+      // Capture old values for activity logging
+      const oldValues = {
+        title: task.title,
+        priority: task.priority,
+        status: task.status,
+        responsibleId: task.responsibleId,
+        projectId: task.projectId,
+        dueDate: task.dueDate,
+      };
 
       await task.update({
         title: title !== undefined ? title : task.title,
@@ -259,8 +367,18 @@ class TaskController {
         responsibleId: responsibleId !== undefined ? (responsibleId || null) : task.responsibleId,
         sectionId: sectionId !== undefined ? (sectionId || null) : task.sectionId,
         projectId: projectId !== undefined ? (projectId || null) : task.projectId,
+        epicId: epicId !== undefined ? (epicId || null) : task.epicId,
+        sprintId: sprintId !== undefined ? (sprintId || null) : task.sprintId,
         status: status !== undefined ? status : task.status
       });
+
+      // Log changed fields
+      const fieldsToTrack = ["title", "priority", "status", "responsibleId", "projectId", "dueDate"];
+      for (const field of fieldsToTrack) {
+        if (req.body[field] !== undefined && String(oldValues[field]) !== String(task[field])) {
+          TaskActivityService.logFieldUpdate(task.id, req.user.id, field, oldValues[field], task[field]);
+        }
+      }
 
       return res.json(task);
     } catch (e) {
@@ -277,8 +395,16 @@ class TaskController {
       const task = await ProductionTask.findByPk(id);
       if (!task) return next(ApiError.notFound("Задача не найдена"));
 
+      const oldStatus = task.status;
       task.status = status;
       await task.save();
+
+      TaskActivityService.logStatusChange(task.id, req.user.id, oldStatus, status);
+
+      // Update burndown if task is in a sprint
+      if (task.sprintId) {
+        BurndownSnapshotService.updateForSprint(task.sprintId);
+      }
 
       return res.json(task);
     } catch (e) {

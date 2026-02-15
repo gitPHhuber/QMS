@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { fetchPrintHistory } from "src/api/warehouseApi";
 import {
     Search, Printer, User, History,
@@ -22,7 +22,7 @@ export const WarehousePrintHistory: React.FC = () => {
 
     const [selectedItem, setSelectedItem] = useState<any | null>(null);
 
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         setLoading(true);
         try {
             const res = await fetchPrintHistory({
@@ -39,12 +39,12 @@ export const WarehousePrintHistory: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [page, search, template, dateFrom]);
 
     useEffect(() => {
         const timer = setTimeout(loadData, 500);
         return () => clearTimeout(timer);
-    }, [page, search, template, dateFrom]);
+    }, [loadData]);
 
 
     const getTemplateIcon = (type: string) => {

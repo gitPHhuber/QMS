@@ -2,14 +2,15 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Package, ArrowRightLeft, FileText, Truck, PieChart,
-  BarChart3, ClipboardCheck, Settings, Tag, Tv, History
+  BarChart3, ClipboardCheck, Settings, Tag, Tv, History,
+  MapPin, Thermometer, RotateCcw, Send
 } from "lucide-react";
 
 import { fetchStructure } from "src/api/structureApi";
 import { fetchAlerts } from "src/api/warehouseApi";
 import { SectionModel } from "src/store/StructureStore";
 import { productModel } from "src/types/ProductModel";
-import { WAREHOUSE_ANALYTICS_ROUTE, WAREHOUSE_INVENTORY_ROUTE } from "src/utils/consts";
+import { WAREHOUSE_ANALYTICS_ROUTE, WAREHOUSE_INVENTORY_ROUTE, WAREHOUSE_DHR_ROUTE } from "src/utils/consts";
 
 import { ProjectDashboard } from "./components/ProjectDashboard";
 import { WarehouseIntake } from "./tabs/WarehouseIntake";
@@ -20,6 +21,11 @@ import { WarehouseSettings } from "./tabs/WarehouseSettings";
 import { WarehouseLabels } from "./tabs/WarehouseLabels";
 import { VideoTransmittersLabel } from "./tabs/VideoTransmittersLabel";
 import { WarehousePrintHistory } from "./tabs/WarehousePrintHistory";
+import { WarehouseZones } from "./tabs/WarehouseZones";
+import { WarehouseInspection } from "./tabs/WarehouseInspection";
+import { WarehouseEnvironment } from "./tabs/WarehouseEnvironment";
+import { WarehouseShipments } from "./tabs/WarehouseShipments";
+import { WarehouseReturns } from "./tabs/WarehouseReturns";
 
 type WarehouseComponentModel = {
   id: number;
@@ -27,7 +33,8 @@ type WarehouseComponentModel = {
   article?: string | null;
 };
 
-type Tab = "INTAKE" | "MOVES" | "BALANCE" | "DOCS" | "SETTINGS" | "LABELS" | "VIDEO_LABEL" | "HISTORY";
+type Tab = "INTAKE" | "MOVES" | "BALANCE" | "DOCS" | "SETTINGS" | "LABELS" | "VIDEO_LABEL" | "HISTORY"
+  | "ZONES" | "INSPECTION" | "ENVIRONMENT" | "SHIPMENTS" | "RETURNS";
 
 export const WarehousePage: React.FC = () => {
   const navigate = useNavigate();
@@ -45,7 +52,7 @@ export const WarehousePage: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen p-6 pb-20 font-sans text-asvo-text">
+    <div className="min-h-screen bg-asvo-bg p-6 pb-20 font-sans text-asvo-text">
 
 
       <div className="max-w-7xl mx-auto mb-6">
@@ -82,6 +89,14 @@ export const WarehousePage: React.FC = () => {
                         <div className="p-2 bg-asvo-amber-dim rounded-full group-hover:bg-asvo-amber/20 text-asvo-amber mb-1"><ClipboardCheck size={20}/></div>
                         <span className="text-[10px] font-bold text-asvo-text-mid uppercase">Ревизия</span>
                     </button>
+
+                    <button
+                        onClick={() => navigate(WAREHOUSE_DHR_ROUTE)}
+                        className="flex flex-col items-center justify-center w-24 h-20 bg-asvo-surface border border-asvo-border rounded-xl shadow-sm hover:shadow-md hover:border-asvo-purple transition group"
+                    >
+                        <div className="p-2 bg-asvo-purple-dim rounded-full group-hover:bg-asvo-purple/20 text-asvo-purple mb-1"><FileText size={20}/></div>
+                        <span className="text-[10px] font-bold text-asvo-text-mid uppercase">DHR</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -97,6 +112,11 @@ export const WarehousePage: React.FC = () => {
                { id: "VIDEO_LABEL", label: "Печать Видео", icon: <Tv size={18}/> },
 
                { id: "HISTORY", label: "История печати", icon: <History size={18}/> },
+               { id: "ZONES", label: "Зоны", icon: <MapPin size={18}/> },
+               { id: "INSPECTION", label: "ВК", icon: <ClipboardCheck size={18}/> },
+               { id: "ENVIRONMENT", label: "Климат", icon: <Thermometer size={18}/> },
+               { id: "SHIPMENTS", label: "Отгрузки", icon: <Send size={18}/> },
+               { id: "RETURNS", label: "Возвраты", icon: <RotateCcw size={18}/> },
 
                { id: "SETTINGS", label: "Настройки / Лимиты", icon:
                  <div className="relative flex items-center gap-1">
@@ -129,6 +149,11 @@ export const WarehousePage: React.FC = () => {
         {activeTab === "LABELS" && <WarehouseLabels />}
         {activeTab === "VIDEO_LABEL" && <VideoTransmittersLabel />}
         {activeTab === "HISTORY" && <WarehousePrintHistory />}
+        {activeTab === "ZONES" && <WarehouseZones />}
+        {activeTab === "INSPECTION" && <WarehouseInspection />}
+        {activeTab === "ENVIRONMENT" && <WarehouseEnvironment />}
+        {activeTab === "SHIPMENTS" && <WarehouseShipments />}
+        {activeTab === "RETURNS" && <WarehouseReturns />}
         {activeTab === "SETTINGS" && <WarehouseSettings />}
       </div>
     </div>

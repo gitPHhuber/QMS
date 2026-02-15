@@ -19,7 +19,7 @@
 require("dotenv").config();
 const sequelize = require("../db");
 const { AuditLog } = require("../models/index");
-const { computeDataHash, computeChainHash, GENESIS_HASH } = require("../utils/hashChainLogger");
+const { computeDataHash, computeChainHash, GENESIS_HASH } = require("../modules/core/utils/auditLogger");
 
 const BATCH_SIZE = 100;
 

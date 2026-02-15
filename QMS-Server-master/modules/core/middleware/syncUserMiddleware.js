@@ -41,10 +41,24 @@ module.exports = async function (req, res, next) {
 
         // Если роли нет в БД — создаём автоматически (только для KC ролей, не системных)
         if (!dbRoleNames.includes(mainRole) && mainRole !== DEFAULT_ROLE) {
-            await Role.findOrCreate({
+            const [newRole, created] = await Role.findOrCreate({
                 where: { name: mainRole },
                 defaults: { code: mainRole, description: 'Автоимпорт из Keycloak' }
             });
+
+            // Inherit VIEWER abilities as baseline for KC-auto-created roles
+            if (created) {
+                const viewerRole = await Role.findOne({
+                    where: { name: 'VIEWER' },
+                    include: [{ model: Ability, as: 'abilities', through: { attributes: [] } }]
+                });
+                if (viewerRole && viewerRole.abilities && viewerRole.abilities.length > 0) {
+                    await newRole.setAbilities(viewerRole.abilities);
+                    console.log(`[SyncUser] KC role "${mainRole}" created with VIEWER baseline (${viewerRole.abilities.length} abilities)`);
+                } else {
+                    console.warn(`[SyncUser] KC role "${mainRole}" created with 0 abilities — VIEWER role not found or empty`);
+                }
+            }
         }
 
         // Находим Role entity для получения roleId

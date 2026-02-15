@@ -8,6 +8,7 @@ import {
   AlertTriangle,
   Clock,
   Boxes,
+  Loader2,
 } from "lucide-react";
 import KpiRow from "../../components/qms/KpiRow";
 import ActionBtn from "../../components/qms/ActionBtn";
@@ -17,6 +18,9 @@ import Card from "../../components/qms/Card";
 import SectionTitle from "../../components/qms/SectionTitle";
 import Timeline from "../../components/qms/Timeline";
 import { equipmentApi } from "../../api/qmsApi";
+import { useExport } from "../../hooks/useExport";
+import CreateEquipmentModal from "./CreateEquipmentModal";
+import EquipmentDetailModal from "./EquipmentDetailModal";
 
 /* ─── types ─────────────────────────────────────────────────────────── */
 
@@ -88,10 +92,14 @@ const EquipmentPage: React.FC = () => {
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [detailEquipmentId, setDetailEquipmentId] = useState<number | null>(null);
   const [selected, setSelected] = useState<any>(null);
   const [calibrationHistory, setCalibrationHistory] = useState<
     { date: string; title: string; color: string }[]
   >([]);
+  const [showCalibrationSchedule, setShowCalibrationSchedule] = useState(false);
+  const { exporting, doExport } = useExport();
 
   /* ─── fetch data on mount ─── */
   useEffect(() => {
@@ -263,20 +271,62 @@ const EquipmentPage: React.FC = () => {
 
       {/* Action buttons */}
       <div className="flex items-center gap-3">
-        <ActionBtn variant="primary" icon={<Plus size={15} />}>
+        <ActionBtn variant="primary" icon={<Plus size={15} />} onClick={() => setShowCreateModal(true)}>
           + Добавить оборудование
         </ActionBtn>
-        <ActionBtn variant="secondary" color="#4A90E8" icon={<CalendarClock size={15} />}>
+        <ActionBtn variant="secondary" color="#4A90E8" icon={<CalendarClock size={15} />} onClick={() => setShowCalibrationSchedule(!showCalibrationSchedule)}>
           График калибровки
         </ActionBtn>
-        <ActionBtn variant="secondary" icon={<Download size={15} />}>
+        <ActionBtn
+          variant="secondary"
+          icon={exporting ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />}
+          disabled={exporting}
+          onClick={() => doExport("equipment", "Equipment_Export")}
+        >
           Экспорт
         </ActionBtn>
       </div>
 
+      {/* Calibration Schedule View */}
+      {showCalibrationSchedule && (
+        <Card>
+          <SectionTitle>График калибровки — ближайшие 90 дней</SectionTitle>
+          <div className="space-y-2">
+            {equipment
+              .filter((e) => e.daysUntil !== undefined && (e.daysUntil as number) <= 90)
+              .sort((a, b) => (a.daysUntil as number) - (b.daysUntil as number))
+              .map((e) => {
+                const days = e.daysUntil as number;
+                const color = days < 0 ? "#F06060" : days <= 14 ? "#E8A830" : "#2DD4A8";
+                return (
+                  <div key={e.id} className="flex items-center gap-3 bg-asvo-surface-2 border border-asvo-border rounded-lg p-3">
+                    <div className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} />
+                    <span className="text-asvo-text font-medium text-sm flex-1">{e.name}</span>
+                    <span className="text-asvo-text-mid text-xs">{e.manufacturer}</span>
+                    <span className="text-asvo-text-mid text-xs">{e.nextCalibration}</span>
+                    <span className="inline-flex items-center rounded-xl text-[11px] font-semibold px-2.5 py-0.5 leading-none" style={{ backgroundColor: color + "22", color }}>
+                      {days < 0 ? `Просрочено ${Math.abs(days)} дн.` : days === 0 ? "Сегодня" : `Через ${days} дн.`}
+                    </span>
+                  </div>
+                );
+              })}
+            {equipment.filter((e) => (e.daysUntil as number) <= 90).length === 0 && (
+              <p className="text-asvo-text-dim text-sm text-center py-4">Нет оборудования с калибровкой в ближайшие 90 дней</p>
+            )}
+          </div>
+        </Card>
+      )}
+
       {/* Data table */}
       <SectionTitle>Реестр оборудования</SectionTitle>
-      <DataTable<EquipmentRow> columns={columns} data={equipment} />
+      <DataTable<EquipmentRow>
+        columns={columns}
+        data={equipment}
+        onRowClick={(row) => {
+          const rawId = (row as any)._raw?.id;
+          if (rawId) setDetailEquipmentId(Number(rawId));
+        }}
+      />
 
       {/* Passport + History for selected equipment */}
       {selected && (
@@ -310,6 +360,22 @@ const EquipmentPage: React.FC = () => {
             )}
           </Card>
         </div>
+      )}
+
+      {/* Modals */}
+      <CreateEquipmentModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onCreated={() => window.location.reload()}
+      />
+
+      {detailEquipmentId !== null && (
+        <EquipmentDetailModal
+          equipmentId={detailEquipmentId}
+          isOpen={detailEquipmentId !== null}
+          onClose={() => setDetailEquipmentId(null)}
+          onAction={() => window.location.reload()}
+        />
       )}
     </div>
   );

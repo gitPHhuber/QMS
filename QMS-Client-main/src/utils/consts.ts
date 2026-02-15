@@ -20,12 +20,14 @@ export const START_ROUTE = '/';
 export const WAREHOUSE_ROUTE = '/warehouse';
 export const WAREHOUSE_ANALYTICS_ROUTE = '/warehouse/analytics';
 export const WAREHOUSE_INVENTORY_ROUTE = '/warehouse/inventory';
+export const WAREHOUSE_DHR_ROUTE = '/warehouse/dhr';
 
 export const TASKS_ROUTE = '/tasks';
 
 // QMS модули
 export const QMS_DASHBOARD_ROUTE = '/qms';
 export const DOCUMENTS_ROUTE = '/qms/documents';
+export const DOCUMENT_DETAIL_ROUTE = '/qms/documents/:id';
 export const NC_ROUTE = '/qms/nonconformity';
 export const CAPA_ROUTE = '/qms/capa';
 export const RISKS_ROUTE = '/qms/risks';
@@ -40,3 +42,19 @@ export const CHANGE_CONTROL_ROUTE = '/qms/change-control';
 export const VALIDATION_ROUTE = '/qms/validation';
 export const PRODUCT_REGISTRY_ROUTE = '/qms/products';
 export const QMS_PROTOTYPE_ROUTE = '/qms/prototype';
+export const DESIGN_CONTROL_ROUTE = '/qms/design-control';
+export const ESIGN_ROUTE = '/qms/esign';
+export const DHR_ROUTE = '/qms/dhr';
+export const CUSTOMER_REQUIREMENTS_ROUTE = '/qms/customer-requirements';
+
+// MES модули
+export const MES_DMR_ROUTE = '/qms/dmr';
+export const MES_DMR_DETAIL_ROUTE = '/qms/dmr/:id';
+export const MES_WORK_ORDERS_ROUTE = '/qms/work-orders';
+export const MES_WORK_ORDER_DETAIL_ROUTE = '/qms/work-orders/:id';
+export const MES_ROUTE_SHEETS_ROUTE = '/qms/route-sheets';
+export const MES_ROUTE_SHEET_DETAIL_ROUTE = '/qms/route-sheets/:serialNumber';
+export const MES_QUALITY_CONTROL_ROUTE = '/qms/mes-quality';
+export const MES_ACCEPTANCE_TESTING_ROUTE = '/qms/acceptance-testing';
+export const MES_KPI_ROUTE = '/qms/mes-kpi';
+export const MES_WIP_ROUTE = '/qms/wip';

@@ -3,17 +3,22 @@ import {
   ClipboardList,
   Layout,
   Briefcase,
+  Layers,
 } from "lucide-react";
 import TasksList from "./TasksList";
 import ProjectsList from "./ProjectsList";
 import ProjectDetailView from "./ProjectDetailView";
+import EpicsList from "./EpicsList";
+import EpicDetailView from "./EpicDetailView";
 import { ProjectModel } from "src/api/projectsApi";
+import { EpicModel } from "src/api/epicsApi";
 
-type ActiveView = "TASKS" | "PROJECTS" | "PROJECT_DETAIL";
+type ActiveView = "TASKS" | "PROJECTS" | "PROJECT_DETAIL" | "EPICS" | "EPIC_DETAIL";
 
 const TasksPage: React.FC = () => {
   const [activeView, setActiveView] = useState<ActiveView>("TASKS");
   const [selectedProject, setSelectedProject] = useState<ProjectModel | null>(null);
+  const [selectedEpic, setSelectedEpic] = useState<EpicModel | null>(null);
 
   const handleSelectProject = (project: ProjectModel) => {
     setSelectedProject(project);
@@ -24,6 +29,18 @@ const TasksPage: React.FC = () => {
     setActiveView("PROJECTS");
     setSelectedProject(null);
   };
+
+  const handleSelectEpic = (epic: EpicModel) => {
+    setSelectedEpic(epic);
+    setActiveView("EPIC_DETAIL");
+  };
+
+  const handleBackFromEpic = () => {
+    setActiveView("EPICS");
+    setSelectedEpic(null);
+  };
+
+  const isDetailView = activeView === "PROJECT_DETAIL" || activeView === "EPIC_DETAIL";
 
   return (
     <div className="bg-asvo-bg min-h-screen animate-fade-in">
@@ -45,8 +62,8 @@ const TasksPage: React.FC = () => {
             </p>
           </div>
 
-          {/* Tab switcher — hidden when viewing project detail */}
-          {activeView !== "PROJECT_DETAIL" && (
+          {/* Tab switcher — hidden when viewing detail */}
+          {!isDetailView && (
             <div className="flex bg-asvo-surface border border-asvo-border rounded-lg overflow-hidden ml-auto">
               <button
                 onClick={() => setActiveView("TASKS")}
@@ -70,6 +87,17 @@ const TasksPage: React.FC = () => {
                 <Briefcase size={14} />
                 Проекты
               </button>
+              <button
+                onClick={() => setActiveView("EPICS")}
+                className={`flex items-center gap-2 px-4 py-2 text-[13px] font-semibold transition-all ${
+                  activeView === "EPICS"
+                    ? "bg-asvo-accent text-asvo-bg"
+                    : "text-asvo-text-mid hover:text-asvo-text"
+                }`}
+              >
+                <Layers size={14} />
+                Эпики
+              </button>
             </div>
           )}
         </div>
@@ -85,6 +113,15 @@ const TasksPage: React.FC = () => {
           <ProjectDetailView
             projectId={selectedProject.id}
             onBack={handleBackFromProject}
+          />
+        )}
+        {activeView === "EPICS" && (
+          <EpicsList onSelectEpic={handleSelectEpic} />
+        )}
+        {activeView === "EPIC_DETAIL" && selectedEpic && (
+          <EpicDetailView
+            epicId={selectedEpic.id}
+            onBack={handleBackFromEpic}
           />
         )}
       </div>

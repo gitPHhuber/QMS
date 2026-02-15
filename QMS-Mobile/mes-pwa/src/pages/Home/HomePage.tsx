@@ -4,19 +4,23 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Package, Cpu, CheckCircle2, AlertTriangle, ArrowRight,
-  ListTodo, Trophy, Clock, QrCode, TrendingUp
+  ListTodo, Trophy, Clock, QrCode, TrendingUp,
+  FileText, Shield, MessageSquareWarning, Settings,
+  ClipboardCheck, BarChart3, GraduationCap
 } from 'lucide-react'
-import { Card, StatsCard, Badge, Skeleton, Button } from '../../components/ui'
+import { Card, StatsCard, Badge, Skeleton, Button, Progress } from '../../components/ui'
 import { useAuth } from 'react-oidc-context'
 import { api } from '../../api/client'
 import { STATUS_LABELS, STATUS_COLORS } from '../../config'
-import type { Task, UserStats } from '../../types'
+import type { Task, UserStats, DashboardSummary, QualityObjective } from '../../types'
 
 interface DashboardData {
   warehouse: { totalBoxes: number; alertsCount: number }
   production: { today: number; inProgress: number }
   userStats: UserStats | null
   recentTasks: Task[]
+  qmsSummary: DashboardSummary | null
+  qualityObjectives: QualityObjective[]
 }
 
 export const HomePage = () => {
@@ -34,8 +38,10 @@ export const HomePage = () => {
 
   const loadDashboard = async () => {
     try {
-      const [tasksRes] = await Promise.allSettled([
+      const [tasksRes, summaryRes, objectivesRes] = await Promise.allSettled([
         api.get('/tasks', { params: { limit: 5 } }),
+        api.get('/dashboard/summary'),
+        api.get('/dashboard/quality-objectives'),
       ])
 
       setData({
@@ -46,6 +52,8 @@ export const HomePage = () => {
         production: { today: 0, inProgress: 0 },
         userStats: null,
         recentTasks: tasksRes.status === 'fulfilled' ? (tasksRes.value.data?.rows || tasksRes.value.data || []) : [],
+        qmsSummary: summaryRes.status === 'fulfilled' ? summaryRes.value.data : null,
+        qualityObjectives: objectivesRes.status === 'fulfilled' ? (objectivesRes.value.data?.rows || objectivesRes.value.data || []) : [],
       })
     } catch (error) {
       console.error('Dashboard load error:', error)
@@ -60,6 +68,8 @@ export const HomePage = () => {
     if (hour < 18) return 'Добрый день'
     return 'Добрый вечер'
   }
+
+  const qms = data?.qmsSummary
 
   return (
     <div className="space-y-6 animate-fadeIn">
@@ -85,13 +95,63 @@ export const HomePage = () => {
           </>
         ) : (
           <>
-            <StatsCard title="На складе" value={data?.warehouse.totalBoxes || 0} icon={<Package size={24} />} variant="primary" />
-            <StatsCard title="В работе" value={data?.production.inProgress || 0} icon={<Cpu size={24} />} variant="warning" />
-            <StatsCard title="Мой рейтинг" value={data?.userStats?.rank ? `#${data.userStats.rank}` : '—'} icon={<Trophy size={24} />} variant="success" />
-            <StatsCard title="Критично" value={data?.warehouse.alertsCount || 0} icon={<AlertTriangle size={24} />} variant={data?.warehouse.alertsCount ? 'danger' : 'default'} />
+            <StatsCard title="Открытые NC" value={qms?.openNc || 0} icon={<AlertTriangle size={24} />} variant={qms?.openNc ? 'danger' : 'default'} />
+            <StatsCard title="Активные CAPA" value={qms?.activeCapa || 0} icon={<Shield size={24} />} variant={qms?.activeCapa ? 'warning' : 'default'} />
+            <StatsCard title="Просрочено док." value={qms?.overdueDocuments || 0} icon={<FileText size={24} />} variant={qms?.overdueDocuments ? 'danger' : 'default'} />
+            <StatsCard title="Рекламации" value={qms?.openComplaints || 0} icon={<MessageSquareWarning size={24} />} variant={qms?.openComplaints ? 'warning' : 'default'} />
           </>
         )}
       </div>
+
+      {/* Second row of stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+        {loading ? (
+          <>
+            <Skeleton className="h-28" />
+            <Skeleton className="h-28" />
+            <Skeleton className="h-28" />
+            <Skeleton className="h-28" />
+          </>
+        ) : (
+          <>
+            <StatsCard title="Калибровки" value={qms?.pendingCalibrations || 0} icon={<Settings size={24} />} variant={qms?.pendingCalibrations ? 'warning' : 'default'} />
+            <StatsCard title="Открытые риски" value={qms?.openRisks || 0} icon={<AlertTriangle size={24} />} variant={qms?.openRisks ? 'warning' : 'default'} />
+            <StatsCard title="Аудиты" value={qms?.upcomingAudits || 0} icon={<ClipboardCheck size={24} />} variant="primary" />
+            <StatsCard title="Обучение" value={qms?.trainingDue || 0} icon={<GraduationCap size={24} />} variant={qms?.trainingDue ? 'warning' : 'default'} />
+          </>
+        )}
+      </div>
+
+      {/* Quality Objectives */}
+      {data?.qualityObjectives && data.qualityObjectives.length > 0 && (
+        <Card className="p-5">
+          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <BarChart3 size={20} className="text-primary" />
+            Цели в области качества
+          </h2>
+          <div className="space-y-4">
+            {data.qualityObjectives.slice(0, 5).map((obj) => (
+              <div key={obj.id}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm font-medium truncate">{obj.title}</span>
+                  <Badge variant={STATUS_COLORS[obj.status] || 'neutral'} size="sm">
+                    {STATUS_LABELS[obj.status] || obj.status}
+                  </Badge>
+                </div>
+                <Progress
+                  value={obj.actualValue || 0}
+                  max={obj.targetValue || 100}
+                  variant={
+                    (obj.actualValue || 0) >= (obj.targetValue || 100) ? 'success' :
+                    (obj.actualValue || 0) >= (obj.targetValue || 100) * 0.7 ? 'primary' : 'warning'
+                  }
+                  showLabel
+                />
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
 
       {data?.userStats && (
@@ -121,43 +181,32 @@ export const HomePage = () => {
         </Card>
       )}
 
-
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 lg:gap-4">
-        <Link to="/warehouse">
-          <Card hover className="p-5 group h-full">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="p-3 rounded-xl bg-primary/20"><Package size={24} className="text-primary" /></div>
-                <div><h3 className="font-semibold">Склад</h3><p className="text-sm text-slate-400">Запасы</p></div>
+      {/* Quick Links - expanded */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 lg:gap-4">
+        {[
+          { to: '/warehouse', icon: Package, label: 'Склад', desc: 'Запасы', color: 'primary' },
+          { to: '/production', icon: Cpu, label: 'Производство', desc: 'Сборка', color: 'success' },
+          { to: '/nc', icon: AlertTriangle, label: 'NC', desc: 'Несоответствия', color: 'danger' },
+          { to: '/documents', icon: FileText, label: 'Документы', desc: 'DMS', color: 'primary' },
+          { to: '/risks', icon: Shield, label: 'Риски', desc: 'Управление', color: 'warning' },
+          { to: '/audit', icon: ClipboardCheck, label: 'Аудиты', desc: 'Внутренние', color: 'primary' },
+          { to: '/suppliers', icon: Package, label: 'Поставщики', desc: 'Управление', color: 'success' },
+          { to: '/rankings', icon: Trophy, label: 'Рейтинги', desc: 'Статистика', color: 'warning' },
+        ].map((item) => (
+          <Link key={item.to} to={item.to}>
+            <Card hover className="p-4 group h-full">
+              <div className="flex items-center gap-3">
+                <div className={`p-2.5 rounded-xl bg-${item.color}/20 shrink-0`}>
+                  <item.icon size={20} className={`text-${item.color}`} />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="font-semibold text-sm">{item.label}</h3>
+                  <p className="text-xs text-slate-400 truncate">{item.desc}</p>
+                </div>
               </div>
-              <ArrowRight size={20} className="text-slate-600 group-hover:text-primary group-hover:translate-x-1 transition-all" />
-            </div>
-          </Card>
-        </Link>
-
-        <Link to="/production">
-          <Card hover className="p-5 group h-full">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="p-3 rounded-xl bg-success/20"><Cpu size={24} className="text-success" /></div>
-                <div><h3 className="font-semibold">Производство</h3><p className="text-sm text-slate-400">Сборка</p></div>
-              </div>
-              <ArrowRight size={20} className="text-slate-600 group-hover:text-success group-hover:translate-x-1 transition-all" />
-            </div>
-          </Card>
-        </Link>
-
-        <Link to="/rankings">
-          <Card hover className="p-5 group h-full">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="p-3 rounded-xl bg-warning/20"><Trophy size={24} className="text-warning" /></div>
-                <div><h3 className="font-semibold">Рейтинги</h3><p className="text-sm text-slate-400">Статистика</p></div>
-              </div>
-              <ArrowRight size={20} className="text-slate-600 group-hover:text-warning group-hover:translate-x-1 transition-all" />
-            </div>
-          </Card>
-        </Link>
+            </Card>
+          </Link>
+        ))}
       </div>
 
 

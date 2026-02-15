@@ -36,8 +36,8 @@ export const AdminPCs: React.FC = () => {
   ));
 
   return (
-    <div className="p-4  bg-gray-100/80 shadow-lg rounded-lg h-screen overflow-y-auto">
-      <h2 className="text-xl font-bold text-gray-900 mb-4 border-b-2 pb-2">
+    <div className="p-4  bg-asvo-bg shadow-lg shadow-black/20 rounded-lg h-screen overflow-y-auto">
+      <h2 className="text-xl font-bold text-asvo-text mb-4 border-b-2 pb-2">
         Список ПК
       </h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 p-6">

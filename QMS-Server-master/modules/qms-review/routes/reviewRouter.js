@@ -17,6 +17,9 @@ router.get("/:id",   ...protect, checkAbility("review.read"),   ctrl.getOne);
 router.post("/",     ...protect, checkAbility("review.manage"), ctrl.create);
 router.put("/:id",   ...protect, checkAbility("review.manage"), ctrl.update);
 
+// PDF Minutes (Протокол совещания)
+router.get("/:id/minutes", ...protect, checkAbility("review.read"), ctrl.getMinutesPdf);
+
 // Actions sub-resource
 router.post("/:id/actions",  ...protect, checkAbility("review.manage"), ctrl.addAction);
 router.put("/actions/:id",   ...protect, checkAbility("review.manage"), ctrl.updateAction);

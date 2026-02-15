@@ -19,6 +19,9 @@ import DataTable from "../../components/qms/DataTable";
 import Card from "../../components/qms/Card";
 import SectionTitle from "../../components/qms/SectionTitle";
 import { changeRequestsApi } from "../../api/qmsApi";
+import { useExport } from "../../hooks/useExport";
+import CreateChangeModal from "./CreateChangeModal";
+import ChangeDetailModal from "./ChangeDetailModal";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                               */
@@ -40,6 +43,7 @@ type ChangeStatus =
 
 interface ChangeRow {
   [key: string]: unknown;
+  id: number;
   ecr: string;
   date: string;
   type: ChangeType;
@@ -220,13 +224,25 @@ const columns = [
 /* ================================================================== */
 
 const ChangeControlPage: React.FC = () => {
+  const { exporting, doExport } = useExport();
   const [tab, setTab] = useState("registry");
+
+  /* ---- Modal state ---- */
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [detailChangeId, setDetailChangeId] = useState<number | null>(null);
 
   /* ---- API state ---- */
   const [changes, setChanges] = useState<ChangeRow[]>([]);
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  /* ---- Analytics state ---- */
+  const [analytics, setAnalytics] = useState<any>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+
+  const refreshData = () => setRefreshKey((k) => k + 1);
 
   /* ---- Fetch data on mount ---- */
   useEffect(() => {
@@ -244,6 +260,7 @@ const ChangeControlPage: React.FC = () => {
         if (cancelled) return;
 
         const rows: ChangeRow[] = (allResult.rows ?? []).map((r: any) => ({
+          id: r.id,
           ecr: r.ecr ?? r.number ?? `ECR-${r.id}`,
           date: r.date ?? (r.createdAt ? new Date(r.createdAt).toLocaleDateString("ru-RU") : "\u2014"),
           type: r.type ?? "DESIGN",
@@ -275,7 +292,26 @@ const ChangeControlPage: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [refreshKey]);
+
+  /* ---- Fetch analytics when analytics tab is selected ---- */
+  useEffect(() => {
+    if (tab !== "analytics") return;
+    let cancelled = false;
+    const fetchAnalytics = async () => {
+      setAnalyticsLoading(true);
+      try {
+        const result = await changeRequestsApi.getAnalytics();
+        if (!cancelled) setAnalytics(result);
+      } catch (err: any) {
+        console.error("Failed to load analytics:", err);
+      } finally {
+        if (!cancelled) setAnalyticsLoading(false);
+      }
+    };
+    fetchAnalytics();
+    return () => { cancelled = true; };
+  }, [tab, refreshKey]);
 
   /* ---- KPI (driven by stats from API) ---- */
   const kpis = [
@@ -303,8 +339,8 @@ const ChangeControlPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <ActionBtn variant="primary" icon={<Plus size={15} />}>+ Новый ECR</ActionBtn>
-          <ActionBtn variant="secondary" icon={<Download size={15} />}>Экспорт</ActionBtn>
+          <ActionBtn variant="primary" icon={<Plus size={15} />} onClick={() => setShowCreateModal(true)}>+ Новый ECR</ActionBtn>
+          <ActionBtn variant="secondary" icon={exporting ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />} disabled={exporting} onClick={() => doExport("changes", "Changes_Export")}>Экспорт</ActionBtn>
         </div>
       </div>
 
@@ -342,7 +378,13 @@ const ChangeControlPage: React.FC = () => {
       )}
 
       {/* ---- TAB: Registry ---- */}
-      {!loading && !error && tab === "registry" && <DataTable columns={columns} data={changes} />}
+      {!loading && !error && tab === "registry" && (
+        <DataTable
+          columns={columns}
+          data={changes}
+          onRowClick={(row: ChangeRow) => setDetailChangeId(row.id)}
+        />
+      )}
 
       {/* ---- TAB: Workflow ---- */}
       {!loading && !error && tab === "workflow" && (
@@ -440,12 +482,142 @@ const ChangeControlPage: React.FC = () => {
 
       {/* ---- TAB: Analytics ---- */}
       {!loading && !error && tab === "analytics" && (
-        <Card>
-          <div className="flex flex-col items-center justify-center py-12 text-asvo-text-dim">
-            <GitBranch size={40} className="mb-3 opacity-30" />
-            <p className="text-[13px]">Раздел аналитики находится в разработке</p>
-          </div>
-        </Card>
+        <>
+          {analyticsLoading && (
+            <Card>
+              <div className="flex flex-col items-center justify-center py-16">
+                <Loader2 size={36} className="animate-spin text-asvo-accent mb-3" />
+                <p className="text-[13px] text-asvo-text-dim">Загрузка аналитики...</p>
+              </div>
+            </Card>
+          )}
+
+          {!analyticsLoading && !analytics && (
+            <Card>
+              <div className="flex flex-col items-center justify-center py-12 text-asvo-text-dim">
+                <GitBranch size={40} className="mb-3 opacity-30" />
+                <p className="text-[13px]">Нет данных для аналитики</p>
+              </div>
+            </Card>
+          )}
+
+          {!analyticsLoading && analytics && (
+            <>
+              {/* Metric cards row */}
+              <div className="grid grid-cols-4 gap-4">
+                {/* By type distribution */}
+                <Card>
+                  <p className="text-[11px] text-asvo-text-dim uppercase tracking-wider mb-3">По типу</p>
+                  <div className="space-y-2">
+                    {(Object.entries(analytics.byType ?? {}) as [string, number][]).map(([type, count]) => {
+                      const tc = typeColors[type as ChangeType] ?? { color: "#64748B", bg: "rgba(100,116,139,0.14)" };
+                      return (
+                        <div key={type} className="flex items-center justify-between">
+                          <Badge color={tc.color} bg={tc.bg}>{TYPE_LABELS[type as ChangeType] ?? type}</Badge>
+                          <span className="text-[13px] font-semibold text-asvo-text">{count as number}</span>
+                        </div>
+                      );
+                    })}
+                    {Object.keys(analytics.byType ?? {}).length === 0 && (
+                      <span className="text-[12px] text-asvo-text-dim">Нет данных</span>
+                    )}
+                  </div>
+                </Card>
+
+                {/* Major vs Minor */}
+                <Card>
+                  <p className="text-[11px] text-asvo-text-dim uppercase tracking-wider mb-3">Категория</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="text-center">
+                      <p className="text-2xl font-bold" style={{ color: "#F06060" }}>
+                        {analytics.majorCount ?? analytics.byCategory?.MAJOR ?? 0}
+                      </p>
+                      <p className="text-[11px] text-asvo-text-dim mt-1">MAJOR</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold" style={{ color: "#4A90E8" }}>
+                        {analytics.minorCount ?? analytics.byCategory?.MINOR ?? 0}
+                      </p>
+                      <p className="text-[11px] text-asvo-text-dim mt-1">MINOR</p>
+                    </div>
+                  </div>
+                </Card>
+
+                {/* Avg implementation days */}
+                <Card>
+                  <p className="text-[11px] text-asvo-text-dim uppercase tracking-wider mb-3">Среднее время внедрения</p>
+                  <div className="text-center">
+                    <p className="text-3xl font-bold text-asvo-accent">
+                      {analytics.avgImplementationDays ?? analytics.avgDays ?? 0}
+                    </p>
+                    <p className="text-[11px] text-asvo-text-dim mt-1">дней</p>
+                  </div>
+                </Card>
+
+                {/* Regulatory impact */}
+                <Card>
+                  <p className="text-[11px] text-asvo-text-dim uppercase tracking-wider mb-3">Регуляторное воздействие</p>
+                  <div className="text-center">
+                    <p className="text-3xl font-bold" style={{ color: "#E8A830" }}>
+                      {analytics.regulatoryImpactCount ?? analytics.regulatoryImpact ?? 0}
+                    </p>
+                    <p className="text-[11px] text-asvo-text-dim mt-1">затронуто</p>
+                  </div>
+                </Card>
+              </div>
+
+              {/* Changes by category horizontal bars */}
+              <Card>
+                <SectionTitle>Распределение по статусам</SectionTitle>
+                <div className="space-y-3">
+                  {(Object.entries(analytics.byStatus ?? {}) as [string, number][]).map(([status, count]) => {
+                    const sc = statusColors[status as ChangeStatus] ?? { color: "#64748B", bg: "rgba(100,116,139,0.14)" };
+                    const maxVal = Math.max(...Object.values(analytics.byStatus ?? {}).map(Number), 1);
+                    return (
+                      <div key={status} className="flex items-center gap-3">
+                        <span className="text-[12px] text-asvo-text-mid w-28 text-right font-medium truncate">
+                          {STATUS_LABELS[status as ChangeStatus] ?? status}
+                        </span>
+                        <div className="flex-1 h-6 bg-asvo-surface rounded-lg overflow-hidden">
+                          <div
+                            className="h-full rounded-lg transition-all"
+                            style={{
+                              width: `${maxVal > 0 ? ((count as number) / maxVal) * 100 : 0}%`,
+                              backgroundColor: sc.color,
+                              minWidth: (count as number) > 0 ? "24px" : "0px",
+                            }}
+                          />
+                        </div>
+                        <span className="text-[13px] text-asvo-text font-semibold w-8 text-right">
+                          {count as number}
+                        </span>
+                      </div>
+                    );
+                  })}
+                  {Object.keys(analytics.byStatus ?? {}).length === 0 && (
+                    <p className="text-sm text-asvo-text-dim text-center py-4">Нет данных</p>
+                  )}
+                </div>
+              </Card>
+            </>
+          )}
+        </>
+      )}
+
+      {/* ---- Modals ---- */}
+      <CreateChangeModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onCreated={refreshData}
+      />
+
+      {detailChangeId !== null && (
+        <ChangeDetailModal
+          changeId={detailChangeId}
+          isOpen={true}
+          onClose={() => setDetailChangeId(null)}
+          onAction={refreshData}
+        />
       )}
     </div>
   );

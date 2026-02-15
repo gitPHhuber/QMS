@@ -14,7 +14,7 @@ const GROUP_META: Record<string, { label: string; icon: React.ElementType; color
   erp:     { label: 'Планирование (ERP)',icon: Package,       color: 'text-purple-400' },
   ru:      { label: 'Российская специфика', icon: Globe,      color: 'text-red-400' },
   premium: { label: 'Premium',           icon: Crown,         color: 'text-yellow-400' },
-  addon:   { label: 'Дополнительные',    icon: Package,       color: 'text-gray-400' },
+  addon:   { label: 'Дополнительные',    icon: Package,       color: 'text-asvo-text-dim' },
 };
 
 export const ModulesPage: React.FC = observer(() => {
@@ -51,7 +51,7 @@ export const ModulesPage: React.FC = observer(() => {
 
       <div className="space-y-6">
         {Array.from(grouped.entries()).map(([group, mods]) => {
-          const meta = GROUP_META[group] || { label: group, icon: Package, color: 'text-gray-400' };
+          const meta = GROUP_META[group] || { label: group, icon: Package, color: 'text-asvo-text-dim' };
           const Icon = meta.icon;
           const enabledInGroup = mods.filter(m => m.enabled).length;
 

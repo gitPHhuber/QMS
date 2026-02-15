@@ -1,0 +1,18 @@
+{
+  "name": "als-cli",
+  "version": "1.0.0",
+  "description": "ASVO License Service CLI — key generation and license management",
+  "main": "index.js",
+  "bin": {
+    "als-cli": "./index.js"
+  },
+  "scripts": {
+    "keygen": "node index.js keygen",
+    "create": "node index.js create",
+    "verify": "node index.js verify"
+  },
+  "dependencies": {
+    "tweetnacl": "^1.0.3",
+    "commander": "^11.1.0"
+  }
+}

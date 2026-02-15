@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import {
   FileText, Plus, Search, Upload, ChevronRight,
   CheckCircle, Clock, AlertTriangle, RefreshCw,
@@ -102,6 +103,10 @@ const STATUS_DOT_MAP: Record<string, "accent" | "blue" | "amber" | "grey" | "red
 /* ───────────────────── Component ───────────────────── */
 
 export const DocumentsPage: React.FC = () => {
+  /* ── URL params for deep-link /qms/documents/:id ── */
+  const { id: urlDocId } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+
   /* ── State ── */
   const [documents, setDocuments] = useState<DocumentShort[]>([]);
   const [stats, setStats] = useState<DocumentStats | null>(null);
@@ -119,7 +124,9 @@ export const DocumentsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState("all");
 
   const [createModalOpen, setCreateModalOpen] = useState(false);
-  const [detailDocId, setDetailDocId] = useState<number | null>(null);
+  const [detailDocId, setDetailDocId] = useState<number | null>(
+    urlDocId ? Number(urlDocId) : null
+  );
 
   /* ── Search debounce ── */
   useEffect(() => {
@@ -190,7 +197,10 @@ export const DocumentsPage: React.FC = () => {
   }, [fetchStats, fetchPending]);
 
   /* ── Handlers ── */
-  const openDetail = (id: number) => setDetailDocId(id);
+  const openDetail = (id: number) => {
+    setDetailDocId(id);
+    navigate(`/qms/documents/${id}`, { replace: true });
+  };
 
   const handleCreated = () => {
     fetchDocuments();
@@ -548,7 +558,10 @@ export const DocumentsPage: React.FC = () => {
         <DocumentDetailModal
           docId={detailDocId}
           isOpen={true}
-          onClose={() => setDetailDocId(null)}
+          onClose={() => {
+            setDetailDocId(null);
+            navigate("/qms/documents", { replace: true });
+          }}
           onAction={handleDetailAction}
         />
       )}

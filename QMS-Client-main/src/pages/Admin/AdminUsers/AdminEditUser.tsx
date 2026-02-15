@@ -99,8 +99,8 @@ export const AdminEditUser: React.FC<AdminEditUserModel> = ({
   };
 
   return (
-    <div className="p-8 max-w-2xl mx-auto bg-gradient-to-br from-blue-50 to-purple-50 shadow-2xl rounded-3xl transform transition-all">
-      <h1 className="text-4xl font-extrabold text-gray-900 mb-8 text-center">
+    <div className="p-8 max-w-2xl mx-auto bg-asvo-surface shadow-2xl rounded-3xl transform transition-all">
+      <h1 className="text-4xl font-extrabold text-asvo-text mb-8 text-center">
         Профиль пользователя
       </h1>
 
@@ -127,7 +127,7 @@ export const AdminEditUser: React.FC<AdminEditUserModel> = ({
           <input
             type="file"
             onChange={handleFileChange}
-            className="mb-4 p-2 bg-white rounded-lg shadow-sm border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            className="mb-4 p-2 bg-asvo-card rounded-lg shadow-sm border border-asvo-border focus:outline-none focus:ring-2 focus:ring-purple-500"
           />
           <button
             className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white font-semibold py-2 px-6 rounded-full shadow-lg transform transition-all hover:scale-105 duration-300"
@@ -148,50 +148,50 @@ export const AdminEditUser: React.FC<AdminEditUserModel> = ({
       )}
 
 
-      <div className="space-y-6 bg-white p-8 rounded-2xl shadow-xl">
+      <div className="space-y-6 bg-asvo-card p-8 rounded-2xl shadow-xl">
 
-        <p className="text-lg text-gray-700">
+        <p className="text-lg text-asvo-text">
           <span className="font-bold text-purple-600">Логин:</span>{" "}
-          <span className="text-gray-900">{currentUser.login}</span>
+          <span className="text-asvo-text">{currentUser.login}</span>
         </p>
 
 
-        <p className="text-lg text-gray-700">
+        <p className="text-lg text-asvo-text">
           <span className="font-bold text-purple-600">Пароль:</span>{" "}
           <input
             type="password"
             name="password"
             value={currentUser.password}
             onChange={handleInputChange}
-            className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            className="border border-asvo-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
           />
         </p>
 
 
-        <p className="text-lg text-gray-700">
+        <p className="text-lg text-asvo-text">
           <span className="font-bold text-purple-600">Роль:</span>{" "}
-          <span className="text-gray-900">{currentUser.role}</span>
+          <span className="text-asvo-text">{currentUser.role}</span>
         </p>
 
 
-        <p className="text-lg text-gray-700">
+        <p className="text-lg text-asvo-text">
           <span className="font-bold text-purple-600">Имя:</span>{" "}
           <input
             name="name"
             value={currentUser.name}
             onChange={handleInputChange}
-            className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            className="border border-asvo-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
           />
         </p>
 
 
-        <p className="text-lg text-gray-700">
+        <p className="text-lg text-asvo-text">
           <span className="font-bold text-purple-600">Фамилия:</span>{" "}
           <input
             name="surname"
             value={currentUser.surname}
             onChange={handleInputChange}
-            className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            className="border border-asvo-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
           />
         </p>
       </div>

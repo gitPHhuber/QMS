@@ -115,7 +115,7 @@ export const AdminPanel: React.FC = observer(() => {
     user.can("users.manage") || user.can("admin.users_manage");
 
   return (
-    <div className="p-6 max-w-[1600px] mx-auto min-h-screen">
+    <div className="bg-asvo-bg p-6 max-w-[1600px] mx-auto min-h-screen">
       <div className="mb-8">
         <h1 className="text-4xl font-extrabold text-asvo-text tracking-tight">
           Центр управления
