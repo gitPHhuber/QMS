@@ -11,7 +11,8 @@ module.exports = new Sequelize(
         port: Number(process.env.DB_PORT || 5434),
         logging: false,
         dialectOptions: {
-            connectionTimeoutMillis: 5000,
+            connectTimeoutMS: 10000,
+            connectionTimeoutMillis: 10000,
         },
     }
 );

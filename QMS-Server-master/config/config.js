@@ -10,7 +10,8 @@ const base = {
   logging: false,
   dialectOptions: {
     // чтобы не висеть вечно при сетевых странностях
-    connectionTimeoutMillis: 5000,
+    connectTimeoutMS: 10000,
+    connectionTimeoutMillis: 10000,
   },
 };
 

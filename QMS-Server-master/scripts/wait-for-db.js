@@ -12,6 +12,7 @@ require('dotenv').config();
 const net = require('net');
 const { execSync } = require('child_process');
 const path = require('path');
+const { Sequelize } = require('sequelize');
 
 const HOST = process.env.DB_HOST || '127.0.0.1';
 const PORT = Number(process.env.DB_PORT || 5434);
@@ -92,6 +93,32 @@ async function main() {
   for (let i = 1; i <= MAX_RETRIES; i++) {
     if (await tryConnect()) {
       log(`Database is ready (attempt ${i}/${MAX_RETRIES}).`);
+
+      // Verify Sequelize can authenticate (catches wrong/missing password early)
+      const sequelize = new Sequelize(
+        process.env.DB_NAME || 'asvo_qms',
+        process.env.DB_USER || 'qms',
+        process.env.DB_PASSWORD,
+        {
+          dialect: 'postgres',
+          host: HOST,
+          port: PORT,
+          logging: false,
+          dialectOptions: { connectionTimeoutMillis: 10000 },
+        }
+      );
+      try {
+        await sequelize.authenticate();
+        log('Sequelize authentication OK.');
+      } catch (err) {
+        log(`TCP port is open, but Sequelize cannot connect: ${err.message}`);
+        if (!process.env.DB_PASSWORD) {
+          log('Hint: DB_PASSWORD is not set. Create a .env file (see .env.example).');
+        }
+        await sequelize.close();
+        process.exit(1);
+      }
+      await sequelize.close();
       process.exit(0);
     }
     process.stdout.write('.');
